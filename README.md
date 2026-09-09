@@ -14,13 +14,21 @@ checkpoint, installed and configured automatically by the installer; there is no
 - **Keep a cast and visual library:** give characters, props and locations stable names, attach
   reference images, and mention them as `@Name` in shot prompts.
 - **Build a sequence:** connect Story State and Last Frame with **Add Next Shot**, or open the film
-  editor to plan shot actions, durations, subjects and intended state changes.
+  editor to select shots on a visual timeline, describe actions, choose subjects and set start/end
+  frames. The player previews saved takes without leaving the editor.
 - **Carry history across shots:** retain ordered associative memory, fusion trees and dense state
   in saved revisions, together with the exact images you approve as evidence.
 - **Iterate on a film:** save a plan, generate a first cut, review individual takes and change the
   affected shots. Unchanged completed work can be recovered when its inputs and runtime match.
 - **Finish and transfer:** add soundtrack cues, export the assembled video, save the ComfyUI
   workflow and transfer a project's input bundle to another compatible installation.
+
+The film editor has three sections: **Shots**, **Cast & world**, and **Soundtrack**. Select cast and
+props by name, upload music directly, and position it using seconds and volume controls. Save an
+edit to see which earlier shots are eligible for reuse and which later shots need generation
+review. **Story memory · Always on** describes the required memory system; **Appearance references**
+chooses exact visual evidence and does not disable associative memory. Soundtrack uploads are mixed
+into the export; they do not condition the generated motion.
 
 ## How Story memory works
 
