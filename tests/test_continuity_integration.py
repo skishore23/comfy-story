@@ -1402,7 +1402,11 @@ def test_public_generation_requires_memory_before_project_or_gpu_work(
     monkeypatch.delenv("COMFY_STORY_MEMORY_CHECKPOINT", raising=False)
     root = tmp_path / "must-not-be-created"
     monkeypatch.setenv("COMFY_STORY_ROOT", str(root))
-    expected = "CHECKPOINT is required" if mode is None else "requires associative memory"
+    expected = (
+        "Bundled associative memory checkpoint is missing"
+        if mode is None
+        else "requires associative memory"
+    )
     with pytest.raises(ValueError, match=expected):
         adapter.prepare_node_generation({})
     assert not root.exists()

@@ -1,0 +1,14 @@
+"""Identity of the supported H3 memory checkpoint distributed with installation bundles."""
+
+CHECKPOINT_FILENAME = "h3-associative-memory.pt"
+CHECKPOINT_SIZE = 216152
+CHECKPOINT_SHA256 = "af20631855a7259669e210b218c962f97b3d50ae27689ade25c37d0671d0ba08"
+FOUNDATION_SHA256 = "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779"
+MODEL_CONFIGURATION_SHA256 = "2ae3a068c9edee44c8f2641ad969bc85c5df1b0947ba10ebd18ff9cd763958f9"
+VAE_SHA256 = "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522"
+CHECKPOINT_RELEASE = "memory-v1"
+CHECKPOINT_REPOSITORY = "skishore23/comfy-story"
+CHECKPOINT_URL = (
+    f"https://github.com/{CHECKPOINT_REPOSITORY}/releases/download/"
+    f"{CHECKPOINT_RELEASE}/{CHECKPOINT_FILENAME}"
+)

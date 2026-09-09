@@ -6,10 +6,13 @@ import argparse
 import base64
 import hashlib
 import json
+import runpy
 import shutil
 import subprocess
 import tempfile
 import tomllib
+import urllib.error
+import urllib.request
 import zipfile
 from pathlib import Path
 
@@ -17,7 +20,7 @@ _ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 _INTEGRATION_SUFFIXES = {".py", ".js", ".mjs", ".css", ".html", ".json", ".md"}
 _INSTALLER = """#!/usr/bin/env python3
 from __future__ import annotations
-import argparse, hashlib, json, re, shutil, stat, subprocess, sys
+import argparse, hashlib, json, os, re, shutil, stat, subprocess, sys, tempfile
 from importlib.metadata import PackageNotFoundError, version
 from email.parser import BytesParser
 from packaging.requirements import Requirement
@@ -68,10 +71,22 @@ def verify_bundle(bundle):
     if manifest.get("payload_sha256") != payload:
         raise SystemExit("bundle payload digest does not match its manifest")
 
+def check_runtime(wheel_path, root, extra_paths):
+    with tempfile.TemporaryDirectory(prefix="comfy-story-preflight-") as temporary:
+        with zipfile.ZipFile(wheel_path) as wheel:
+            wheel.extractall(temporary)
+        env = os.environ.copy()
+        env["PYTHONPATH"] = temporary
+        command = [sys.executable, "-m", "comfy_story.installation", "--comfy-root", str(root)]
+        for path in extra_paths:
+            command.extend(["--extra-model-paths-config", str(path)])
+        subprocess.run(command, env=env, cwd=temporary, check=True)
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Install Comfy Story into an existing ComfyUI")
     parser.add_argument("--comfy-root", type=Path, required=True)
     parser.add_argument("--check-only", action="store_true", help="Verify without installing")
+    parser.add_argument("--extra-model-paths-config", type=Path, action="append", default=[])
     args = parser.parse_args()
     if sys.platform not in ("linux", "darwin"):
         raise SystemExit("Comfy Story currently requires Linux or macOS")
@@ -91,6 +106,8 @@ def main() -> int:
         )
         metadata = BytesParser().parsebytes(wheel.read(metadata_name))
     failures = []
+    dependency_installs = []
+    torch_failure = False
     for value in metadata.get_all("Requires-Dist", []):
         requirement = Requirement(value)
         if requirement.marker and not requirement.marker.evaluate():
@@ -99,12 +116,16 @@ def main() -> int:
             installed = version(requirement.name)
         except PackageNotFoundError:
             failures.append(f"{requirement.name} is missing")
+            dependency_installs.append(str(requirement))
+            torch_failure |= requirement.name.lower() == "torch"
             continue
         if installed not in requirement.specifier:
             failures.append(
                 f"{requirement.name} {installed} does not satisfy {requirement.specifier}"
             )
-    if failures:
+            dependency_installs.append(str(requirement))
+            torch_failure |= requirement.name.lower() == "torch"
+    if failures and (args.check_only or torch_failure):
         raise SystemExit(
             "Comfy Story dependency preflight failed before installation: " + "; ".join(failures)
         )
@@ -115,8 +136,16 @@ def main() -> int:
             "Comfy Story already exists; stage the new release separately "
             "and switch it after validation"
         )
+    if dependency_installs:
+        # Pin the host's exact Torch build while resolving other required dependencies.
+        with tempfile.TemporaryDirectory(prefix="comfy-story-dependencies-") as temporary:
+            constraints = Path(temporary) / "constraints.txt"
+            constraints.write_text("torch==" + version("torch") + "\\n")
+            subprocess.run([sys.executable, "-m", "pip", "install", "-c", str(constraints),
+                            *dependency_installs], check=True)
+    check_runtime(wheels[0], root, args.extra_model_paths_config)
     if args.check_only:
-        print("Bundle, dependency, and destination checks passed; no files installed.")
+        print("Bundle, dependencies, H3 models and memory verified; no files installed.")
         return 0
     command = [
         sys.executable, "-m", "pip", "install", "--no-deps", "--force-reinstall", str(wheels[0])
@@ -124,7 +153,8 @@ def main() -> int:
     subprocess.run(command, check=True)
     shutil.copytree(source, target)
     print(
-        "Comfy Story installed. Restart ComfyUI, then add Comfy Story from Comfy / Story."
+        "Comfy Story installed with authenticated associative memory. "
+        "Restart ComfyUI, then add Comfy Story from Comfy / Story. No memory variables are needed."
     )
     return 0
 
@@ -139,12 +169,18 @@ supported environment, setup, and first sequence.
 1. Extract this bundle on the ComfyUI host.
 2. With ComfyUI's Python, run
    `python install.py --comfy-root /path/to/ComfyUI --check-only`.
-3. Resolve reported dependencies in that environment, preserving its Torch/CUDA build.
-4. Run the same command without `--check-only`, then restart ComfyUI.
+3. Install the required authorized H3 models and a compatible Torch/CUDA build if missing.
+4. Run the same command without `--check-only`. Other required Python dependencies are installed
+   automatically; the existing Torch build is pinned. Restart ComfyUI.
 5. Add **Comfy Story** from **Comfy / Story**.
 
 The installer verifies the exact file inventory and hashes before installation and uses `--no-deps`.
-Models and access credentials are not included. Back up your complete story directory and workflow.
+The supported associative-memory checkpoint is included in the runtime wheel and selected
+automatically; no memory environment variables are needed. H3 foundation models and access
+credentials are separate prerequisites. Use `--extra-model-paths-config /path/to/models.yaml`
+when your ComfyUI launch uses shared model paths. Preflight checks memory, model identities and
+ffmpeg/ffprobe; CUDA availability is reported separately from checkpoint validity.
+Back up your complete story directory and workflow.
 For upgrades, validate a staged installation before switching while the queue is empty.
 """
 
@@ -216,13 +252,19 @@ def _record_digest(value: bytes) -> str:
     return f"sha256={encoded}"
 
 
-def _build_wheel(root: Path, wheels: Path) -> Path:
+def _build_wheel(root: Path, wheels: Path, memory_checkpoint: Path | None = None) -> Path:
     """Build the repository's pure-Python wheel without network or build isolation."""
     configuration = tomllib.loads((root / "pyproject.toml").read_text())
     files = {
         path.relative_to(root / "src").as_posix(): path.read_bytes()
         for path in _tracked_files(root, "src/comfy_story", {".py"})
     }
+    if memory_checkpoint is not None:
+        catalog = runpy.run_path(str(root / "src/comfy_story/memory/catalog.py"))
+        data = memory_checkpoint.read_bytes()
+        if len(data) != catalog["CHECKPOINT_SIZE"] or _sha256(data) != catalog["CHECKPOINT_SHA256"]:
+            raise ValueError("release memory checkpoint does not match the supported identity")
+        files["comfy_story/models/" + catalog["CHECKPOINT_FILENAME"]] = data
     project = configuration["project"]
     version = project["version"]
     dist_info = f"comfy_story-{version}.dist-info"
@@ -297,7 +339,9 @@ def _zip_tree(stage: Path, target: Path) -> None:
             )
 
 
-def build_release_bundle(repository_root: Path, output_root: Path) -> Path:
+def build_release_bundle(
+    repository_root: Path, output_root: Path, *, memory_checkpoint: Path | None = None
+) -> Path:
     """Build and publish one deterministic release ZIP plus digest sidecar."""
     root = repository_root.resolve()
     output = output_root.resolve()
@@ -307,7 +351,7 @@ def build_release_bundle(repository_root: Path, output_root: Path) -> Path:
         stage = Path(temporary) / "bundle"
         wheels = stage / "wheels"
         wheels.mkdir(parents=True)
-        _build_wheel(root, wheels)
+        _build_wheel(root, wheels, memory_checkpoint)
         if len(tuple(wheels.glob("comfy_story-*.whl"))) != 1:
             raise RuntimeError("Comfy Story wheel build did not produce exactly one wheel")
         _copy_integration(root, stage)
@@ -337,9 +381,59 @@ def build_release_bundle(repository_root: Path, output_root: Path) -> Path:
     return target
 
 
+def obtain_memory_checkpoint(root: Path, supplied: Path | None = None) -> Path:
+    """Fetch the pinned release asset once; private repositories use an authenticated gh CLI."""
+    catalog = runpy.run_path(str(root / "src/comfy_story/memory/catalog.py"))
+    target = supplied or root / "artifacts/checkpoints" / catalog["CHECKPOINT_FILENAME"]
+
+    def verify(path: Path) -> None:
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("memory checkpoint must be a regular, unlinked file")
+        if (
+            path.stat().st_size != catalog["CHECKPOINT_SIZE"]
+            or _sha256(path.read_bytes()) != catalog["CHECKPOINT_SHA256"]
+        ):
+            raise ValueError("memory checkpoint failed its pinned size/SHA-256 check")
+
+    if supplied is not None or target.exists():
+        verify(target)
+        return target
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="memory-download-", dir=target.parent) as temporary:
+        candidate = Path(temporary) / catalog["CHECKPOINT_FILENAME"]
+        try:
+            with urllib.request.urlopen(catalog["CHECKPOINT_URL"], timeout=60) as response:
+                candidate.write_bytes(response.read(catalog["CHECKPOINT_SIZE"] + 1))
+        except urllib.error.HTTPError as error:
+            if error.code not in (401, 403, 404) or not shutil.which("gh"):
+                raise RuntimeError(
+                    "Cannot download the memory release. For a private repository, authenticate "
+                    "gh with access to skishore23/comfy-story, or use --memory-checkpoint."
+                ) from error
+            subprocess.run(
+                [
+                    "gh",
+                    "release",
+                    "download",
+                    catalog["CHECKPOINT_RELEASE"],
+                    "--repo",
+                    catalog["CHECKPOINT_REPOSITORY"],
+                    "--pattern",
+                    catalog["CHECKPOINT_FILENAME"],
+                    "--dir",
+                    temporary,
+                ],
+                check=True,
+            )
+        verify(candidate)
+        candidate.replace(target)
+    return target
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--memory-checkpoint", type=Path)
     args = parser.parse_args(argv)
     root = Path(__file__).parents[1]
     if subprocess.check_output(
@@ -348,7 +442,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(
             "release builds require a clean committed checkout; local files are not published"
         )
-    path = build_release_bundle(root, args.output_root)
+    checkpoint = obtain_memory_checkpoint(root, args.memory_checkpoint)
+    path = build_release_bundle(root, args.output_root, memory_checkpoint=checkpoint)
     print(path)
     return 0
 

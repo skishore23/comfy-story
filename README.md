@@ -7,7 +7,7 @@ same project.
 
 **Checkpoint-backed associative memory is a required part of Comfy Story.** Every new shot records
 learned history alongside its visual evidence. Generation requires a compatible trained memory
-checkpoint and its identity hashes; there is no reference-only fallback or memory-off mode.
+checkpoint, installed and configured automatically by the installer; there is no memory-off mode.
 
 ## What you can do
 
@@ -50,44 +50,52 @@ it confirmed canon. **Keep this moment** and **Keep @Name look** record evidence
 
 - Python 3.11 or newer and an existing ComfyUI installation with working, authorized MiniMax H3
   generation models, text/vision encoders and video/audio VAEs.
-- A compatible **trained associative-memory checkpoint**, plus trusted SHA-256 identities for that
-  checkpoint, its foundation model, its training configuration and its video VAE.
 - A supported story-storage host: Linux or macOS. GPU generation has been exercised on Linux;
   Windows storage is not supported. See the installation guide for the tested host configuration.
 
-Model weights, the memory checkpoint and credentials are **not included in this source repository
-or the installer**. Obtain the compatible checkpoint and its identity manifest from its provider
-before attempting generation. This repository does not currently provide a public checkpoint
-download. The configuration hash is the checkpoint's training-configuration identity; it is not a
-hash of your workflow JSON. An arbitrary checkpoint or a newly initialized memory module is not a
-substitute for compatible trained weights.
+The installable release includes the tested associative-memory checkpoint. The installer verifies
+it and the required H3 model identities, installs missing Python dependencies while preserving your
+Torch/CUDA build, and selects memory automatically. **No memory environment variables are needed.**
 
-## Get started
+H3 foundation models, encoders, VAEs and credentials are separate prerequisites. Install the
+authorized H3 model pack in ComfyUI first. Film export also needs `ffmpeg` and `ffprobe` on PATH.
+The installer reports missing models and tools; it does not download large foundation models or
+replace a GPU driver. CUDA availability is reported separately from checkpoint integrity.
 
-1. Follow the [installation guide](docs/getting-started.md) to build and install the ComfyUI extension
-   into your existing environment. Cloning the source into `custom_nodes` alone is insufficient.
-2. Configure the required memory checkpoint in the environment that launches ComfyUI:
+## Install and create your first shot
 
-   ```bash
-   export COMFY_STORY_MEMORY_CHECKPOINT=/absolute/path/to/h3-memory.pt
-   export COMFY_STORY_MEMORY_CHECKPOINT_SHA256='CHECKPOINT_SHA256'
-   export COMFY_STORY_MEMORY_FOUNDATION_SHA256='FOUNDATION_MODEL_SHA256'
-   export COMFY_STORY_MEMORY_MODEL_CONFIGURATION_SHA256='CHECKPOINT_TRAINING_CONFIGURATION_SHA256'
-   export COMFY_STORY_MEMORY_VAE_SHA256='VIDEO_VAE_SHA256'
-   ```
+Download and extract the **complete installer ZIP** from [Releases](https://github.com/skishore23/comfy-story/releases/latest),
+then run it with the Python environment used by ComfyUI:
 
-   Replace the placeholders with the independently recorded lowercase, 64-character hashes.
-   Associative memory is selected automatically. Remove an old `COMFY_STORY_MEMORY=native` setting;
-   if `COMFY_STORY_MEMORY` is present, its only supported value is `associative`.
-3. Run the [checkpoint preflight](docs/getting-started.md#associative-memory) using ComfyUI's Python.
-   It authenticates the checkpoint and checks that changing history and its order changes the
-   readout, without loading the foundation model or allocating its GPU VAE. ComfyUI also verifies
-   the actual generation-model and VAE files before rendering. Missing configuration, inactive
-   weights or mismatched identities stop generation with an error.
-4. Start or restart ComfyUI with those environment settings. Add **Comfy Story** from **Comfy / Story**,
-   choose **Start Story**, add your references and describe a short, visible action.
-5. Generate and review the first shot. Use **Add Next Shot** to connect Story State and Last Frame,
-   or **Open Story** to plan a film. Save your workflow and project as you work.
+```bash
+/path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
+```
+
+Or install from a clean source checkout, outside `custom_nodes`:
+
+```bash
+git clone https://github.com/skishore23/comfy-story.git
+cd comfy-story
+/path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
+```
+
+The source installer downloads the checksum-pinned memory release once and caches it under
+`artifacts/checkpoints/`. The complete installer ZIP includes it already and needs no checkpoint
+download. While the repository is private, source installation requires repository access and an
+authenticated `gh` CLI for that download. Users of the complete ZIP do not need `gh`.
+
+1. Restart ComfyUI after installation. Add **Comfy Story** from **Comfy / Story**.
+2. Choose **Start Story**, add named character/prop/location references and a starting frame, then
+   describe a short visible action.
+3. Generate and review the first shot. Use **Add Next Shot** to connect Story State and Last Frame,
+   or **Open Story** to plan a film.
+4. Save the workflow and back up the complete story directory.
+
+Use `--check-only` for a preflight without installing packages or nodes. If your normal ComfyUI
+launch uses shared model paths, pass the same `--extra-model-paths-config /path/to/models.yaml` to
+the installer. The [installation guide](docs/getting-started.md) lists the exact baseline model
+files, offline installation and advanced checkpoint overrides. A source clone or `pip install .`
+alone does not install the complete custom node and memory payload; use the installer above.
 
 [Film workflow](docs/films.md) · [Writing prompts](docs/prompting.md) · [Security](SECURITY.md)
 

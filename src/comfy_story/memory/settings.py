@@ -11,6 +11,7 @@ from typing import Any, Self
 import numpy as np
 import torch
 
+import comfy_story.memory.catalog as catalog
 from comfy_story.memory.checkpoint import MemoryProtocol
 from comfy_story.memory.runtime import MiniMaxH3Codec, MiniMaxH3StoryRuntime
 from comfy_story.story_contracts import canonical_story_json
@@ -98,6 +99,21 @@ def configured_memory() -> MemoryConfiguration:
         "model_configuration_sha256": "MODEL_CONFIGURATION_SHA256",
         "vae_sha256": "VAE_SHA256",
     }
+    # Advanced overrides are all-or-nothing; never mix a custom checkpoint with shipped pins.
+    if not any("COMFY_STORY_MEMORY_" + suffix in os.environ for suffix in fields.values()):
+        checkpoint = Path(__file__).parents[1] / "models" / catalog.CHECKPOINT_FILENAME
+        if not checkpoint.is_file():
+            raise ValueError(
+                "Bundled associative memory checkpoint is missing; install the complete "
+                "Comfy Story release or run install.py from the source checkout"
+            )
+        return MemoryConfiguration(
+            str(checkpoint),
+            catalog.CHECKPOINT_SHA256,
+            catalog.FOUNDATION_SHA256,
+            catalog.MODEL_CONFIGURATION_SHA256,
+            catalog.VAE_SHA256,
+        ).validate()
     values = {}
     for field, suffix in fields.items():
         value = os.environ.get("COMFY_STORY_MEMORY_" + suffix)

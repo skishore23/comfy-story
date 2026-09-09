@@ -6,26 +6,60 @@ your supported ComfyUI model setup. Model files and credentials are not included
 
 ## Install
 
-Build the installer from a clean committed checkout:
+The complete installer ZIP from [Releases](https://github.com/skishore23/comfy-story/releases/latest)
+contains the runtime wheel, ComfyUI extension and authenticated memory checkpoint. Extract it and
+run with ComfyUI's Python:
 
 ```bash
-python scripts/build_release.py --output-root artifacts/releases
-```
-
-Extract the ZIP and use the ComfyUI environment's Python:
-
-```bash
-/path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI --check-only
 /path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
 ```
 
-The preflight checks the bundle, installed dependencies, and destination. Resolve any reported
-missing dependencies in the ComfyUI environment. Installation preserves its Torch/CUDA build.
-Configure and preflight the required [associative memory](#associative-memory) checkpoint before
-restarting ComfyUI. Cloning the source into `custom_nodes` alone does not install it.
+The same command works from a clean cloned source checkout. It fetches the pinned memory asset
+and builds the installable bundle automatically. Private repository downloads require an
+authenticated `gh` CLI; the complete ZIP needs no checkpoint download or GitHub credentials.
 
-For an upgrade, validate a staged installation first. Back up the existing node, environment,
-workflow, and complete story directory before switching while the render queue is empty.
+The installer verifies the bundle, supplies associative memory automatically, installs missing
+Python dependencies and checks required H3 files, checkpoint behavior, and ffmpeg/ffprobe. It pins
+the host's existing Torch version during dependency installation. A missing or incompatible Torch
+build must be resolved in the ComfyUI environment first. Restart ComfyUI after successful setup.
+
+For inspection without installing packages or nodes:
+
+```bash
+/path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI --check-only
+```
+
+A source preflight may download/cache the small checkpoint before checking the host. To install
+offline, transfer the complete ZIP and ensure dependencies and H3 models are already installed.
+To build offline from source, add `--memory-checkpoint /path/to/h3-associative-memory.pt`; the supplied
+file must match the shipped checksum. To build a redistributable ZIP, run
+`python scripts/build_release.py --output-root artifacts/releases` from a clean committed checkout.
+
+Cloning into `custom_nodes` or installing the Python project alone is insufficient. The installer
+places the actual extension in `ComfyUI/custom_nodes/comfy_story` and installs the runtime and
+checkpoint together. Existing node directories are preserved: for upgrades, stage a separate
+installation and back up the workflow, story store and matching old runtime before switching.
+
+### H3 models
+
+The default **Reference shot / Native res_multistep** workflow needs these files in ComfyUI:
+
+| Folder | File |
+| --- | --- |
+| `diffusion_models` | `minimax_h3_ref2va_pruned_int8_convrot.safetensors` |
+| `text_encoders` | `qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors` |
+| `vae` | `minimax_h3_video_vae_fp16.safetensors` |
+| `vae` | `minimax_h3_audio_vae_fp32.safetensors` |
+
+The installer reads ComfyUI's default `extra_model_paths.yaml`. For a launch-specific shared model
+configuration, pass `--extra-model-paths-config /path/to/models.yaml` as well. It checks actual
+foundation and video-VAE hashes, not just filenames. The shipped memory checkpoint targets the
+reference model above; a different foundation model requires a compatible checkpoint.
+
+Turbo sampling requires its corresponding LoRA. Full HD 2-pass also requires the pinned H3 latent
+upscaler. Those presets are additional configurations; the baseline installation preflight checks
+the default Reference shot workflow. In particular, Animate frame uses another foundation model
+and cannot use this checkpoint's identity pins unchanged.
 
 ## Create two shots
 
@@ -65,12 +99,18 @@ exact references. That image uses one of H3's nine source slots. New composition
 omit the inherited context image while continuing to store memory. Forgetting an observation
 removes its whole source shot from dense history in subsequent revisions.
 
-The trained checkpoint must respond to changes in history and order;
-a successful preflight does not establish rendered continuity quality. The foundation model and
-video VAE must match the configured hashes. Checkpoints are installed separately from source and
-are not included in the installer. No public checkpoint download is currently provided by this
-repository; obtain compatible trained weights and their identity manifest from the checkpoint
-provider. Without them, you can install and edit projects, but generation cannot run.
+The installer includes the supported trained checkpoint and selects it automatically. It checks
+that history and order affect the readout and that the actual H3 model and video VAE match.
+The weights are stored inside the installed `comfy_story/models/` package directory, separately
+from the source repository. A missing or corrupt checkpoint stops generation with an actionable
+error. Checkpoint integrity does not guarantee rendered continuity quality.
+
+### Advanced: custom checkpoints
+
+Normal installations need none of the following variables. To use a different compatible trained
+checkpoint, supply **all five** identity settings; partial overrides are rejected so custom weights
+cannot accidentally inherit the bundled checkpoint's pins. Remove all five to return to the bundled
+configuration. An old `COMFY_STORY_MEMORY=native` setting is an error; remove it.
 
 Set these variables before starting ComfyUI, using independently recorded checkpoint/model hashes:
 
@@ -86,7 +126,7 @@ Replace the uppercase placeholders with the actual lowercase SHA-256 hashes. The
 hash identifies the checkpoint training configuration, not the workflow. Associative memory is
 selected automatically; remove old `COMFY_STORY_MEMORY=native` settings. If set explicitly, only
 `COMFY_STORY_MEMORY=associative` is supported. Missing pins or unsupported modes fail before a node
-creates its story store or prepares generation.
+creates its story store or prepares generation when using an explicit override.
 
 Start a new story when changing checkpoint, model or memory runtime implementation; an existing
 branch requires its original configuration. Keep the previous installation for historical branches.

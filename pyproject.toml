@@ -1,6 +1,6 @@
 [project]
 name = "comfy-story"
-version = "0.5.0"
+version = "0.6.0"
 description = "Reusable cast, story continuity and film production for ComfyUI and MiniMax H3."
 readme = "README.md"
 license = "AGPL-3.0-only"

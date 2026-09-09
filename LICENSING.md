@@ -18,7 +18,10 @@ code license. We do not publish the private agreement or infer additional end-us
 For an installation using independently obtained weights, the applicable model license or
 separately granted authorization still applies.
 
-This source release does not bundle MiniMax weights, adapters, credentials, or model services.
+The source repository does not bundle model weights, credentials, or model services. Installable
+releases separately include the small trained H3 associative-memory checkpoint; its identity and
+compatibility contract are pinned in source. The code license does not grant rights to H3 model
+weights or replace the applicable model agreement. Foundation models and encoders are not bundled.
 It does not relicense MiniMax or other third-party software. Separately installed dependencies,
 models and datasets retain their own notices and terms. A film is not automatically licensed
 under AGPL merely because Comfy Story generated it; rights in its inputs and output still apply.

@@ -70,3 +70,29 @@ def test_required_configuration_rejects_missing_checkpoint(
     Path(memory_environment["COMFY_STORY_MEMORY_CHECKPOINT"]).unlink()
     with pytest.raises(ValueError, match="absolute regular file"):
         configured_memory()
+
+
+def test_installed_checkpoint_works_without_environment_configuration(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from comfy_story.memory import catalog, settings
+
+    for name in tuple(os.environ):
+        if name.startswith("COMFY_STORY_MEMORY"):
+            monkeypatch.delenv(name)
+    package = tmp_path / "comfy_story"
+    checkpoint = package / "models" / catalog.CHECKPOINT_FILENAME
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"path-resolution fixture")
+    monkeypatch.setattr(settings, "__file__", str(package / "memory/settings.py"))
+    config = configured_memory()
+    assert config.checkpoint == str(checkpoint)
+    assert config.checkpoint_sha256 == catalog.CHECKPOINT_SHA256
+    assert config.foundation_sha256 == catalog.FOUNDATION_SHA256
+    monkeypatch.setenv("COMFY_STORY_MEMORY_CHECKPOINT", str(checkpoint))
+    with pytest.raises(ValueError, match="CHECKPOINT_SHA256 is required"):
+        configured_memory()
+    monkeypatch.delenv("COMFY_STORY_MEMORY_CHECKPOINT")
+    checkpoint.unlink()
+    with pytest.raises(ValueError, match="install the complete"):
+        configured_memory()

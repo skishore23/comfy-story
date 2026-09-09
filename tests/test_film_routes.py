@@ -204,7 +204,7 @@ def test_film_generation_identity_tracks_inputs_models_and_integration(
     with monkeypatch.context() as environment:
         environment.delenv("COMFY_STORY_MEMORY", raising=False)
         environment.delenv("COMFY_STORY_MEMORY_CHECKPOINT", raising=False)
-        with pytest.raises(ValueError, match="CHECKPOINT is required"):
+        with pytest.raises(ValueError, match="Bundled associative memory checkpoint is missing"):
             module._film_generation_identity(recipe)
         environment.setenv("COMFY_STORY_MEMORY", "native")
         with pytest.raises(ValueError, match="requires associative memory"):

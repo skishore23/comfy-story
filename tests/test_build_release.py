@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import runpy
 import shutil
 import subprocess
 import sys
@@ -180,8 +181,6 @@ def test_release_bundle_ships_product_guides_and_license(tmp_path: Path) -> None
 
 
 def _installer_fixture(tmp_path: Path) -> tuple[dict[str, object], Path]:
-    import runpy
-
     bundle = build_release_bundle(REPOSITORY_ROOT, tmp_path / "build")
     extracted = tmp_path / "bundle"
     with zipfile.ZipFile(bundle) as archive:
@@ -200,9 +199,13 @@ def test_installer_check_only_does_not_install_or_copy(
     main = cast(Callable[[], int], namespace["main"])
     monkeypatch.setitem(main.__globals__, "version", _compatible_version)
     monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy), "--check-only"])
+    checks = []
+    monkeypatch.setitem(main.__globals__, "check_runtime", lambda *args: checks.append(args))
     monkeypatch.setattr(subprocess, "run", _unexpected_mutation)
     monkeypatch.setattr(shutil, "copytree", _unexpected_mutation)
     assert main() == 0
+    assert len(checks) == 1
+    assert checks[0][1] == comfy.resolve()
     assert list((comfy / "custom_nodes").iterdir()) == []
 
 
@@ -359,3 +362,74 @@ def test_bundle_inventory_includes_nested_manifest_files(tmp_path: Path) -> None
     nested.write_text("{}")
     manifest = json.loads(_manifest(tmp_path, "a" * 40))
     assert manifest["files"]["example/manifest.json"] == hashlib.sha256(b"{}").hexdigest()
+
+
+def test_ready_bundle_contains_only_the_pinned_memory_checkpoint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint = tmp_path / "memory.pt"
+    data = b"release packaging fixture, not trained weights"
+    checkpoint.write_bytes(data)
+    original = runpy.run_path
+
+    def catalog(path: str) -> dict[str, object]:
+        values = cast(dict[str, object], original(path))
+        values.update(CHECKPOINT_SHA256=hashlib.sha256(data).hexdigest(), CHECKPOINT_SIZE=len(data))
+        return values
+
+    monkeypatch.setattr(runpy, "run_path", catalog)
+    bundle = build_release_bundle(REPOSITORY_ROOT, tmp_path / "out", memory_checkpoint=checkpoint)
+    with zipfile.ZipFile(bundle) as archive:
+        name = next(name for name in archive.namelist() if name.endswith(".whl"))
+        with zipfile.ZipFile(io.BytesIO(archive.read(name))) as wheel:
+            assert wheel.read("comfy_story/models/h3-associative-memory.pt") == data
+    checkpoint.write_bytes(data[:-1] + b"!")
+    with pytest.raises(ValueError, match="supported identity"):
+        build_release_bundle(REPOSITORY_ROOT, tmp_path / "bad", memory_checkpoint=checkpoint)
+
+
+def test_installer_installs_missing_dependencies_without_changing_torch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace, comfy = _installer_fixture(tmp_path)
+    main = cast(Callable[[], int], namespace["main"])
+
+    def versions(name: str) -> str:
+        if name == "cryptography":
+            raise PackageNotFoundError(name)
+        return _compatible_version(name)
+
+    calls: list[list[str]] = []
+
+    def run(command: list[str], **kwargs: object) -> None:
+        calls.append(command)
+        if "-c" in command:
+            assert Path(command[command.index("-c") + 1]).read_text() == "torch==2.12.1\n"
+
+    monkeypatch.setitem(main.__globals__, "version", versions)
+    monkeypatch.setitem(main.__globals__, "check_runtime", lambda *_: None)
+    monkeypatch.setattr(subprocess, "run", run)
+    monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy)])
+    assert main() == 0
+    assert len(calls) == 2
+    assert "cryptography<50,>=43" in calls[0]
+    assert "--no-deps" in calls[1]
+    assert (comfy / "custom_nodes/comfy_story/__init__.py").is_file()
+
+
+def test_installer_preflight_failure_does_not_install_node(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace, comfy = _installer_fixture(tmp_path)
+    main = cast(Callable[[], int], namespace["main"])
+    monkeypatch.setitem(main.__globals__, "version", _compatible_version)
+
+    def reject(*args: object) -> NoReturn:
+        raise ValueError("checkpoint failed authentication")
+
+    monkeypatch.setitem(main.__globals__, "check_runtime", reject)
+    monkeypatch.setattr(subprocess, "run", _unexpected_mutation)
+    monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy)])
+    with pytest.raises(ValueError, match="authentication"):
+        main()
+    assert not (comfy / "custom_nodes/comfy_story").exists()
