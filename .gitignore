@@ -23,8 +23,6 @@ dist/
 .idea/
 .vscode/
 /.worktrees/
-/.superpowers/brainstorm/
-/Duet/.worktrees/
 
 # Training data, checkpoints, samples, and experiment logs
 /artifacts/

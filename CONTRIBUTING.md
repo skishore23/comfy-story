@@ -1,15 +1,12 @@
-# Contributing to Comfy Story
+# Contributing
 
-Keep changes focused on the Comfy Story product. Preserve saved workflows, node IDs, typed state,
-checkpoint identities, and existing project formats. Add regression tests for behavior changes.
+Keep changes focused on Comfy Story. Add regression tests for behavior changes and preserve project
+integrity, immutable revisions, model authentication, and completed-shot recovery.
 
-Install the locked development environment with `uv sync --locked --extra dev`. Run the formatter,
-Ruff, format verification, mypy, the full Python suite, and `node --test tests/js/*.mjs` before a PR.
-See [README.md](README.md) for exact commands.
+Install the development environment with `uv sync --locked --extra dev`. Before committing, run
+the formatter, Ruff, format verification, strict mypy, the complete Python suite, and the frontend
+tests shown in [README.md](README.md).
 
-Keep credentials, models, reference media, generated clips, caches, and experiment outputs outside
-Git under `artifacts/`. Do not weaken integrity checks or quality rules to make a test pass.
-Contributions use AGPL-3.0-only; retain copyright and third-party notices.
-
-This repository remains private until the owner approves publication based on the evidence in
-[VALIDATION.md](docs/VALIDATION.md). Passing unit tests does not prove film quality.
+Keep credentials, models, media, generated output, and caches outside Git under `artifacts/`.
+Do not weaken validation or quality rules to make checks pass. Retain copyright and third-party
+notices. Contributions use AGPL-3.0-only.

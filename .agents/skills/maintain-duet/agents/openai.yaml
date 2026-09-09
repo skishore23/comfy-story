@@ -1,4 +1,0 @@
-interface:
-  display_name: "Maintain Duet"
-  short_description: "Run Duet quality gates and keep the repo clean"
-  default_prompt: "Use $maintain-duet to verify and tidy this Duet change."

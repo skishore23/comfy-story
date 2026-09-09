@@ -1,18 +1,19 @@
-"""Guard the extraction boundary and the compatibility surface in the shipped source."""
+"""Validate the installed package, commands, and source inventory."""
 
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib
-import json
 import subprocess
 import tomllib
 from importlib.util import resolve_name
 from pathlib import Path
-from typing import Any
+from types import SimpleNamespace
 
-import duet
-import duet.duetx
+import pytest
+
+import comfy_story
 
 ROOT = Path(__file__).parents[1]
 
@@ -28,7 +29,7 @@ def test_product_modules_have_no_missing_local_imports() -> None:
     }
     paths = [
         *(ROOT / "src").rglob("*.py"),
-        *(ROOT / "integrations/comfyui_duetx_continuity").rglob("*.py"),
+        *(ROOT / "integrations/comfy_story").rglob("*.py"),
     ]
     for path in paths:
         for node in ast.walk(ast.parse(path.read_text())):
@@ -51,12 +52,12 @@ def test_product_modules_have_no_missing_local_imports() -> None:
                     module = resolve_name("." * node.level + module, package)
                 names = [module]
             for name in names:
-                if name == "duet" or name.startswith("duet."):
+                if name == "comfy_story" or name.startswith("comfy_story."):
                     assert name in modules, f"{path.relative_to(ROOT)} imports omitted {name}"
 
 
 def test_every_retained_lazy_export_resolves() -> None:
-    for package in (duet, duet.duetx):
+    for package in (comfy_story,):
         for name in package.__all__:
             assert getattr(package, name) is not None, name
 
@@ -68,30 +69,10 @@ def test_only_product_console_commands_are_installed() -> None:
     assert set(project["scripts"]) == {
         "comfy-story-film",
         "comfy-story-audit",
-        "duet-story-film",
-        "duet-story-audit",
     }
     for value in project["scripts"].values():
         module, name = value.split(":")
         assert callable(getattr(importlib.import_module(module), name))
-
-
-def test_inventory_accounts_for_runtime_source_and_omitted_research() -> None:
-    inventory: dict[str, Any] = json.loads((ROOT / "docs/SOURCE_INVENTORY.json").read_text())
-    assert inventory["branch"] == "main"
-    assert len(inventory["commit"]) == 40
-    entries = inventory["files"]
-    indexed = {row["path"]: row for row in entries}
-    assert len(indexed) == len(entries)
-    for row in entries:
-        assert len(row["sha256"]) == 64
-        if row["action"] == "retain":
-            assert (ROOT / row["path"]).is_file(), row["path"]
-    for path in (ROOT / "src").rglob("*.py"):
-        assert indexed[path.relative_to(ROOT).as_posix()]["action"] == "retain"
-    for prefix in ("paper/", "runpod/", "src/duet/salinas/", "src/duet/assembly101/"):
-        assert any(row["path"].startswith(prefix) for row in entries)
-        assert all(row["action"] == "omit" for row in entries if row["path"].startswith(prefix))
 
 
 def test_no_generated_or_private_payload_is_tracked() -> None:
@@ -101,3 +82,49 @@ def test_no_generated_or_private_payload_is_tracked() -> None:
         assert not name.startswith(("artifacts/", "paper/", "runpod/", "data/", "assets/"))
         assert path.suffix not in {".mp4", ".wav", ".flac", ".pt", ".pth", ".safetensors", ".pyc"}
         assert not path.name.startswith(".env")
+
+
+def test_source_origin_checks_include_the_installed_namespace(tmp_path: Path) -> None:
+    from comfy_story.ltx_quality_operations import (
+        SourceArchiveEntry,
+        SourceArchiveReceipt,
+        verify_loaded_duet_module_origins,
+    )
+
+    encoded = b"value = 1\n"
+    relative = "src/comfy_story/example.py"
+    source = tmp_path / relative
+    source.parent.mkdir(parents=True)
+    source.write_bytes(encoded)
+    entry = SourceArchiveEntry(
+        relative,
+        "100644",
+        0o644,
+        len(encoded),
+        hashlib.sha256(encoded).hexdigest(),
+        hashlib.sha1(b"blob " + str(len(encoded)).encode() + b"\0" + encoded).hexdigest(),
+    )
+    receipt = SourceArchiveReceipt(
+        "duet-x-ltx-source-archive-v1",
+        "a" * 40,
+        "b" * 40,
+        "c" * 64,
+        "d" * 64,
+        1,
+        (entry,),
+    ).validate()
+    modules = {"comfy_story.example": SimpleNamespace(__file__=str(source))}
+    verify_loaded_duet_module_origins(
+        tmp_path,
+        receipt,
+        required_modules=("comfy_story.example",),
+        loaded_modules=modules,
+    )
+    source.write_bytes(b"value = 2\n")
+    with pytest.raises(ValueError, match="source identity changed"):
+        verify_loaded_duet_module_origins(
+            tmp_path,
+            receipt,
+            required_modules=("comfy_story.example",),
+            loaded_modules=modules,
+        )

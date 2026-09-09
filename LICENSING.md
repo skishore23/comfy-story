@@ -3,7 +3,7 @@
 The current source code and repository documentation are licensed under the GNU Affero General
 Public License version 3 only (`AGPL-3.0-only`), except where a file or separately identified
 component states otherwise. See [LICENSE](LICENSE) for the complete, unmodified terms and
-[NOTICE](NOTICE) for attribution. This release's license change was made on 2026-09-08.
+[NOTICE](NOTICE) for attribution.
 
 AGPL is an open-source copyleft license, not a noncommercial or source-available-only license.
 Commercial use is permitted under its terms. Its source-sharing requirements include modified
@@ -23,16 +23,11 @@ It does not relicense MiniMax or other third-party software. Separately installe
 models and datasets retain their own notices and terms. A film is not automatically licensed
 under AGPL merely because Comfy Story generated it; rights in its inputs and output still apply.
 
-## Earlier releases and contributions
+## Contributions and notices
 
-Earlier copies distributed under Apache-2.0 retain that license. The license change does not
-retroactively revoke their permissions. The prior license text is preserved in
-[licenses/Apache-2.0.txt](https://github.com/skishore23/duet/blob/65dfb7db079d2e00810b1402abe43c0dcf51f91d/licenses/Apache-2.0.txt); its inclusion is historical, not an alternative
-license grant for all new AGPL-covered changes. Historical research plans mentioning Apache-2.0
-describe their original scope and do not override this release's license.
-
-Keep third-party copyright and license notices intact. Contributions to the current release
-use AGPL-3.0-only under [CONTRIBUTING.md](CONTRIBUTING.md).
+Keep copyright and third-party license notices intact. Contributions use AGPL-3.0-only
+under [CONTRIBUTING.md](CONTRIBUTING.md). The license text accompanying previously
+licensed components is retained in [licenses/Apache-2.0.txt](licenses/Apache-2.0.txt).
 
 ## Release contents
 

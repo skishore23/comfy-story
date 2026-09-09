@@ -31,26 +31,20 @@ Repository = "https://github.com/skishore23/comfy-story"
 Issues = "https://github.com/skishore23/comfy-story/issues"
 
 [project.scripts]
-comfy-story-film = "duet.duetx.film_runner:main"
-comfy-story-audit = "duet.duetx.film_audit_cli:main"
-duet-story-film = "duet.duetx.film_runner:main"
-duet-story-audit = "duet.duetx.film_audit_cli:main"
+comfy-story-film = "comfy_story.film_runner:main"
+comfy-story-audit = "comfy_story.film_audit_cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/duet"]
+packages = ["src/comfy_story"]
 
-[tool.duet.story-runtime]
+[tool.comfy-story.story-runtime]
 # Preserve the existing ComfyUI host's Torch/CUDA build.
 torch = "torch>=2.8,<2.13"
 cryptography = "cryptography>=43,<50"
-
-[tool.duet.story-distribution]
-# Research modules are absent from this standalone source tree.
-excluded-packages = []
 
 [tool.ruff]
 line-length = 100

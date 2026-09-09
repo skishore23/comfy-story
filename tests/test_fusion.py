@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from duet import MatrixSemigroupFusion as PublicMatrixSemigroupFusion
-from duet.fusion import (
+from comfy_story import MatrixSemigroupFusion as PublicMatrixSemigroupFusion
+from comfy_story.fusion import (
     FUSION_TREES,
     LEAVES,
     BinaryTokenFusion,

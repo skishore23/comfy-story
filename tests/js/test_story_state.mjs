@@ -10,7 +10,7 @@ import {
   migrateSerializedStoryWidgets,
   nextShotWiring,
   normalizeLibrary,
-} from '../../integrations/comfyui_duetx_continuity/web/story_state.mjs'
+} from '../../integrations/comfy_story/web/story_state.mjs'
 
 const library = {
   project_name: 'Coast Story',
