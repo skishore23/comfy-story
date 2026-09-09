@@ -1,0 +1,54 @@
+{
+  "project_id": "open-door-film",
+  "title": "The Open Door",
+  "target_duration_ms": 10000,
+  "initial_facts": [
+    {
+      "key": "door",
+      "value": "closed"
+    }
+  ],
+  "shots": [
+    {
+      "shot_id": "open",
+      "duration_ms": 5000,
+      "purpose": "Show the invitation",
+      "action": "Ada opens the door and stands aside. Keep the same face and clothing. One continuous shot.",
+      "present": [
+        "Ada"
+      ],
+      "requires": [
+        {
+          "key": "door",
+          "value": "closed"
+        }
+      ],
+      "effects": [
+        {
+          "key": "door",
+          "value": "open"
+        }
+      ],
+      "composition": "New composition"
+    },
+    {
+      "shot_id": "welcome",
+      "duration_ms": 5000,
+      "purpose": "Hold the welcome",
+      "action": "Ada remains beside the open door and smiles gently toward someone off screen. The door stays open. One continuous shot.",
+      "present": [
+        "Ada"
+      ],
+      "requires": [
+        {
+          "key": "door",
+          "value": "open"
+        }
+      ],
+      "depends_on": [
+        "open"
+      ],
+      "composition": "New composition"
+    }
+  ]
+}

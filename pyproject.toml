@@ -1,0 +1,101 @@
+[project]
+name = "comfy-story"
+version = "0.3.0"
+description = "Reusable cast, story continuity and film production for ComfyUI and MiniMax H3."
+readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE", "NOTICE", "LICENSING.md", "licenses/Apache-2.0.txt"]
+requires-python = ">=3.11"
+dependencies = [
+  "aiohttp>=3.11,<4",
+  "cryptography>=43,<50",
+  "numpy>=1.26",
+  "omegaconf>=2.3",
+  "packaging>=24",
+  "Pillow>=10,<13",
+  "torch>=2.8,<2.13",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.14",
+  "pre-commit>=4.2",
+  "pytest>=8.3",
+  "ruff>=0.15.12,<0.16",
+  "types-Pillow>=10.2",
+]
+film-audit = ["accelerate>=1.2", "transformers>=4.57,<6"]
+
+[project.urls]
+Repository = "https://github.com/skishore23/comfy-story"
+Issues = "https://github.com/skishore23/comfy-story/issues"
+
+[project.scripts]
+comfy-story-film = "duet.duetx.film_runner:main"
+comfy-story-audit = "duet.duetx.film_audit_cli:main"
+duet-story-film = "duet.duetx.film_runner:main"
+duet-story-audit = "duet.duetx.film_audit_cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/duet"]
+
+[tool.duet.story-runtime]
+# Preserve the existing ComfyUI host's Torch/CUDA build.
+torch = "torch>=2.8,<2.13"
+cryptography = "cryptography>=43,<50"
+
+[tool.duet.story-distribution]
+# Research modules are absent from this standalone source tree.
+excluded-packages = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  "B",
+  "C4",
+  "DTZ",
+  "E",
+  "F",
+  "G",
+  "I",
+  "PIE",
+  "PT",
+  "PTH",
+  "RUF",
+  "SIM",
+  "UP",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src", "tests"]
+strict = true
+pretty = true
+show_error_codes = true
+show_error_context = true
+warn_unreachable = true
+exclude = "^(artifacts|assets|data)/"
+
+# Transformers does not provide complete usable typing for the optional verifier.
+[[tool.mypy.overrides]]
+module = ["transformers.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-config --strict-markers"
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+  "ltx_comfy: requires pinned external ComfyUI",
+]

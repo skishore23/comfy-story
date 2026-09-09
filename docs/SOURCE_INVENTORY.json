@@ -1,0 +1,3832 @@
+{
+  "upstream": "https://github.com/skishore23/duet",
+  "branch": "main",
+  "commit": "b2e93d805b71bedcc2099c8d60b0887d42a149d7",
+  "runtime_roots": [
+    "duet.duetx.contracts",
+    "duet.duetx.film_audio_asset",
+    "duet.duetx.film_audit_cli",
+    "duet.duetx.film_bundle",
+    "duet.duetx.film_export",
+    "duet.duetx.film_io",
+    "duet.duetx.film_project",
+    "duet.duetx.film_project_runs",
+    "duet.duetx.film_runner",
+    "duet.duetx.film_staging_workflow",
+    "duet.duetx.film_timing",
+    "duet.duetx.h3_acceleration",
+    "duet.duetx.h3_prompt",
+    "duet.duetx.h3_quality",
+    "duet.duetx.h3_reference_cache",
+    "duet.duetx.h3_reference_checkpoint",
+    "duet.duetx.h3_reference_compressors",
+    "duet.duetx.h3_reference_conditioning",
+    "duet.duetx.h3_reference_contracts",
+    "duet.duetx.h3_sol_attention",
+    "duet.duetx.ltx_quality_protocol",
+    "duet.duetx.minimax_h3_memory",
+    "duet.duetx.minimax_h3_training",
+    "duet.duetx.story_attempts",
+    "duet.duetx.story_contracts",
+    "duet.duetx.story_language",
+    "duet.duetx.story_memory_backend",
+    "duet.duetx.story_native_archive",
+    "duet.duetx.story_native_service",
+    "duet.duetx.story_product_contracts",
+    "duet.duetx.story_prompt",
+    "duet.duetx.story_recall",
+    "duet.duetx.story_service",
+    "duet.duetx.story_store",
+    "duet.duetx.story_video_canvas"
+  ],
+  "files": [
+    {
+      "path": ".agents/skills/maintain-duet/SKILL.md",
+      "sha256": "09182a1733ec4f9a25630dc389a3cfec55d512dac0775b27a6b5b26c66ac3257",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": ".agents/skills/maintain-duet/agents/openai.yaml",
+      "sha256": "cfdd97387da44c32bc650859114f330f1037efd46709f19b6c977a8c8d60b639",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "7ddaaadec8bdfe3726ebca0c0a544355319546a288a969154996b1fd67247226",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": ".github/workflows/quality.yml",
+      "sha256": "6a59140f2621911f470c96a14dd85db7c416c0d46f41777f38e7d5231eda3b5f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "4de9757b550632f8f146c083f7e9fcd45f2ec35e0045b5521ed8614b01bdab4e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "sha256": "a1de452ddabdaec0900567063a64d85730f94de39582cf19633d0d0edf879ee0",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": ".superpowers/sdd/2026-08-28-duet-x-ltx-decision1/task-1-report.md",
+      "sha256": "cc948e77da14c20bbc0f73bcfe85540796a7c471cecba81eeece0478a6ab4dce",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": ".superpowers/sdd/2026-08-28-duet-x-ltx-decision1/task-2-report.md",
+      "sha256": "c1e68e2669d73fad59a7315ca37527d5b473911c7a75fade5bfcd9acf0a2ad05",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "608bb21e375df8558626e16e1b60fda32eeedccb1cc77bd4746c3a7bc82dd15a",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "bc88b00a349839c6ca36ae08f5d439402261df78cd8bbc458cfe638b40c74a59",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "d8a6cc31abc16b6748c7a21f21611f5a1ec33f67d22ca23d7da1c19b95496bee",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "LICENSING.md",
+      "sha256": "c1dbe16764acfc1f135d0da0a420ffceb11fa0c2166b38b5fd48ef6cd41da14f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "NOTICE",
+      "sha256": "99acd4c318a2d43aa15940a870aa2667ff05b21979200e74844380d2e6c3442e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "README.md",
+      "sha256": "77b18dbfeddc410f6def0f798a6c7efbdda2b1ea8d50b03c410db203cf2c023a",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "92f2819a50379228846f7d1dba99db1f160181f1b18e669003ef8f560b6fb0da",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "app.py",
+      "sha256": "421ec1c47ee6dec697c84ed674d089fbf7897d74518111a8c2d0a83da8eeab1d",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "configs/assembly101/mistake_canary.yaml",
+      "sha256": "a8aa2bd90242d324b0475534f5c4861b25abdd1286571fc1c2177f970d005e3e",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/assembly101/mistake_full.yaml",
+      "sha256": "80f46745dad85e9ad9ab113935fa72b494bbbc4dc1959f432df702813d08d871",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/assembly101/mistake_subset_v1.json",
+      "sha256": "0916bc760c06039e204b01efa8099b8dfcfe888f4226f8a2846f87f505918714",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/assembly101/mistake_validation.yaml",
+      "sha256": "848b42c5dc4364611b0e8e2a697e18e381ed0fa7d8dbcd48a07ec57908d44e55",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/assembly101/synthetic_gpu_smoke.yaml",
+      "sha256": "d2d6b6e8560843297c74d4bfb3bcf96fc79010c7315212805395534cdb67448f",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/assembly101/tsm_canary.yaml",
+      "sha256": "c13eedbbbe80104a712fb3d5f76442a3a8634ff0a44f03b413db2e5c6403e25c",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/assembly101/tsm_full.yaml",
+      "sha256": "c371ba9627a88f380481ee1a6137bcccfff5f0d730c95c399ee44b19e2f97ae1",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_architecture_baseline_v1.yaml",
+      "sha256": "02fcf59f9bd71bd6f1ce720f8ce28fd3a366177a66a3dba84bfb3f374a021cc9",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_contrast_confirmation.yaml",
+      "sha256": "61b75062c554f0eff17b32ef974f662f142cce03d3a14457d15ebd02114a3195",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_full_span_dev.yaml",
+      "sha256": "3daf4dd5294e476c5823f393e85b0e3bcf8ef1bcd0c49b661cf2cad4b86eb82d",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_generalization_v1.yaml",
+      "sha256": "a16d2bd40c717dff6e21c77ec67c2ec5bf08df0c8d43a3273d807b97d4f9364a",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_generation_precision.yaml",
+      "sha256": "14951dae163f65af84e986a6d35fb09576e7fa62e3496e28f8d0c24336f34bef",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_holdout.yaml",
+      "sha256": "0c1e4ab048dfb5a6550b9e4439e81127703589bfeb99466218e83ca6b497dbaa",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_listening_v1.yaml",
+      "sha256": "14a666909a0084d78b90cbdac079351b5d9634238cdf63fc8f7c4361ace990bd",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_control_memorization.yaml",
+      "sha256": "ac8c2426bf75f458df16fe9a7d713f2c0541f273e451b876298f8b246e8a0014",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_matrix_control_canary.yaml",
+      "sha256": "de38c032aaa7dacabebd8c53a911e4bb1f9cf22c7f78a9dfce209f08931ab20c",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sa3_matrix_prefix_canary.yaml",
+      "sha256": "45ac550a16e0a7b39eb4503514a3541aadcb4070e0fcc1ac95c0c242c822fc24",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sfx_associative_smoke.yaml",
+      "sha256": "db0178207dc5745ee5c01b0adbc05df6434636bc626fef8f3481babf7fcb1a63",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sfx_binary_smoke.yaml",
+      "sha256": "4e63b7995347d2f7589db79a88124081bd2d1b081b596af916535fc7a6535a3c",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sfx_manifest_example.yaml",
+      "sha256": "00a309e889652f6c4efa1a7069d9f2e3500a1396ebf2687602335ab6b3a30ce9",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sfx_quality.yaml",
+      "sha256": "5208c673ed365295f58db95ad583234085dc4e77913671609117135b0dbe6fb6",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duet_sfx_smoke.yaml",
+      "sha256": "397408d4ccc9138d58eaa5a60d9705789ce4ff9e48a867aef21bb7e045ff955b",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duetx/decision1.yaml",
+      "sha256": "37c641e42ce065a504712160afba371f736235d7b0c23348b4ae0dd5e379ade8",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "configs/duetx/gate0a.yaml",
+      "sha256": "b98fb68f1449e78fb551419c1967a76c29db4d720423d888783966beaf77120a",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duetx/h3_reference_compiler_poc.yaml",
+      "sha256": "8c72e335b47309ec3b5aed6219c85f290411b2f81f8fa0e402e32b418a614d46",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/duetx/synthetic_smoke.yaml",
+      "sha256": "441bb927d65088c2b989d4b59263fa8b76b50e628c927d2f8e3f7389a59a13f0",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "configs/duetx/tailnet.example.yaml",
+      "sha256": "7eb713abf00e24638322435737d7ddc2844ac4ac036a3181b8d4d6ae31463470",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/eurosat/active_matched.yaml",
+      "sha256": "249a39bdc468a75f8fcc399d1a26418ad5209030f8f447b054078fb8cc0e2d68",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/eurosat/default.yaml",
+      "sha256": "3c7f3764312d3cd742d9c7d477036abfac2bc50bd3fa85fa0d36f98945a857e6",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/eurosat/gpu_canary.yaml",
+      "sha256": "3b66e64a10ac9a90aae4b0fa8dc9341e593862f217265d58c82bc7aff57099e3",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/eurosat/group4_paper.yaml",
+      "sha256": "5186a9fdb4bdbcc3f2f8079533cf7cd9ccba53f6721be4d5aa5373a239acaaa4",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/eurosat/scaling.yaml",
+      "sha256": "a2dee7fe715eed84bba76988e92bd3ca960d9e3c9019262af66a3da055572ce8",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/eurosat/smoke.yaml",
+      "sha256": "37a2c4d53af87b94ffdf43f1045807f9b4da27b2774457347d0d6a5f59cbb567",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/salinas/default.yaml",
+      "sha256": "cdd74ea93885844377eee1b62a8f345c9cace1077d0c6356fae25f268ec8a8a5",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "configs/salinas/order_discrimination.yaml",
+      "sha256": "753d003ef00921940368625bc9434f2c5f1422b279aa91eea77bded974a0d037",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "docs/AFFINE_REBRACKETING_PROOF.md",
+      "sha256": "7ace217927af4c9814369801f5add0b5eedda75fc9deab092cd88b4d41760d91",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "sha256": "ffa37a81a4b293deb291c1f73fcef408250faf169b163091d0363b6e53ea9062",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/ASSEMBLY101_DUET.md",
+      "sha256": "86b2641e70b87126332db60143cc933c7a188f52895bdfd7ecff01bb4ec6076f",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/COMFY_STORY_OPEN_SOURCE_REVIEW.md",
+      "sha256": "5478250ccaf68e5b206e0039dbd5cae8c95e0273b9c14b458d98d0c37593d026",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/COMFY_STORY_REBRAND.md",
+      "sha256": "0a07efd9a583753b857575a0371ef897f87bef023939866b36edc9877faed5cf",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DATASETS.md",
+      "sha256": "659df2b5d8b5a16343d54642a5ea6345f2888b1e9b7e3e3f44a104ede2757e0f",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUETX_H3_REFERENCE_COMPILER_RESULT.md",
+      "sha256": "84613312bd0b862281f8bbe41f6367d2746660f8b458ed392e59d62b8cfa31ad",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUETX_H3_REFERENCE_CONTEXT_COMPILER_THESIS.md",
+      "sha256": "25c25b8cb729f66daefa1620a0c71cbea6dede15ed921f94f4ad1f8e5571c6ca",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_PRODUCT_THESIS.md",
+      "sha256": "246af5dfee56dbb91363d4faca56635671d724c29078312261cd1c18bcffe873",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_RESEARCH_THESIS.md",
+      "sha256": "ff411607193f96c0ff1fa1663982db5d99c48707bee635335c90c1b833cd1c0e",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_REUSE_AND_DIFFERENTIATION.md",
+      "sha256": "d44c62c3dcd45fc0ff1549e0427bbd7e9b864b9927727929e30585ee8ea9ae77",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_STORY_BUILD_GUIDE.md",
+      "sha256": "aff05ff0b2addbc5be2a17f2eb81cb9914d437b5d006c0f8d20132185518f416",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_STORY_COMMUNITY_UX_AND_FAILURE_PLAN.md",
+      "sha256": "be856b51e3b8f17e10e9dc5f2ceb3427b1d5a8becc8b1596f2f9e4682599fb01",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_STORY_CUSTOMER_ACCEPTANCE.md",
+      "sha256": "9d7352762a27386fec5ee9e3e1de0d03e7c2d00dab9d68083e5f3c8cc90bd39c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_STORY_FAILURE_ANALYSIS.md",
+      "sha256": "7ce7c478a424ec4d7c6dc88a4aa07108c106a765db13dd257e464cf7c0bdb7fa",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_STORY_FILM_WORKFLOW.md",
+      "sha256": "3bd9fd3f60d590833e3202c0652681856b645628e09c1829606ac00dc138c89c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_STORY_H3_PROMPTING.md",
+      "sha256": "6378c8b73782488715aba36470b87d2b98c1553c50290fefba0eeb50aa8a6388",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_STORY_MARKETING.md",
+      "sha256": "79d9132af4bf024451a25b62128d4e615481cac321ee2c3ac29bfe9398430d63",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_STORY_QUICKSTART.md",
+      "sha256": "84c88136dc293f3911e2d5fdbd76ca7e71578b94c506319e1acd5f846752333d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_STORY_RELEASE.md",
+      "sha256": "2e5b9841123cb10baf937af07330406dae303ce79b845673b429cec4a9ccb998",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_STORY_UNATTENDED_ACCEPTANCE.md",
+      "sha256": "95ab4368d021588de079f3de1b7752d8102cc9fd9cc176473ec69c633fd344b3",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "docs/DUET_TYPED_CONTROL_POC.md",
+      "sha256": "09e8cb6fe848b04613f094d521355a7642142224021070e35ea58751a2756331",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_X_CLAIMS_AND_EVIDENCE.md",
+      "sha256": "78ed8a497f1c299a45a8789e46c3cb6a5cbaf9bd811b0eae3e32d42e72319756",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_X_CURRENT_STATE.md",
+      "sha256": "01529271cfc41816977e5036471bb07a55fcbf76e21b527cff101c861686b765",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_X_EXACT_LONG_GAP_RESULT.md",
+      "sha256": "a98c61a1a75711d60aad6d5cf29b88dea2bfa75e77cda7e0127251caa98ba446",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_X_LTX_DECISION1.md",
+      "sha256": "f57f8e8aa42614412de18e754462ff506a3dfca68932b29af74b025064330449",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/DUET_X_STATE_ATTENTION_ROADMAP.md",
+      "sha256": "174f48b8fcfe7e3b03ba19957fdded155afe4abafe2e5a998c2a552435f42f06",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/EUROSAT_DUET.md",
+      "sha256": "c1f7a3146a24d061191ef7b46ad7834410bb1c3cc09f277e147ee71a0873e594",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/MINIMAX_H3_DUETX_ARCHITECTURE_RESEARCH.md",
+      "sha256": "b2a2548e5cac7dbf0cb1454fdcc5147def97c2cce2db87cc0052817132cd8b52",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/MODEL_CARD.md",
+      "sha256": "f464d6228b699c6e68de94e4279d37d7ba5b1e3261ba03729fc62d3d9fcebd5d",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/REAL_SFX_FUSION_EXPERIMENT.md",
+      "sha256": "2a88cf188c13965a5225d413e72b9bc5cd248a6145740b3fa872503449de6152",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/SFX_FUSION_PROOF.md",
+      "sha256": "48bab87680ba2c313d2c81a923dfa7aba22417853ac25937365db1e2faeb2800",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/STATE_OF_THE_ART_SOUND_PROGRAM.md",
+      "sha256": "827932bab1cc7c5a428ed51f5cb62893182cfa74e781a66b85ca781fac7885e1",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-25-cuhkx-cash-first-distilled-duet.md",
+      "sha256": "a4b64c6244b87c937d0a0d1564a6078ba6d884d6254311e996777c407ac59e52",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-25-eurosat-duet-gate.md",
+      "sha256": "8f8df3cfd81bbcfaec5247264dcba8a9e925cd879813f47af9024f166c933dd8",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-28-duet-x-ltx-decision1.md",
+      "sha256": "d5936ad225210a7143d66fa6af34f2ef12e506e8b53bca45884addb47c1d79a2",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-30-duet-x-ltx-decoded-quality.md",
+      "sha256": "af85f76e911db9fa691d0d2e5b0771a5744412b9e31aed86c4a57fe2d2e88281",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-02-duet-continuity-comfyui.md",
+      "sha256": "e0e715435261b2b7d7b9312341bc77ae66c8c12d148a178b27f325929def66d7",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-02-duet-story-chaining.md",
+      "sha256": "0a1ebb6273ad2a82d402324e50df3e24573240d5d0916b9d8dbbe27baebb048b",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-02-duetx-dual-memory-backend-refactor.md",
+      "sha256": "facd62673d6e905ecf9bf4c25f7b945a4d3fa938fffb33b46d5be2fa5a8b65ef",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-03-duet-story-selective-recall-canon.md",
+      "sha256": "485d7f933b896569a169f3f449bbf14e98801364f47a1a9ee53e709e5e7ff6f6",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-03-duetx-h3-reference-context-compiler-mvp.md",
+      "sha256": "a3a79ebe8faad51cf33d7b39a444fba0f49c9ae9d923f8302b96432075f7429a",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-03-two-perfect-parties-duetx-film.md",
+      "sha256": "49cc72a605444aab06578780980ce9b1d3934bc49808f44252712d8fa2df9b4a",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-25-cuhkx-cash-first-distilled-duet-design.md",
+      "sha256": "f7e672f3d72e5c08cf198fa19a0f82cf582c9f50637e66bba54994d063c59141",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-25-spectral-first-duet-paper-design.md",
+      "sha256": "000e1cb69a2ece940adc5e584d7ab4763657dd5cec40cfbc6a6982783edda5d3",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-26-hotc-visibility-amendment.md",
+      "sha256": "efa7628a4d54d5a756d0e56edc9f3cc93360d6ebbecf596b7e472669ccb177b4",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-28-duet-x-ltx-falsification-spike-design.md",
+      "sha256": "d7cd063a294b0bcff9fdb582c4d1ac9767f69b9b5b57e493e46523dd7c155c82",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-30-duet-x-ltx-cost-audit.md",
+      "sha256": "83f1670f74671a2878977099e8ff9603fa13576db7d17de2a24866889603e934",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-30-duet-x-ltx-decoded-quality.md",
+      "sha256": "41a83b49d5cb00cb77ff00b92418b6d006a1f1f81f6eae022ff17c7ce085d6a0",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-01-duet-x-60s-thesis-mvp.md",
+      "sha256": "adb50710e81221d6f137794b8366f1e0d12cd15e2f63a81a2177fb49645bc7bc",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-02-duet-continuity-comfyui-design.md",
+      "sha256": "a6003f20b08bdf47c6e363c951bc2ec30ee896e956a835bf6adb63bf1c7e1b79",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-02-duet-story-chaining-design.md",
+      "sha256": "5a93c5c59b26c744a9ecc66b055eada200ab62dc198f1c00b53535ce63078086",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-02-duetx-dual-memory-backend-refactor-design.md",
+      "sha256": "77307b141ceed6a91f7b0476998258fcb4969181b87699f24ff3564dbe74c0a6",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-03-duet-story-selective-recall-canon-design.md",
+      "sha256": "a70e6ff385105365b3426896542b7caafe020a8beb1b1f22d3ef55df754a1b4d",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-03-duetx-h3-multi-roster-training-design.md",
+      "sha256": "c0447a7e04279672a189789528266028ff41f4f191c47824047d9784121aca7d",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-03-duetx-minimax-h3-model-memory-design.md",
+      "sha256": "19d1d4d426d4cdb271fd4ad4f039f47b310be69a8ba1fd46d2cea4d693b7bb55",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-09-03-two-perfect-parties-duetx-film-design.md",
+      "sha256": "0b44205ca1a1643ec09319034d72c3858dea7904a179f3d24ddb786b76dbb478",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "integrations/comfyui_duetx/__init__.py",
+      "sha256": "998c37960c497b177bea32a065a96a5590b178d5a31fd0fdb65fe578ecda895a",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/README.md",
+      "sha256": "35f1a31c4b0e2c5664ac40fb3013399fa91d92c920fb0b56f5a58548053feb2e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/__init__.py",
+      "sha256": "e1a0d1a0ef1446fa0b357ee5547ba579cc4a65975a5af9634242d568c739683f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/comfy_adapter.py",
+      "sha256": "d4cd3a1ac60f9e54f97d11b1cb9e38db98549aeb0f3e162bc8e9566aa4f4cb22",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/example_films/film-first-pass-inputs.json",
+      "sha256": "a6ad0b12a609e5fbfd581cfddf3677139f44ff2443776ede79ac4b6b9b47df02",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/example_films/film-first-pass-plan.json",
+      "sha256": "eea63dadfbd61ef3a098f4d1a533baf2d27f48928c1dda958d30e133a572c372",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/example_workflows/duet-story-living-canon-two-shot.json",
+      "sha256": "8f0adee6dec61fc1938c3eb118b94761d3f4989c4fecc485fc9adde1f47c1291",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/example_workflows/duet-story-two-shot.json",
+      "sha256": "06663d1604a4f21080233a62dd2adc0c21b830391768cb4980be429fdf86e41b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/film_routes.py",
+      "sha256": "976e4f80465440e1795a96688130a98c815dc4df42d8ddbf7858a7b3a1c713a5",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/h3_quality_nodes.py",
+      "sha256": "aa93123ef059607bbf0f120d7a425d1038f1536f2e95f9cf70ce0902a94c4f54",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/h3_reference_node.py",
+      "sha256": "ac5e477facee01211e0e89b5f0495c769569d1d8d839438b201b2aadc6ead87f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/nodes.py",
+      "sha256": "75de172de3c067f7ee5b9323ac7a06dbb57e76c35bce14f8a41f61049d000e1d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/routes.py",
+      "sha256": "fd00192c7a6b7ec086655c69e1c9b930e3695d268f1eebb4253fbfbe85964b00",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/web/duet_story_panel_v2.js",
+      "sha256": "bc6deaf4d3a92465fa15be597d30a0528815d0aac56acb31c8b39698fb7c4353",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/web/film_editor.mjs",
+      "sha256": "3654584f9cdf957a533c01432bac44bd15436bdfb584e3e99d149f8e2818c023",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_continuity/web/story_state.mjs",
+      "sha256": "3676bc54af259107a460eac4656be8d84405fc29afb949aef99f1b60085eb285",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "integrations/comfyui_duetx_visual_mvp/__init__.py",
+      "sha256": "21e9e783f3769406d7ef0a2e1d4caf6b8aa91900f86ec1655710ba08567658a4",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "licenses/Apache-2.0.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "paper/whispers2026/IEEEbib.bst",
+      "sha256": "7e6ca0c8b72158d504a12bb091f817c07032a021ba41ca783cca4c2dd80d570b",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "paper/whispers2026/REPRODUCIBILITY.md",
+      "sha256": "422d329dc871739eabb6dcfbe304ec7fe46061952795d35fa8f893cc3e8e3f20",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "paper/whispers2026/main.tex",
+      "sha256": "8a879781db8aebec6d642b80a501dd7fb0e3c678857fc425c3877f688327b587",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "paper/whispers2026/refs.bib",
+      "sha256": "2bccdc3bd789482e7eec665c067d23e17a32e75a102d6b336c5e6e2c5249d3b5",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "paper/whispers2026/stywhispers.sty",
+      "sha256": "ebd181b9448a4a37942b441177acb0082582a7448bbd477470791e58748fe454",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "d4fb3da53dd88ef5bd08808e162da56b0d8543f13c181983f509056b6ac07015",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "7fac236d67bfde40e56ae0ed74ec6c83572c32c3df5beee5032d458901792596",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "runpod/SETUP.md",
+      "sha256": "36bc61de8e1d9481484f30dbc8d246c865375f16eb43fea73a10533c8939865b",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/audit_sa3_control_checkpoint.py",
+      "sha256": "31e72e43f9ad910d2421a686eec87f73f9a786f51d9d9e81885040c7ea4397a8",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/bootstrap.sh",
+      "sha256": "91137bbc2e09208f09c244fedca1ed7127f295f36dfe6f262683fbfea8d1efee",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/bootstrap_assembly101.sh",
+      "sha256": "222fe41ba8ac28f0f32106b010fa6f2c9b65755996cc5b256ef111953ccd45d3",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/bootstrap_eurosat.sh",
+      "sha256": "b000e58bf5801081e5f6300de3ec5cf091462fb53c6d1dbc2d061718e679a582",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/bootstrap_hotc_helios.sh",
+      "sha256": "92f4ef24fa8b093777ae46b1e424ea495aef9865dfc8ec83c9e4fef9f088bf2f",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/evaluate_sa3_control_holdout.py",
+      "sha256": "e62bb7f9d8d3cdb6061081ad780a7ee12ab643a418f2c8b116448bd696052934",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/evaluate_sa3_control_memorization.py",
+      "sha256": "785f9896854153f1cbed08d2e593d11e6e3017f664263339b1ac77b6e9cc0284",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/launch_assembly101.sh",
+      "sha256": "36bf81973a757e952817aa8640f23e150f2aecf67a4d2685ea99046c5cacb31b",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/launch_assembly101_mistake.sh",
+      "sha256": "696434178d2a14dce95a2dec465c392313f7615d7baed37440694c14bcf7463e",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/launch_assembly101_systems.sh",
+      "sha256": "ef860dadb3b5ea906706a57e0bbe85e9d57890e7e0bf3bb513c27872216ccdbf",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/launch_eurosat.sh",
+      "sha256": "6c55a2d6d806dd2735318fcf46f4f0654266e243d7b8209e8ff6670ff779fc0c",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/launch_hotc_helios.sh",
+      "sha256": "46fbe80fe440ed77261717fa834548d5be10dfe01e0f7bb469538a0a9127422e",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/launch_salinas_group_attention.sh",
+      "sha256": "7b2c61b42098a664b30e6d1f0c14020ba9f47ac3f83ac769671be6a6bea921e4",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/patches/ostrack-pytorch2.patch",
+      "sha256": "aed88d1f99678598ec51472c64a800552d4aa53573fd15db3dec94c8dcbbbe72",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_assembly101_mistake_pipeline.sh",
+      "sha256": "181902f039b238cc6e5846b66e05afe6035934cea9b6133c42fa5312fa60ce16",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_assembly101_pipeline.sh",
+      "sha256": "7ca6e886357fd1b223976bb65f9a56947318b29e2ae950d21899f123f79ab277",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_eurosat_pipeline.sh",
+      "sha256": "9eb7ce12edf36d1002cfe229c4b6d713fdaceba95cb7ac6f854257efbc9cc89c",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_hotc_helios.sh",
+      "sha256": "c6137cae646747a35a9373422bc9704dded76238b2dff7c53edb9435e3b605ff",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_quality_v1.sh",
+      "sha256": "89c1071ae90a5820f59b2c879034933568a1ab4c1ed7e602ba6e8bd9d956adfd",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_sa3_control_architecture_baseline.sh",
+      "sha256": "22c2ee883fd02df17d1dd85b0bb45dee5673936d9e36b513b692beb18bb4b6d6",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_sa3_control_full_span_dev.sh",
+      "sha256": "5cee73cfde7fad5667bd561023685bb80bc56b302a96b4628a8115ee9f0b2935",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_sa3_control_generalization.sh",
+      "sha256": "a908a2230f2f83448465aaa69ffc9d4773c9c1bcc58b53f20fd07a2c8d4c5715",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_sa3_control_generation_precision.sh",
+      "sha256": "39285039674dedb7150628c60f31dbe48b9d34e148549db73f473f0ad910f66f",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_sa3_control_holdout.sh",
+      "sha256": "e06ba2bac4f92c28483aed5fe552eb6527d98a728bc6c03760ae4c87790db502",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_sa3_control_memorization.sh",
+      "sha256": "8a2057ff7ba7f251548e27d8226c6a258fb9c53abcb0dc332cb24cc50f9ac07a",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_salinas_duet_v2.sh",
+      "sha256": "a391e0e2a1130cf259c75334a25f652f0ca3dbcacf10361bdac3cecec276cd5e",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_salinas_frontier_controls.sh",
+      "sha256": "72b295dd280d4c4c6b2d3568e3c57a241112c6efbec57095bf06a4f533cf3b33",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_salinas_group_attention.sh",
+      "sha256": "530ae25f362bbaa537d52a16bc917254fa8d967bc012ddef783753a0438d0550",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_salinas_order_discrimination.sh",
+      "sha256": "19ea7ce6497e0c25acef1bd298ac37e5dbfe801059ab7cd846be973fab24b889",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/run_salinas_residual_v2.sh",
+      "sha256": "47567a9653365832bbbc58a6f1c31fa7674cb9d304fe9a509f0ea8907bedab74",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/runpod_rest.sh",
+      "sha256": "7306f4605b0bac0e22ee945bd0cff462a886caea9aebedb8ed24ff6f72585937",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/summarize_sa3_architecture_baseline.py",
+      "sha256": "f004defd04bc5724b595aefc8947cdc7820191d7a17d85b3ca573dc73e2fbc9b",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/summarize_sa3_control_development.py",
+      "sha256": "91dc711129256c7a3656e41d0988ae24b56d148266418c204912789499199f01",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/summarize_sa3_control_generalization.py",
+      "sha256": "b0f5d7d1d1a0ccaf8b4124b06723f87d2d15d600756cea429395ed4775b38967",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/summarize_sa3_control_generation.py",
+      "sha256": "b57c8998e0b51f41a3a299b265f4a235c641176f3fec9122c24e9a094ecc355e",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/train_minimax_h3_reference_attention.py",
+      "sha256": "66790c3bf778c5fb32e818a2c43394f7351c69c1dbb5bc986e60233b9a7ebbbd",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "runpod/train_sa3_control_memorization.py",
+      "sha256": "5523709c622b2e0803d496f0c0f06bfd8542576b212c06e94457ee4858a96c3e",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "scripts/build_duet_story_internal.py",
+      "sha256": "8199bbf754334cbde2a963b06b4a286be5e0c4a2ad34ecca6e537457136a9f64",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "scripts/build_duetx_n128_comfy_mvp.py",
+      "sha256": "c9daa372cc1d82227ff1af2130cf978a3867793dcf1730e55d821aa628ccee7b",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "scripts/materialize_duetx_n128.py",
+      "sha256": "eb5e1e36a7f2840b49cda0fe2b7c04528a81a4f081f52c87fd88d07d79f12df8",
+      "action": "omit",
+      "reason": "Monorepo documentation or configuration superseded by standalone product files"
+    },
+    {
+      "path": "src/duet/__init__.py",
+      "sha256": "e25d212f747534d5892fdedbccb24edb23a0be74f94871c887905d32b142786c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/affine_proof.py",
+      "sha256": "7da470ef2e3bbe5e43d5d5e8ca982a689b54677b0caf4e415ca5bae864fda798",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/__init__.py",
+      "sha256": "a4b261a704d7de5b00bf1fa0db537598f316dac9d2ee294d850fb2dad93b1356",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/acquire.py",
+      "sha256": "8700b86ae03394e4ebc382d787c2887269c2cfb3df7326baf56d9d7ce17bc518",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/aggregate.py",
+      "sha256": "656eeef2e7a89d94a01fb14602d36807472a961dff00d14b7fd3a7756cfb192d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/data.py",
+      "sha256": "f3712c646fd745b440dcbcde091e560d7226595cbc6f8927d8ce40b5af920f86",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/experiment.py",
+      "sha256": "66523d2d3111c3f404f2ecb11e7b6eba43518255b8c17188600416158e30ffc3",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/metrics.py",
+      "sha256": "4e476ad37a3a211619da311c43c7ad56f0b59ab5367994700dbd9f1c40917c69",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/model.py",
+      "sha256": "3a62a3cb76a4a6ee4af830b8d12cad9ca71ffc603a12fcf877bd7fa4877da2cc",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/preprocess.py",
+      "sha256": "e5da968516975398095b06a404628e780ad3a11a9cfb89da81d8400ace95509f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/assembly101/systems.py",
+      "sha256": "e2f7aa7dd526f201ecd69c2e35c920e063f679b952e4323da648c29cf427a79b",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/associa.py",
+      "sha256": "ecd19040fd2135cfced75d85375b056c1d05306f6e83c16a23b4f47ebce6e444",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/associator_repair.py",
+      "sha256": "d072471b1c1e2f6642cfe73df8e3a6cd8cf746e28af082dae6ee61ab11a48d97",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/bigvgan_codec.py",
+      "sha256": "29def4f1d569ec0d758bc5e2e05d73b364666c0ed42b94cf18b5181623fa6ad7",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/category/__init__.py",
+      "sha256": "24fa8a148fe62c0a7fcdde74ef9956343ccabe1a2b4224edba3be967289dfdec",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/category/architecture.py",
+      "sha256": "8f771e3d2b5c0df9c4d2a4702c012b5d25ba0ecbce7d512d7065172c2b9577e0",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/category/core.py",
+      "sha256": "89e97cf85a29b0f733cd9e2d9e9802ad682aa0faa94ebe30ae434593a4cbe1cc",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/codec.py",
+      "sha256": "688fea4f9e82079c9774f21aeb27cd115b354cf896f21645b8b9f95fb3243540",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/codec_oracle.py",
+      "sha256": "7e0261cf793516262fd842a62cbe5cd45b0e1d6a41fc37f0fb3c09e93f2dfebc",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/coherence_eval.py",
+      "sha256": "2c709bcf6bdd2e4b8b6b500fd64280e417d2b37e9b8e655e6323bb3fb671eb04",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/contracts.py",
+      "sha256": "cba673fe62dde4e7e8a49a9d3e4815d6435a449a5ec7a89ddfdebd9b089c5ed7",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/__init__.py",
+      "sha256": "8086440ab2298ea91751f4bb9249f9caac17f1c8f75b85a7d7916d6c9ac49fd0",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/audit.py",
+      "sha256": "717f76c1c1aa27fabde061e599f28f5d80937c41dc6e512fea3f766dc889283f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/control_memorization.py",
+      "sha256": "13381311aebcefcfdaa5f631037c88ff9be1576e1259a7d8efdec9d57635be97",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/curate_sa3_tactile.py",
+      "sha256": "5b78c29b6d8a2831a88000c9ea426e1cbc4100ddabaf9f65a5909bd69dbbccd1",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/foleyset.py",
+      "sha256": "71013b0870778d498b06b0b9e369e3928362f344a935dc4c5dba46a7f14084d6",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/freesound.py",
+      "sha256": "12f26dfdf3cbcdcf6a3c0da663bd951174162f50511ba9eaa8dfc9bccd57f221",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/fsd50k_subset.py",
+      "sha256": "ad16b0151b4405a095537e77cafc980ef2f4cb26c0b8439ac944c6e6298ab87e",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/manifest.py",
+      "sha256": "9d552da0275ea204b80e23e3f63e75367c93a50f2999b2ee3eba3f1e9b238e1f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/sa3_fsd50k.py",
+      "sha256": "e4006806ce5d5ff8a96006ff17b6324f49f827072009b3f20d415d0cbad2c640",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/sa3_pairs.py",
+      "sha256": "816cb513ea709a154646e70cd6e02a0f4aba3ddeff545f5ac2442b81df55a7ee",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/synthetic_sfx.py",
+      "sha256": "d8123742d136e8ca74c3d0f67849eeecb4dcf129a1ff266f51cdcf8857a3f3d9",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/tactile_audit.py",
+      "sha256": "2ca7647a5a95a3a73071a69510618728830d9e3cafd4e6924828c9228ebcf89f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/types.py",
+      "sha256": "b236f1f1e418c35748c1ff77099d3a8023475b7a5907b702a93151f007cb06ef",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/data/v3_policy.py",
+      "sha256": "497956f7102b4690c00d00b9fcfbb5ba43b4a0cc8693b88db86a276c4df98796",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/decoded_eval.py",
+      "sha256": "3bd98cadffdc7850395dc829ab1a427cdea7f31ec6453518369587b912eb91cb",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/demo.py",
+      "sha256": "1a5fed65719e483b2551cb4095bd43b4f4d9a112eb3d0cf86c6b2448fced8f8f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/__init__.py",
+      "sha256": "c4f0379227e491b11e09ec91e4df1383446e5746801ed077bfde45efe6485a45",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/artifacts.py",
+      "sha256": "494be595144090e379f4dd6073f089f3e0ea53939a3b380609f4ca40c0d84314",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/cache.py",
+      "sha256": "f57edd6a8fd982649352242177cb2cb4bb30feffcb4224693960d5c67d62744d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/checkpoint.py",
+      "sha256": "1a457917ac66d4db1f33231e0906cbeab7e7535bb7b9bd37646de7f428b8d5b3",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/cli.py",
+      "sha256": "05fcef3a35a27f71d5bfcc2d77c14612a85869d64bb00e66abc0da07c10ce7d0",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/comfy_capture.py",
+      "sha256": "e1e43a819daa3d8b7b0caf5454b521ff30dd2c27c1ce5c0900027bd23c2b9a6f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/comfy_minimax_h3_request.py",
+      "sha256": "b5bed5ac5ce8209605cc29bee61ce5dec32535223cc584e85be04e1437a56692",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/comfy_nodes.py",
+      "sha256": "d6220b2f2e16e27c2f36f2832b3a4f5dfb54fb4fd7e7e8b1c76de250882d453f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/comfy_visual_memory.py",
+      "sha256": "043f7146b7c4b6d46bc731f82968911edf3854a978219c94c3baab497601f465",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/config.py",
+      "sha256": "9b1f1281ce2fcaf6df83f75407b4e105c138c5d64927a89e246326155d1820a1",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/continuity.py",
+      "sha256": "87f35c69a1ce595f5da84aa273d6ecbd3901fef2c11b198090da3aa956e0f8de",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/contracts.py",
+      "sha256": "35bf17f8fd610cabb98a6778be43a5d4e8435854ed0fe124cc25f60d0fc6484d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/data.py",
+      "sha256": "c4f8f3c048ab913a00caa25f348b3b591a642b9471e9c8771e7004c611528715",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/deep_artifact_provisioning.py",
+      "sha256": "730ff0e2d3e679c86c9e339703929e9815375755046bb3d5ae93d1da1e2144d3",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/deep_comfy_preflight.py",
+      "sha256": "1466ddbb596eeacb04a1d8543338b271cd92244a83a2b8181dc622c9858528c3",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/evidence_authority.py",
+      "sha256": "66cb5d045c61ff1b085fc356671512ba160b77bd0dc1cab28cb126337d1fb8d3",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/exclusion_state.py",
+      "sha256": "b8f7119cf19fe1715ab598fdc4b223e91489179501ab40c4101570dac934c784",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_audio_asset.py",
+      "sha256": "dd9ae647ee9d1542a95baa0b81bebcfaa8af2bb3cc2405667af741ff89fde2eb",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_audit.py",
+      "sha256": "f69cadfd68f5ff640e31a722aad8db6bf2ba65175386f81ee5f4222d869b75ee",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_audit_cli.py",
+      "sha256": "c1941a638eb2d1bf6a96bfedfc7cfb8fb71ed6e888a54dfe233ad1f296252a03",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_border_audit.py",
+      "sha256": "df978c69dd8bcad00fa893cd4e5d8f08328a9bd4423396267bb4a3562388f03f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_bundle.py",
+      "sha256": "01ce886aa443ac8c9b15f5cf50f169366a35afd9812cf6289168344c237030e2",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_count_audit.py",
+      "sha256": "3757ce284c637064d03cd54fea6a5ec6656031933274c05a09e92ef621fdfa39",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_edit_artifacts.py",
+      "sha256": "48e7dffcba0968c411fea97ca203f54da1e22702e1d5f95c7562e2205b8e7a17",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_export.py",
+      "sha256": "dc401da8aeaf0884faae7be08e572537b0ea43c2f8bd898aa101ed172e49d24e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_io.py",
+      "sha256": "915a480228ef7c9d76464b118301be4fedc8f1a20f18abfb73c3c66e498e113f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_narrative.py",
+      "sha256": "776349a1f3e05ea25bb1ce119858ca5c2e3042fe2824c8280c5adb5700ef5e12",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_opening_review.py",
+      "sha256": "20ff0fa79ca4390b3260e252cbef8a230ff690f561015e7deaca4b4101df7cc3",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_plan.py",
+      "sha256": "5768673e4da88896cf2199f1faf380a0b087a999935b02ad24e0faf7d55dc64d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_production.py",
+      "sha256": "7e7fee769c50372d112d862f23089552bd14fedf901417798a3fa3d0b9ae93f5",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_project.py",
+      "sha256": "c630f7939a0c903d97b3bfd226d7f3261c6b1e7866fd3260b686e73e34cb732c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_project_runs.py",
+      "sha256": "92d1b774854b58e41945939f01e59e356f0b206968417ed1e029a0c3dc9d631b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_retell.py",
+      "sha256": "0867b25f1f23f712966f965428fc5baa143b78628725e093368602a4d07ef675",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_runner.py",
+      "sha256": "71a640b21bb26f78c939e8f0b266639b99c27e93f905d4bf479eb9a6496bd783",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_selected_state.py",
+      "sha256": "16906ddf01b42de2dc65e8910909e548fb25a9d5ee55aace98a2f797c5f75d57",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_staging.py",
+      "sha256": "064be558c3de5e9a24175f485d34ede11edaf896cf5b5588ca0eeca78dcbc95b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_staging_workflow.py",
+      "sha256": "9cabf3e900e983c79ec19fdec538192ab2a202a7606252f8eda41a952e8df2da",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_starting_state.py",
+      "sha256": "24efdd1fde6de0e14a023f55e560595213f88993252a404172efa0ce9811539f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_state_audit.py",
+      "sha256": "d06dd563ca48f8eca7f5cc6799893bc3096c435a2f5a4b50f13dbf420a606d73",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_timing.py",
+      "sha256": "ee71e4a86491944951bb98957df06bbf233cbbf89485141168b4f8d21dfae6ba",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_visibility_audit.py",
+      "sha256": "2b73bc0faf40b32f8cd58f7c9e1e8987e06301f6bed758d3648b77de2c11e5c3",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/film_workflow.py",
+      "sha256": "94a6111d0796367e2b83a2f65ccb23a4f1fc668bac8cf3ce642f0aaea4d8cce1",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/gate0_cli.py",
+      "sha256": "d8fc1e7dfda980ac70f4228976a6d223a92922fa8694e25a9cecfd0a82fe2031",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/gate0_data.py",
+      "sha256": "763c308af356663346d8e9345bd9d75cb5b5c0922c4fc479e85e542cbf0ef470",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/gate0_evidence.py",
+      "sha256": "c2d00a7a09c0dbca23dd9897692826d7adcf041d813463817e56bfb9d3cb2853",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/gate0_experiment.py",
+      "sha256": "2381d4ab557f09aaaf5ee840e18379263886b8afcabff5fa2ff81ac27ed846a4",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/gate0_memory.py",
+      "sha256": "978bd3aec2d1aa6c0ff0e05d28fd6bc69ebb527ddb4406d81d24582f5ae93082",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/gate0_models.py",
+      "sha256": "6524ed479265677b3ce258cf90f466df125e9db230d810f3293b92f656c6177e",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/gate0_protocol.py",
+      "sha256": "924e58ef6bfd7741b3406c23095ae9d97ab86c4be049fb4c10eaed33b9551a68",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/gate0_statistics.py",
+      "sha256": "e1d04d6d704d0515569ee183b464263b1819b357de4de7a56cd660092659704b",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/guide_boundary.py",
+      "sha256": "4bf2828de37a4724d3f263411c9e694d81c163b62e7d7cfe67c853ac95ff75cd",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_acceleration.py",
+      "sha256": "08f0f2684d6a0faa291b52ff0341728d5f77c23d0d340634ba854f414ba63186",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_attention_distillation.py",
+      "sha256": "02cf70faf9a7782f4c4c60fec97f77204858b48917b5ea09ab2125826fc7673e",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/h3_prompt.py",
+      "sha256": "8e463da76e1860e187be81c331a535f34695ada28f19aa3660e643549d4def3b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_quality.py",
+      "sha256": "8c075524f53641f9ed9a7d42d91f4f1002c313a502c533a5bb0969653ca05367",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_alignment.py",
+      "sha256": "8f9e55305b92fe6c4dc4e1854d9db7b09b7e991332494d59c93e01d429202fcb",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_benchmark.py",
+      "sha256": "e5fa7d5b5af2882496e8a01c5dab040eee41bbd56465b57bd4cd2800fdd2af7c",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_cache.py",
+      "sha256": "dbca4bc794291228c958e875cb09737881f6565c7ca047ae90537b6372d637d8",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_checkpoint.py",
+      "sha256": "7cf9c5d6c09c73be11643588239d138ec7cfacf4e4afd37dcd8192d5069fdc25",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_cli.py",
+      "sha256": "1bbd0e202e38acf2485a0346b4690942b70cc26de9d4c2053e16bed3c4299f2c",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_compressors.py",
+      "sha256": "089c6bad7cab577a29e50de5bd1dcbe73f6a095e54308d73061898fb253ad55f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_conditioning.py",
+      "sha256": "a4f2292d0776633dc6956608331c1685b0aa2a24353a744223a856e6d2ecc274",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_reference_contracts.py",
+      "sha256": "fc34af24ce79218cd51c23456e251a216e7fba8d58411f33e971364ac64610a3",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/h3_sol_attention.py",
+      "sha256": "113815844dd9a0fbafe0e299e7a3ae59c413abcd3358fe962ab4fe3e89bcf96b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/identity_evidence_cli.py",
+      "sha256": "155bdb2831c3da63f57b0033f8382d871c6bbfe023c30705ef91321862e76acc",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/latent_bridge.py",
+      "sha256": "863a7df3cdc4330e238b6b8afef44f7f9022df4536c82c231cfbb54d6261df37",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/lite.py",
+      "sha256": "a27db166b8bdb50419a100e0ed51b8a0d2d332a30822f4006039c6298fff7cc5",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/lite_gate_b.py",
+      "sha256": "2510cf913d1c8ef58fcf1ff65e42054dde475805bfe0aec2e5bfde4ddb0f7adc",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/local_receipts.py",
+      "sha256": "cd8a9f6f9a974c44cace34916f4def19de96812ba6886468e64923ee35e08979",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/losses.py",
+      "sha256": "3cd9abbbc9af7c14509acb99481ae56e1d2d1e35a0d004cb307b1f5a72798033",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_bridge.py",
+      "sha256": "956cdcd57c82092dbd0a84bbba65b6b9dc0ee3533280fff1f997ab711dff8654",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_cost_audit.py",
+      "sha256": "ef0656498e9dc7174bdd934d26fbf45fd876400a6e63572268a3766ed4b84167",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_exception_canary.py",
+      "sha256": "866efda5e53cf0f9ae1039e0c2be531d6d9ef4a4f946136dad36d0992c5c9606",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_exception_canary_operations.py",
+      "sha256": "14b5b92d206e56ec121f2d286894b85ffd9845f46b87964be06b1b68c070c6a6",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_exception_canary_runtime.py",
+      "sha256": "8f17240b06535ea8e4ec67f385a3dcbf9ef32db5d63e2cd7ffe87e1adcc95291",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_foundation_builder_parity.py",
+      "sha256": "1aa332bff72d1f878803f94b76adb2deb7400cda3ecf04ae742d1a43f82fee8b",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_foundation_checkpoint.py",
+      "sha256": "30edd4be198d3c760fce90d744cfa9c61de4c95a8513fa7bf207517a72e66eee",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_foundation_diagnostic.py",
+      "sha256": "c89cb347d7da8708f4b9069a9c45a6952774c815de57a7855a9c7e671d7a8b44",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_long60_evidence.py",
+      "sha256": "164b560a9576673871a348216d061e440749b07e0f204328a5e89f1c7d763024",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_long_context_canary.py",
+      "sha256": "69a32e344497dd09b294644b55739efd15ab1cd3e4aa4a1337144a9464aff0e4",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_media.py",
+      "sha256": "86523a5649635a470ebb36ec28829370d94efd9dd4811c5917cb1406eaa8fa77",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_n128_comfy_app.py",
+      "sha256": "972f9e3a64cfb0abbbc2a40a1eaa4d9fd2c2efe2e9930c47d4eede182a0de771",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_n128_evidence.py",
+      "sha256": "2b879810c8ee39fd2e3b1d2f5aba043d4a6a62ea63e319261fa38671e83bcccb",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_n128_guide_memory.py",
+      "sha256": "fbb162bd0295dcdde1294d4a4b3bbedb7026affa5fa430077c36088bad134cc8",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_n128_materializer.py",
+      "sha256": "66617ec7eff05a1e39f58831a32aeec99a884fdae4c27e105c8722ab61c38252",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_n128_memory_bundle.py",
+      "sha256": "4d3113efdd0281cc5cd6e5b1f814aa3c80c62d0b7e8b306c585af32fb3d8fd58",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_n128_memory_refresh_app.py",
+      "sha256": "405ca8b2d712b960536bc37017688fc3c448e68b5ae35ad1e95ea2bf72abd233",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_n128_runtime.py",
+      "sha256": "85944d1c59992d155771bee39eded5b5c977f5838d76676070f98f97384de603",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_probe.py",
+      "sha256": "1cbac37da291a78ae959bd247af8600c79aadbd70af5916f04e29fa15d05c24d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_probe_cli.py",
+      "sha256": "d603f1f0221b78561f71198ce06718b232e07a7aa9c15a48c8ddba3af32484ad",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_probe_media.py",
+      "sha256": "bfe19d6cc1f4942c0dcc6882ee5b5bd4f7391f260b5a8c8cbeda96bb823a7c37",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_probe_statistics.py",
+      "sha256": "6e3f0dac4770b2a3c8f64594146b3281013eb301b5dd8fb780ab7ca94f5ebb87",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_bootstrap.py",
+      "sha256": "3cf61dafe0ad03e69245aac1994a6dabb35feccd89b2642dfa1d81ff95f7eb46",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_cli.py",
+      "sha256": "16227894b643c6af1867d2c9b8d26df0f3e016dfa274bf1ab741f0ee65fb4f68",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_confirmatory_forge.py",
+      "sha256": "df7c1384f096a5da1ddefe6263d899e97f046441edb49960ae85130d54670401",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_confirmatory_runtime.py",
+      "sha256": "10be929612811b79d41e6976bc7cbd336dcbd22cfda60f8e8a0de092449cb707",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_file_io.py",
+      "sha256": "6f4c5ffe97874dafb434e2bb081c1886779e915bd076ead23782a37021415a1c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_forge.py",
+      "sha256": "abfd354959ab8d6acb9324e8800ad4d276da2ec08c1b60d1ea466da57935764d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_generation.py",
+      "sha256": "575e35ae311c48fb9c3effc03f9c5d623666c355e6a959c0d7458c42e2a0599b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_generation_dispatch.py",
+      "sha256": "41c537ecc3c9100617733aa430263cf42133a25ef53620f708085afce530bd17",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_operations.py",
+      "sha256": "d84c9ef42cd8f62f30b1b0953fc8885346e6226ffafe8107c9bf8f4d11cb39c1",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_protocol.py",
+      "sha256": "a06f11f6626e4e2afcd9c3dc6ec55baeb7b0f191da4d6caa4a86290ef62db5da",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_review.py",
+      "sha256": "31c93e63d9d617550090fe84ca0de7e391f5ace7d651667899b377d427611f46",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_review_dispatch.py",
+      "sha256": "f3fe1661bfa6a942f51be53153979d11013b9e6e90b16cddd6e8394004473231",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_runtime.py",
+      "sha256": "ee56f244c77a3d997bd0c51bf69a7e92741e1c0187365fc4fee9441e9e223fdc",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_runtime_equivalence.py",
+      "sha256": "fccfd94769e568e141c6f8c2240ec006f45ab4d4edb833179adccd28bfc48c62",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_scenes.py",
+      "sha256": "197d4b832b4106db522685a771e1f0be6bffb0ea843e338eaceeab5f077c8936",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/ltx_quality_statistics.py",
+      "sha256": "66d66adbd0000aa5b53d04f7c52ee44d690304579df030fe00b55af5c376b35a",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/ltx_runtime.py",
+      "sha256": "06b17de839b8c4fc8f3f71039049112f53152c8d18e7bd571afb0b3bdebfc4b4",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/media_probe.py",
+      "sha256": "64d71f17092fdf313cb05463215496127705c03c1d01dc0dd875785db5fdaeed",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/methods.py",
+      "sha256": "de05f3ea6403393fff5ff61754b80f59b413c2361383e5c05ae187414a0f5463",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/metrics.py",
+      "sha256": "0055bae0e0db85c5abbb79cf06c2a1deeb5cabd505abac7f4cc16d87199f3505",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/minimax_h3_bridge.py",
+      "sha256": "c3a35811e838e124f4e2e95a2478f9a5578d049bbef1fe18c78f572e0e4c803d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/minimax_h3_memory.py",
+      "sha256": "d3582a976a54f51c7230713800e834fda9f4013df2648c42dd80233773e74f5d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/minimax_h3_training.py",
+      "sha256": "ae2945d156c6d6ea634a4ecc13bb538fca4f4ce3789ef11145f4ea55e8fdfbfd",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/orchestrate.py",
+      "sha256": "063c61da3c8758b2025da62c62d270ff00c79001cfdc8c65e04365895edfeb35",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/poc.py",
+      "sha256": "2ede3817c09a078213a874268491817d97fd4b83198f6a4c3daa131e56243127",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/poc_cli.py",
+      "sha256": "960150ba566648d27d74c793824bc9278ee24ebb265142411588c413d4b40c4f",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/production_cli.py",
+      "sha256": "5e58d762c2c50141901f47e3eecf81dc9b2289a9684e62425f20cf17c574e7fa",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/production_completion.py",
+      "sha256": "0b0deb5487daddcc96f38412d7e959442538b379951e18260a32f25b447d8992",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/production_launch.py",
+      "sha256": "834cfe529505a78938e4d8a3235443fa60d90669dbc1ad3e37b81e014eb9bd07",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/production_operations.py",
+      "sha256": "e803ce1da3d371e555d85ede5accc3e6ad86b81b9b5975394bf80ac5feab4365",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/production_receipts.py",
+      "sha256": "fdd9963a4887d8371e71072b87583f40aa654dda7699b20307ab1296ae1b4d29",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/production_runtime.py",
+      "sha256": "19fe3fe05012ab6742da76491c7084704775ed08ac59a19380fab6763e85770a",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/profile_runtime.py",
+      "sha256": "f6e962e4f18a470e57d3cafd30bd4b5d9e8d9c5debef24e95ad2cf4c270a6bd9",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/promotion_launcher.py",
+      "sha256": "6d895bee0530db942f0bd4a96945d94821ce60d192208f7ed1ecd7eefd616f3d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/readiness.py",
+      "sha256": "23fb1b706fedf8b5e27a8234b23a4563547e56335709b9b5b67dc7fae4f836d4",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/readiness_cli.py",
+      "sha256": "f15cb94475226554f2267b7025c712c3e0f9743d61f2afb301d8f0402de7109d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/report.py",
+      "sha256": "a90c233acac37121026bf735e0758ab46d8abb295f029f827511205d0889130d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/runtime_io.py",
+      "sha256": "8ca4b285c6034733749c1be09f06014eebe59f16673ae241490e83fa144770c8",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/secure_filesystem.py",
+      "sha256": "d815f53d1acdc029b6ca748694e547e138a495569e499e41af7e1c42ff590bb2",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/selection.py",
+      "sha256": "0f9c40513cdeec49dc0133085a88de9085640eb39932de3a9ca6bd2369dab361",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/snapshot.py",
+      "sha256": "a937cc6b07179ebd1bb1c990bcb4550f7d88e08c45dc4af733416f1224214c74",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/source_deployment.py",
+      "sha256": "90dd3c8dc72e467ef86a2830feeaac56f5f8c84c20c44bea0175a08765fcbe67",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/state.py",
+      "sha256": "14d11df26afd13ce61c26f0269c1cadadd597260ffc226bd09380b60ac681f1b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_attempts.py",
+      "sha256": "29307bba84a347f26b9c1f3c906f969af9e0f632dc92487d5c426e9fd43a55cd",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_contracts.py",
+      "sha256": "e38ac5e3f5bc7be34267ae084312723adc98c95283d438c353c735b5daef258c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_language.py",
+      "sha256": "abe45d9496b53762cca51b43ff2143549f133e1c56f7ebd158a7e7b5582ee867",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_memory.py",
+      "sha256": "492d6f8424b60ccabbe5d15d81d4f36fbe9390b21c8d17ddb2f5803fb95095f8",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_memory_backend.py",
+      "sha256": "55927d8cce6eea2bea045a605930162cca69082c19583f210c945edf9c47ebe1",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_native_archive.py",
+      "sha256": "a3cbba794daf82011ae5541f6d9bbd693f6967255a06187696b1c6fc25fe211a",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_native_service.py",
+      "sha256": "12b74c6ec9a479f688238d9f43b92ddf489857c490ec6f8d988fb4b0d0d6b12b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_observations.py",
+      "sha256": "bf94381922af17f3d8bd614562adf7aa016479a15cee63cbdd0bc7f6b62273bd",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_product_contracts.py",
+      "sha256": "c9f6ea3a2982d1d4204d8c6592106e88af0efa1a089277685f78de46e014a7e5",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_prompt.py",
+      "sha256": "e36a005ddf704fbe1541b85472ec23d2dbd4c14b0e73dfb56ec405f1e629e869",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_recall.py",
+      "sha256": "e79b6aecb9dcd464667a1d68563d22bbcbce2500a5c0b85c00854a4b367179ff",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_service.py",
+      "sha256": "920a6545092fac1d1ead266e6b6b4b7250e62c380bd14a5b230c0290785df9a1",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_store.py",
+      "sha256": "3ce11b177ab532f5366ad76d9daecaf44927e00e31319c736e46511929c30bb7",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/story_video_canvas.py",
+      "sha256": "11671d5d5c97b7fb2e86fb775b5d755b2d95dd3acee8caa9cd8f958925e0e415",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/streaming_long_context.py",
+      "sha256": "2e11e2f171c2cc6b0c09fb6a1417b75909308fe8603bf9c2801aa724736e9a0f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/systems.py",
+      "sha256": "47188488762915e449eaf947ac6f38b0ff2436fa798bd921d6de5b67754edc52",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/duetx/teacher.py",
+      "sha256": "4d684586950055a73b0ed525407c811cdf1d4725edac59fb64c60ade66bbf44f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/training.py",
+      "sha256": "7534c6f86cf601bfcfbe3d0dda234deb28de51c7d9df301bc984e52841768aed",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/verifier_kernel_compat.py",
+      "sha256": "beef752dc11db3bd786df460d0b36ba5b5467f43f4f6317b611876c6455f76e7",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/duetx/windows_bootstrap.py",
+      "sha256": "1c39809ad81e9ed0c58acdff9d23852c6deba4f920a473507e911cd168fb4102",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/eurosat/__init__.py",
+      "sha256": "e89827cb38fd0938e96a4046e34d2b75d5f4769f20871aa3fd210fe97e88c76e",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/eurosat/acquire.py",
+      "sha256": "7373502cd9e9fb4a21b6b3b067b3eedcfde0162434190d94d54a8b3f42bd60b2",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/eurosat/aggregate.py",
+      "sha256": "b7834686b2b28923ab1fc39aa60f0157ade1458c8b7f9ca96f8eccf34a43bd82",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/eurosat/data.py",
+      "sha256": "b14a7e3e490308407d5aed8cb94c4fd1d99b58a80f91d42ddbebdb61821e08ff",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/eurosat/experiment.py",
+      "sha256": "0818befe0f16e1538d5a31cc551619f8a949d4fdfe86bc831df521346676de4d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/eurosat/metrics.py",
+      "sha256": "0595c6c02960a2606fcdf2a220779ba6c3cfbd6343935f2c66914d6061f0dee0",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/eurosat/model.py",
+      "sha256": "670119cefb947fe9d01f6d5f21bea35d20f17bda67a895580b6cb97125d8d2f7",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/evaluate.py",
+      "sha256": "0c9871c164b883012aa5efa60287b5a2a6d888cdc82a7145ef318e0d09a81141",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/experiment_gate.py",
+      "sha256": "10f39f4e5d752c105c17bfa835d68852ac8268354089ea3644d1b3d8f67a9b0b",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/fit_mel_stats.py",
+      "sha256": "40fac8fa0b1c6a1dc5850e12fa4689ba0ea25d21d7390b1e2768489099ab63ec",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/foundation.py",
+      "sha256": "a3b494ca14838aa715033b48a9ceb04ebe8722bf20dc6dc26e2071862dde4534",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/foundation_control.py",
+      "sha256": "e182328cb18e90c1da0e46819290069977b75c16ad9cfd87b5f285c8fbb65728",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/foundation_inference.py",
+      "sha256": "095ad9b69764cdf1f9068e757a9b942904d1bd251c981e7cde9938c2d9c27210",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/fusion.py",
+      "sha256": "b7929b92a226b9e3256d43eec3ac2d69ee9c7d67ed8b42c34ee29117cb44fa9e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "src/duet/hotc/__init__.py",
+      "sha256": "0b95a893d636478c4aaaab38204f24042afd281b706bfd87f1137ffee322e1e3",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/hotc/baseline.py",
+      "sha256": "cd15f792f9a3a75614062c3a4c7e47438a0135a6e2b17da684a17f5d98436b2b",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/hotc/data.py",
+      "sha256": "c3a62d74cb0343d74adb18b8dd2ff6e7a170bce89140067fa8fbc3728d0a0f2c",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/hotc/helios.py",
+      "sha256": "d08694712a07628acb1881798bfaa9c0afbc2baf2ae09732d6ac321f8b9605fb",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/hotc/metrics.py",
+      "sha256": "b5a826d6240d7da87ea7943b397cb3b7175fa35b44d71081e4430cdfd3cc4914",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/hotc/tracker.py",
+      "sha256": "e72e97fee531f1df698198f35a0b16b6277cf9631bd053537ef300d901976a98",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/hub.py",
+      "sha256": "928533c5e1bb7d829e8aa8126b6b0df5c2960e9102e984b94be5f48c1f41690c",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/inference.py",
+      "sha256": "ce5202466e19538be71538ef471cb6b6187d6c1f05b4e6b39f2a5a3e2de24e65",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/listening.py",
+      "sha256": "b8b3940a82100f9f2a6fdea88c472768f1567f46bef419d4c8586dedba9d10c6",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/losses.py",
+      "sha256": "da060541cc5909049eb1f92bb19bea5ed5f248f7d730ce892fa790287cac6036",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/models/__init__.py",
+      "sha256": "99782a2d6d06a7d22ea615b126ce57ecdb879e5b683a9be5b1a69dfbd31775a1",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/models/blocks.py",
+      "sha256": "cbac74801a7ca0317fc58a37f6dfa3f39f09940a7c4e376af5920460c45e46bd",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/models/sfx_unet.py",
+      "sha256": "9961f2f71e844f33e76932fba4d2f061d47c5a79bbdd6baf7252ebf358b23cd5",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/prompts.py",
+      "sha256": "13784a8cc599231b4ee3e0e8e0ba3d7eadbd13f4b056c1fb5324ebdb34ecbeef",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/quality.py",
+      "sha256": "7fcb32257f8eed69fbe6d3412d2ac833f05e91e834e7ec78078476d54a8206ab",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/real_sfx_fusion_proof.py",
+      "sha256": "3ce1289a89499fa8245ce5c32c5720f4a770782913be2e1e0c35053fe15a6fe7",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/rebracket.py",
+      "sha256": "7240d7e3567b5ec34e0510a23af59d47613dc5cf1a2eaa53b0bfda83bc498973",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/runtime.py",
+      "sha256": "93a20bc730104b650a63b92afa137a23931162d69b87ed3ca97d260be8e34374",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/salinas/__init__.py",
+      "sha256": "307ea2863bca97d4e61b21367080df87df7cbf9991ff219b5d7f184a0cc058a0",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/salinas/aggregate.py",
+      "sha256": "02408056b422a43493db902bccb6901bda9d36b83dbd2cd2e55544a431b34089",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/salinas/data.py",
+      "sha256": "2175a16435b5bbf9027f383e66f2b71a19c298b9d56beb625be7c2647953b371",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/salinas/experiment.py",
+      "sha256": "af5449fe15c65789f2a3275d083910ac5504791a65d40d5b4708b7761897db6c",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/salinas/scaling.py",
+      "sha256": "bfb65db7bc0274e45096b2633cc9d657a436c97023ae2394ccc1cc7158ea7a8a",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/sample.py",
+      "sha256": "6b287d7755b8fc4d28e6cf71dab1a4fca06e433591e90326cbd6709f8ff2de2d",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/sfx_fusion_proof.py",
+      "sha256": "607f996c556b8c3b3ef2592955da40a2d1a1176993b0b6517d3c40da5c2be996",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/surface_eval.py",
+      "sha256": "c24c207f24ecf6b67338835db8c570115cff51f091d96a9027cb40d0f177f8f4",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/tactile_benchmark.py",
+      "sha256": "be2fbf65cd61e5e84e6af6301b062b9aded4b91fdc48733c5e9739558e97e1c2",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "src/duet/train.py",
+      "sha256": "9404cb41ac37d81ddab44f6340ab3a74ebcfc97ff9815689d0ca390bc55ac55a",
+      "action": "omit",
+      "reason": "Not reachable from Story integration or film commands"
+    },
+    {
+      "path": "tests/integration/test_duetx_ltx_comfy_contract.py",
+      "sha256": "02d4aa799d3bccf2df923bc685c342e8b03f02b72bce6de0c917c95f0c6c3991",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/js/duet_film_editor.test.mjs",
+      "sha256": "410ef29ee1c17779632245a020be17f83b53c6ca4deba384cb96229695cb7eac",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/js/duet_story_panel_lifecycle.test.mjs",
+      "sha256": "01f7bb3efae6bf938c5807e795f9898cd5a251a380e9bcb9a38755bedf701c1d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/js/duet_story_panel_state.test.mjs",
+      "sha256": "83832394ba2f7369c8e0a137fb1652caed1db3ebaa396a8979c8dc4970753c6d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/js/duet_story_reference_policy.test.mjs",
+      "sha256": "0a648099ee8e50d3f5d46dbc2c0923416eba51451a10d4efe35d55af35d96f25",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/js/test_story_state.mjs",
+      "sha256": "967acf793561c49f54e8b1a5e8ff9c62c8951ca48ba38166e078e3b056203056",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_affine_proof.py",
+      "sha256": "e4140637c395dbddc46bd4ebf8c2448b281b6976b27459e9131c98e44fcfd193",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_architecture_config.py",
+      "sha256": "ff07fcc2678a1810511503d7c915d68c1f20536f9900ba37125ad069a158fa02",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_assembly101.py",
+      "sha256": "10216c8a8da823a166def195e20579cf6803a699cad427b466dd7ad85c8ca8c2",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_assembly101_aggregate.py",
+      "sha256": "829ba7b58e9d648a222bbb359c4412ead7731326f20341b13e557b84ca1220c4",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_assembly101_systems.py",
+      "sha256": "2bafcf3f2a7de048794ac6e194c0bb72e1b1fca63f6d3390f3b3e472201edd85",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_associa.py",
+      "sha256": "b8622c985c6a89bd167d1f6c3889f3f98a55fad9dac57ee696e10d880850f41d",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_associator_repair.py",
+      "sha256": "2656bd28fefce0d773f819dfac6f5e657be7eb191079f65ed6b5fa44ea9240a9",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_build_duet_story_internal.py",
+      "sha256": "69fb970caa9a4d8c6987dececb02997203e3c7f19e479d23807ae75e0ce0501b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_category.py",
+      "sha256": "c4d751581de551fd4aaf2ab8e3a23c1797e1c266676fa76706766b605ce478b3",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_codec.py",
+      "sha256": "b8671236ee25a8b9e948ad78d7dd3a6798d196cbd4701a31cecf246d7d117621",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_coherence_eval.py",
+      "sha256": "db3a32d52cbc2e3faa74e4cdd4ccf7729698efb56db112199630ba1299631618",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_contracts.py",
+      "sha256": "a89b4a0982899aa436bc2d09bf4efdfef3431cb067738471cc024e8de6266a1f",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_control_memorization.py",
+      "sha256": "5272696d795d5115a8ed843a840903e55a98646045ec81ba54d3632649b84e48",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_curate_sa3_tactile.py",
+      "sha256": "95066ecca959bfc5a55712d986aa9820d65a5117fb881e3bba2146c6201b38ca",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_data_audit.py",
+      "sha256": "9c03de0cc9dd35e8529b272d944796007debf9119ffec6361c9252187139ae53",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_dataset.py",
+      "sha256": "bdf1fc6ac7463eed99532fa5c839159df03c95a113a015bdf7701136ae6e77ee",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_demo.py",
+      "sha256": "83299262aece5e9d80c5c0eca7048f3fd4274196399d690871b1cdbfe274c6bf",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_artifacts.py",
+      "sha256": "eea9e444a66e20445af0075e4a5db2cdc6a4891e90fa8ff8f38558bd61a843a6",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_cache.py",
+      "sha256": "6b4778f159e1c42fbaca19b54cd5479335b2d533987e4ad3ca85fcb35ffe79a7",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_checkpoint.py",
+      "sha256": "a02a36c04566c0cd769f49987f2a90e132e85f272d2d8480e26d9689b21ff43f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_cli.py",
+      "sha256": "d3ec7916fe576df272745ad0843e39d282c4fea306edfc2f537a6fd0b4425ee9",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_comfy_capture.py",
+      "sha256": "21f2b29a37ec0d1a6c05cce9912caca431b57c416b360a020960c7fb892906aa",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_comfy_minimax_h3_request.py",
+      "sha256": "febec92602d8545e397eccb42d2d295ac3bf72007a833ae8d263f71affab018d",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_comfy_temporal_schedule.py",
+      "sha256": "a4177e97d309c19918bae6c6e21380e34a6cca0c9b27f1ce3db0b746bd6edbbc",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_comfy_workflow.py",
+      "sha256": "4442d545a4f837f6c8d8f6f7fe233be53c4fae39db14ac5a44cc6502914f3dd6",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_config.py",
+      "sha256": "b2a3eccac728dbdb996485ea9e6110328e4acdcb0b863b9e2045964316e41bef",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_continuity.py",
+      "sha256": "2ed443fd5daedbd726a3f27b7fb030b9e0bf2882bd14c5d2ea77751988cd4629",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_continuity_integration.py",
+      "sha256": "2ac600191c16c66ccbd386ae147d15bb094c6e43891c6d750f174b40eebbf0f6",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_contracts.py",
+      "sha256": "f42e36bfe0308687b21ccd51dd62e3663c147d7ccefdf564fca501689ffc3a53",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_data.py",
+      "sha256": "503ddde2418411f2bf4fb5a38a691fc41edab4f70dd9a445120784b863a2940c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_deep_artifact_provisioning.py",
+      "sha256": "16c86e47b92dc7668b20fb864b69752297cf6701967eaa6294009a7a0a49a1c7",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_deep_comfy_preflight.py",
+      "sha256": "bfe9008ad6ad2d1f7db601ad7e0c5d699bdff78d84aafbadeb8cb241abc76862",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_evidence_authority.py",
+      "sha256": "f408a285d3c954f53dd77800148da4ee7b1875ecebce9b2cd511f04e7b054482",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_exclusion_state.py",
+      "sha256": "6ff73dc3f99dea0859c569418d72a6319db27dc4d7e23ec01aeabce1a5f4060a",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_audio_asset.py",
+      "sha256": "2124e16c247f60a6fe48f9e8eebc6347369fb6fa04d00dc988e9e726f4316fa7",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_audit.py",
+      "sha256": "39c23e70cd4697e071ff15022294a1b91da3a751bbb943b25f56f88e3b26c39a",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_border_audit.py",
+      "sha256": "40daa0851c9fb3c141f23ac9659c3ab37ab7273b7a3cdabb8b06cc4e1901dc5c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_bundle.py",
+      "sha256": "4c0420a7b1997c02ea48017402d76806cd92fb1ef412c2d6519e4f188e140d0c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_camera_pairs.py",
+      "sha256": "fadca8b8b5ebd7ae3b7e8fbbbf4cdd8bca02096fbb3748f2a4d9e325a8de60b0",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_camera_prompt.py",
+      "sha256": "5e0087b1db5ade505b42df2b79dc1036ab6e828f3525c514673b7f10e916cb72",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_count_audit.py",
+      "sha256": "c6ccfb6de4e70bac56928ea9c93dd1f7f751fd694f3c6a184f5a973b56757256",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_edit_artifacts.py",
+      "sha256": "c16a7c28dda4a6278b20d2a9c1d5099e493706c1629316b2fe393e771b526527",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_export.py",
+      "sha256": "ce56901b3714aec0fca94fe5e3b94f4683be60ad67aa9500c09462a5a94d238c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_model_identity.py",
+      "sha256": "53663288d4f5a39f860a752e4bfa0fa23bb844a0ef3e860a8c6ddd8dd40cf5d3",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_narrative.py",
+      "sha256": "b94971bb6ff2496ee34d6a0298791958da638df95224aad3bfbdf73778c0f0cb",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_opening_review.py",
+      "sha256": "11ed576b7d8eb8eb567144461ca530e0145902af5abae1f8e3c2c522610a7d96",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_plan.py",
+      "sha256": "0bfd912736a7f36f15dc9e16963e9ee9359e292a76759df62f443ee047c0d7c4",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_production.py",
+      "sha256": "fcacde9fa8d90f468fd4d69663fc880851177cbe0fa64c5ad3f141668307b5c7",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_project.py",
+      "sha256": "dd4ad7fb24c4e551d9eee00b2856d59b0549a797d1d0d503e1ae0039b7ca2dc5",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_project_runs.py",
+      "sha256": "8aa1865fac9f7505ebbb48b5fd2b949ec94d137c3868016f1b10d4ea9af3c46d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_retell.py",
+      "sha256": "fa1b7513f8d0a17c5f3dbd48c3463f4117b50d9bdcd6ec1a1b73233be25fa7a0",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_review_retry.py",
+      "sha256": "85bf0fda4420ff1066ef282036624804758e44bae55116664635e6e2342e548b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_routes.py",
+      "sha256": "e3dfa14f20e7cddd3b0c072cc05eb3fc749c47ae7c2fdca071bf1c11e9e9354f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_runner.py",
+      "sha256": "53e3750bdbb490a16f35d2fe82fa65c57d6faf6764e8bea5c562d001515144ca",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_settings.py",
+      "sha256": "bf4269e64676221b870d56188c6025e378d713653f3c1c3b6e8e2668a40dd77c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_staging.py",
+      "sha256": "a5b4e2247c516cc5653358afaaf0c5b02b1df41f7f7627f802acae3d8c6bcc64",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_state_audit.py",
+      "sha256": "3654ce48988ceecd508bfb7c2548541fa79a2e134f5d1838d887b4520d3e2536",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_state_definitions.py",
+      "sha256": "c97e2243634d6f94db461f23a3ca062d045c1fb065fe208bb41c83b0c99dcdce",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_timing.py",
+      "sha256": "3f17ba4b9f5a33ba66b52a695e1eed97ae1e0b0c44e3c309789c0785362886f9",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_visibility_audit.py",
+      "sha256": "528276ff2f4c5ff52cb6a7e5af4a0b0008fc75e4ca75fa5217ba812fdec1d37b",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_film_workflow.py",
+      "sha256": "f09c07f7d18cd7571b18d4054122b9b3a792eab4388eaf9f8bf5809949c3d833",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_gate0_cli.py",
+      "sha256": "2d3e6d144e53ff3cb4b3c2592be994f123ecb55630f54d7617d21204b516aa60",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_gate0_data.py",
+      "sha256": "a1b68d918ea7b70c8d5e5f2714272315f1a63fd09aac38849726b6354eb355d3",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_gate0_evidence.py",
+      "sha256": "5b306eedfc750351bc67a1aac658055459dd44e00302044b8d481fd7228387ec",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_gate0_experiment.py",
+      "sha256": "86879f6e480bdf3cdaf935c2711309d85f311ce34361bff5e792371e560853fe",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_gate0_memory.py",
+      "sha256": "b3a92e495e967a728bdb452781382da4f32fd2f7de5f1b950b6edc4b549b17e8",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_gate0_models.py",
+      "sha256": "23da7c8c4169bc584e46160294a6aecd941236d7105aed305718e93fad53632d",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_gate0_protocol.py",
+      "sha256": "8c1e05719cc1084dd8fc9a7bc7ebfa47c1dc2fb91f93ede526feb3a306343067",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_gate0_statistics.py",
+      "sha256": "eb920919b5c9eea2276466b07955261a6cfddd43ae8d809827f3f681eca041b0",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_guide_boundary.py",
+      "sha256": "31aa98dcbfdda9bce5b075e08c4a470ee1849bbf23404a7be0363f710df4e34e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_h3_acceleration.py",
+      "sha256": "e0992d01a46b7754d0655a5ac7975b5338b1220598e2bc474de0cad6d920ed02",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_h3_attention_distillation.py",
+      "sha256": "7783fc0a46ded9fc6671e45f550c2a06e73175ffc9bca79e3a7759d63699b43f",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_alignment.py",
+      "sha256": "4de529037835281915a2b4354b4b43287e0d1183823f0f9e57a9c57f5ef88e75",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_benchmark.py",
+      "sha256": "6669c4efac419e59e2c72b21df307d656882211a7ac5f3df3bd0fb5ff2d09977",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_cache.py",
+      "sha256": "06eedbc9260c9df2abab0e3b2f8a2df1fc8928a92c9f58d0c3a9e2aea3074e7c",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_checkpoint.py",
+      "sha256": "5edddec54df90e971b5c1efcf592ebb1e922c7963e243c5638644178f37d0b76",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_cli.py",
+      "sha256": "d62718315cf52a10852554db447db80bd77268cbe2c84e7da4f8a41459807ccd",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_compressors.py",
+      "sha256": "52350e4ed16dcbd3f4fce1353af2a33ddf04d1dee69cd54cc1270423c1372f14",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_conditioning.py",
+      "sha256": "ba2cacb2b92cdaafd5ef8c1bfbfc1ee6938a864443cd21375e6628eca17b70fd",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_h3_reference_contracts.py",
+      "sha256": "e95e1c3c26643ceea5f682577e51b86fa0aefac60684914e011d78aace346f91",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_h3_sol_attention.py",
+      "sha256": "8122214761d086e4bc5e2188355542a01be47ee46fdb51727af74b3a65b9f1a6",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_identity_evidence_cli.py",
+      "sha256": "b9c00b868a69f2ef31594921772e2917a0555352003b663aa2f7c0aa43133921",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_latent_bridge.py",
+      "sha256": "f20c39aa3a1b95ae72eb8b97a4b410529452ef67c2fc42081f6681645836a3a9",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_lite.py",
+      "sha256": "caa8db89e39315901b7816fe8a4da78497b5155fa13cf8c459c01f3950fab1f2",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_lite_gate_b.py",
+      "sha256": "07859ed68273cad60b3994fad38cd353088832b108fdb883039778fad7efc3b9",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_losses.py",
+      "sha256": "3eb2d4eaeb58db747bd17ce6161712bbae43c8c51219b183e8f0efc3f3df8956",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_bridge.py",
+      "sha256": "0edc442f734618d6f16cffe8fe97b05eafc13cb4e6c1adf0cf5ef665e1e6cd20",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_cost_audit.py",
+      "sha256": "2d7d0e37011ddad82904edd3cf3614ac06a681cf7f4272365ba578a90c9ec960",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_exception_canary.py",
+      "sha256": "677b784f4c6e065e3ced2810ae9da9aaa0ee44c604c3fe0ab09be51131ff8696",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_exception_canary_operations.py",
+      "sha256": "42348ac86b6916ef6183d377243bf294c16eacfa513938a703eded8ac88a5b2f",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_exception_canary_runtime.py",
+      "sha256": "cb403274fee52a7fcab9e10fef0fa6f91919bb783026b9b32670160bc0698cb3",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_foundation_builder_parity.py",
+      "sha256": "ff42c52fc99a59525bc76e481771e4b3fd8e29af3a5b0569057223311b140b1a",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_foundation_checkpoint.py",
+      "sha256": "1c797f76518446baae4cd82659e466101d461e009e438ecd0bfd6213b1d20811",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_foundation_diagnostic.py",
+      "sha256": "bfacb6ab17873a372a204b14b90c83f8eea4b42939fd75987e7bf29e670dc6c6",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_long60_evidence.py",
+      "sha256": "ef202ae5418d98b7c19085a1b4a56b04fefc16bedb53b4d55433918ff6bcc05b",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_long_context_canary.py",
+      "sha256": "f4c35a5af1af9525fa0c3157e05b9c3206c5586e0586b7bb3c37e67b98c28185",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_media.py",
+      "sha256": "1b3869678db62e84f9df81d5d31274e8cf40fce8017196b59c0738049d1c7152",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_n128_comfy_app.py",
+      "sha256": "ebbb3103558c33c0d9a90b6b1ff9c14018462b3ed34dc638b7fe4da73428580e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_n128_evidence.py",
+      "sha256": "ad2f0e4ae5fa5240280629deedd8cc47d65adebff32b19547ec61cfe0c90500d",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_n128_guide_memory.py",
+      "sha256": "d28e1c24d659efdf830a5bd45ce6b0406e959a1af20cef619a6f21a151a5f316",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_n128_materializer.py",
+      "sha256": "58a9d651b3b770312bd8b283f8baa10fe49d46ff6dc9f642373f85556c21d2f2",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_n128_memory_bundle.py",
+      "sha256": "a36407cf1ee59a2ec042160a26f1326721c479a324661d69453a301c07d5244c",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_n128_memory_refresh_app.py",
+      "sha256": "fc7823b1bb54a9f6441128999f922b3dea03ad104f4c800a46a6684814ab4a89",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_n128_runtime.py",
+      "sha256": "d3d6dd1dcde130679d589d9b04410e649bc52f37a3047be1e7a92f1272b9749d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_probe.py",
+      "sha256": "b784da174c1c42351d4c458a994488918a80f63fa826c4a552624a4dbcfd4638",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_probe_cli.py",
+      "sha256": "d065d2a44afedf2c3c5e3c34b7b086bd04cc55c91e5d58e91f297014de99c590",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_probe_media.py",
+      "sha256": "7a9f4b9e8204a26e8d247864977d9a3d78f27611b32fe2ec8cf6d6d6e66ce7d7",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_probe_statistics.py",
+      "sha256": "b04f546d88ddc2c654fbdf8fbd02349e5c80f07cf15e8c3d397c51f2d4b7ea5c",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_cli.py",
+      "sha256": "9a175e06ffe4436679999994c6be0f8cd41aed0aac214a87286d16e6534da6e8",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_confirmatory_forge.py",
+      "sha256": "48411fa5f13723c1a8c57a1cd294dc63a988ae27d2a9ed243b58fcd9411dc69b",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_confirmatory_runtime.py",
+      "sha256": "e76a9ff0a60a9ed4725e9ff24281f5947c36186de76a52bac9e54fa553856446",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_file_io.py",
+      "sha256": "bd2c865b03e38d686f47b17c528cba54832fefa4fc456ce736c129d9a0c20982",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_forge.py",
+      "sha256": "ecdb7f318a8160c2225189e1ee8b250610db51ef9a0d05603ddd2cf3dbc63756",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_generation.py",
+      "sha256": "a1df9bd6d67e3702e8ee830819ee54ec51443e67d4a1090cce47c27960607eff",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_generation_dispatch.py",
+      "sha256": "bb2bfa6796b29be42377bbc9ba526993cad7934b29fe5d3719e62c11d7faa2da",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_operations.py",
+      "sha256": "95748ec60677dfa62adb444abb6d76107603ee5d7eec085579f70b96ceb9052b",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_protocol.py",
+      "sha256": "5535f255889eb72cffc43a4a201189f81b21543db50984016bc2dbc905b42ddf",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_review.py",
+      "sha256": "c0735e43d5005c6a2ce5d4ae42613cd67aba8ff87de74e37b5cd0ce0fba83343",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_review_dispatch.py",
+      "sha256": "b9c0dbcd44e551798b2789bf37e768ef4a398a2b5e49c8ed46c734ae7cf5a28d",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_runtime.py",
+      "sha256": "563c5dc9aa364ac4de456000e242357e8ab364fa74a2d5bc23f929ee8bcabcab",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_runtime_equivalence.py",
+      "sha256": "dd74b52c775952baf91f7585c6079b2e85d1def98f76081a85b6102c150a8423",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_scenes.py",
+      "sha256": "2ccc95308157c9876292381de210b664aba748a9f8a472c6b180a5ed4cc09e42",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_ltx_quality_statistics.py",
+      "sha256": "17ef7ed3c85469fdbeef939834568bc4f064ce8675be8144d191a96ec678b10e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_ltx_runtime.py",
+      "sha256": "1dc146b2cea2f5d762b24383596b1c0b2effc7a2449dd855af0833aaef3c7d1d",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_media_probe.py",
+      "sha256": "555974495197885048d86dbf04f369f32a26a31397c3d3b86578253e089b9ecf",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_methods.py",
+      "sha256": "70b89b98b144cd6955588553edbe557db93e4d09eaea7ee0afcc4467781b1340",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_metrics.py",
+      "sha256": "f377e3949382f06adaccf7ea5a43958d5283d4291abb6ef27604e3c0ac678832",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_minimax_h3_memory.py",
+      "sha256": "7f55f25720247fdd03f10572059ee7aeff47a1edb47a7d8f297ec6b0c5c84d77",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_minimax_h3_training.py",
+      "sha256": "8aed30a97dbd6e7cfd070f5c8842e6725df3e5bfce79cdee431cbe8b575711dd",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_n128_visual_memory_bundle.py",
+      "sha256": "8bcae5662da3bd4faedbb9564543fbf818ac5e7f941dd2724d3878c88aca4d4e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_orchestrate.py",
+      "sha256": "0a39009e870a760ca33f3dfd9cf246062008b7c8e39ca1b484807754961cecac",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_poc.py",
+      "sha256": "69a8994d6c8c9b9394066dc1db1a9119afba25a113035a1b5bc1a397010df3b3",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_poc_cli.py",
+      "sha256": "a085b0abaaee1784028e3222f8ccf598169c967ea94cac2174d6c89892057ea9",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_production_cli.py",
+      "sha256": "da0fdda6b13075a2d1656b3f0026a44a3359850c675530d1221cf5536c99d004",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_production_completion.py",
+      "sha256": "358ce17cb2963e5b2a61fef93cea902e12af5bbb91cce3a41acf8a4ba23b028e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_production_launch.py",
+      "sha256": "bc9b587aad0c1f587db26b735fb9bb2bdac6ed1f6a85a980933e8d1a57f255c1",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_production_operations.py",
+      "sha256": "4efc3d08b2a7e038ad222c3e615a417e146fb7501fb91f8272ac482486eca6da",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_production_receipts.py",
+      "sha256": "87dba859df3612869f885d8d334e56bdddf0ae062d0092bcdca3de302bd2ab66",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_production_runtime.py",
+      "sha256": "ed25b5c74585b83da22821690747229ca469e57e98d8ba134283338d022cfc3a",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_profile_runtime.py",
+      "sha256": "933bcc92fab718bbca087510a67136d8077a7d029f995b1681c69784076ef9e3",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_promotion_launcher.py",
+      "sha256": "cf1758f886325e6ad28d053d94a81aeed368b19e76af3d74b58d30189de5c707",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_public_api.py",
+      "sha256": "374c7c1219bbbb36afd04c2251ade7e07bec24d4fd503cd11da5ce9b119ab68e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_readiness.py",
+      "sha256": "f0d0e572b28cb826a5dbdc7e82c21351116bd18b770c1de9557f383946633796",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_report.py",
+      "sha256": "18342438a9b54e5f0245896efab7c9bcc62c95dd58d11ddc17274d11a477aa05",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_runtime_io.py",
+      "sha256": "602702614df7ce9202bfc1a8131cc91144092b887689d3fba2578d09ee0e16ef",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_secure_filesystem.py",
+      "sha256": "4cdca849431007028eb588708889f481dc77142b6d82f1a9a8583a0d925e53b7",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_selection.py",
+      "sha256": "9c90c6587e51c840add28ff48e229be0d02a3a33f76acffac22ed6a00562ed2a",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_snapshot.py",
+      "sha256": "e970f6e57cfc3f397ad012295a0b2cb8c0e4655fc8e01e1615211c15af60dc2a",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_source_deployment.py",
+      "sha256": "027d3dd5ec4fbd145af23bed1ed9d9d9a154f3293d82e194dd150815a11fbd2d",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_state.py",
+      "sha256": "74dd5b6e2b6051ca93ad336700649ca3a1da579aff886db5c145b953d551c989",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_attempts.py",
+      "sha256": "0fd81ca2cc0dc8dbf1f17fff94879be588f20ad663205f3cefd7a2f896489404",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_contracts.py",
+      "sha256": "ca01cb83f7a93b08e81926c6be857a4ee1267557db91aec77608dbbf48d60b3e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_language.py",
+      "sha256": "74abf3ad641eb3395bba22dcb5650f0274ad3d89a88557ce3757bc6e489be4bc",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_memory.py",
+      "sha256": "3ac67cbfdff743fe846df4b65c06a8c0f0bdcde9d857aabd0b44438f0730f537",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_memory_backend.py",
+      "sha256": "e0b7f60db3fd0785a59744532ff6c9058598b30f5ced37bf752495f71f0ba5e2",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_native_archive.py",
+      "sha256": "7df0ac459c8f328758c18965cf0a56a012b14352fe93e9ab5e7bdb24f4487098",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_observations.py",
+      "sha256": "5623e45c51e925c89cd5bcd147a66a07e799fb3eb4484c7acd71137554d35364",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_product_contracts.py",
+      "sha256": "1754d0d9731dcf46de05533e590c585c37af11f5ce5f7497187a56add6b71090",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_prompt.py",
+      "sha256": "d52570cabe366dbad7dc3e34568f64c56c225d902ec9f372b5c24a86b28ae083",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_recall.py",
+      "sha256": "25e8cf609aac1da745b461030c09a681cbf838537f6f7949a99dcbb9dbcdf15f",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_service.py",
+      "sha256": "9564e054d354db4f9015b15b8d655c2381ad0c132cfb1d5369760cae7467ce51",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_story_store.py",
+      "sha256": "a57bed679137518d9ac5b3e354e0cd446390d8e9e9e1d9bda10abfe2568a378e",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_streaming_long_context.py",
+      "sha256": "f0094e2ee591fbbde2a45c12e59167e5f498a60e7e1793462a106bf59925ec64",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_synthetic_e2e.py",
+      "sha256": "c75cb32883e39a09d4406b160695f95bad2db138c12703139aeedd9acc2e3abd",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_systems.py",
+      "sha256": "ad973343f57f28493a8ec6c8507950c7337414fa2175ecd4b9853874c55c3f8b",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_teacher.py",
+      "sha256": "b74299601dccfacd92c38b135776d76c7ca3965e5613705c9a7510284d17eaa9",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_training.py",
+      "sha256": "2f21a4e88112e1c4e1be9adbaf834ee1ed90a83e67999f395f3b972ea618905d",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_verifier_kernel_compat.py",
+      "sha256": "edf182db4049ecc81ff6db23f2553b510edde64468e2a768a78125c953de3982",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_verifier_preflight.py",
+      "sha256": "903ae23f76b32560c4b03f0010c83232211b09a1fd3b41d7a538cfd3344e3841",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_duetx_visual_mvp_integration.py",
+      "sha256": "aee8ed0760f2310575a19229bb55cd48b8e839513707b04dbd3abeb5f4f6e2b1",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_windows_binary_descriptors.py",
+      "sha256": "c6099c345fffee5623f585acabd3817dfbb407c53ecb49561b167b85d6c6e7b0",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_duetx_windows_bootstrap.py",
+      "sha256": "39524348d6058f67301d2b5f704f9ea6afae32bc715d96cbd895933aacfd70dd",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_eurosat_acquire.py",
+      "sha256": "0c8e20d13977300bef85f286ffc12a408db357d79a576d63142781d5660ff6ac",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_eurosat_aggregate.py",
+      "sha256": "b6ddd30849333b575d632edb59e5a478deaca103e04182bbd5ec958d5036b4a4",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_eurosat_data.py",
+      "sha256": "8da5d792bfd4d9822d71f86d79000a5d9352cc338a489aa1f29c122aff1aed28",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_eurosat_experiment.py",
+      "sha256": "4f93f8bfbceff00f89ade01de2b75a4f6e4df5072ff8664bdae7a26aed7b71a7",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_eurosat_metrics.py",
+      "sha256": "15876e920a62f38ede28a46e7587f437b1502291cb81a8df0e6b9d85761be497",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_eurosat_model.py",
+      "sha256": "ba4857bda9daa7c7bb2338f92336aea9fea3b0037738890519651ec932ebd835",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_eurosat_runpod_scripts.py",
+      "sha256": "c8cbc8e3c2f2a1ccefabf69d580018b4f02b12e8edc922ddaae75c6c6c626f3e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_experiment_gate.py",
+      "sha256": "717a424e6524ab486a96d31b51d56ee175451f8ea7423097a7143bf5601179c4",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_foleyset.py",
+      "sha256": "a4195c863c5e320614e2f57fa59e215febfce0b75548376f01d6c5fd391b7f2e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_foundation.py",
+      "sha256": "d909d00b9d16cc71eb7e7fc5fd622b45f52f1b7f44674ea6ebb8a09bbdc3e539",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_foundation_control.py",
+      "sha256": "fab8c4fda326b486fdaed27a835df1c910ed6d63441683694e8e2f4d9fc295c8",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_foundation_inference.py",
+      "sha256": "cd754cd5b550a70b25ff8786a66cff55c4306ed4ca9fe35dcbae341da17ae324",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_freesound.py",
+      "sha256": "5aa3c4a14d95654159f6955cdd7f2e1e605c48a6e5f71ba789b829b8f0af927f",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_fsd50k_subset.py",
+      "sha256": "ef769d1287b9008fe803680b6a698fbab45defa7a24a66675777b4acdd43972e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_fusion.py",
+      "sha256": "0dfd010e4c621d2290a25640b374a25e7726814c4acabd37636474df283794f1",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "tests/test_hotc_data.py",
+      "sha256": "08419d33878c7577c4cb7d1e866aa0a878bd50f574dc090eb71d73108f3becc0",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_hotc_helios.py",
+      "sha256": "02900897aceef722521a4edec0840e55d832391e8a8c74aebe2848af3fadfa14",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_hotc_metrics.py",
+      "sha256": "b1c169d9b866360ba8ea17aa76671093818604ee1dae93725750378e59b00edc",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_hotc_tracker.py",
+      "sha256": "7947789c847dbd65863f69741189aad89fed04e2b35c1ececcef55690be614fe",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_hub.py",
+      "sha256": "09d6fd7117e460700cebff4b98f867c60d0bc9e5d5f5f1c9cf72f3a3398216fa",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_inference.py",
+      "sha256": "f06d68ce86bc70b04c4f3c0cda0d06a78273cfaa7918c380b26ff4b9df93992e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_listening.py",
+      "sha256": "9bbd8c220d981f07636b248179ba1468347904d6ba90f0d650d8ce8a64d4c9ee",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_model.py",
+      "sha256": "b111762e222d527bc0da6e3f4d70b563699f8f81016922df7c895af9ea85fa68",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_prompts.py",
+      "sha256": "7b253fd6514ba9ab33c821dcd6e7ecf26c20a383809d3ffcacc1e7c537e53ad8",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_quality.py",
+      "sha256": "5fa1f993b03840ce182ea9d94bf48527624955be3b3b3e2edbc52e879f3aecb3",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_real_sfx_fusion_proof.py",
+      "sha256": "48077468b5fc3e8fb1b9cd0376a0739e7dc45cc672c4b675294add6cb8ee4c43",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_sa3_fsd50k.py",
+      "sha256": "ee0312a648b9c2d10ec2f8c46bd75079f0ade4e5ddab37073104ba35440b0b34",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_sa3_pairs.py",
+      "sha256": "bcecc8a6d34b53cd8d08bb281932ebf21bdee0fa01b9593944161519b10b5333",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_salinas.py",
+      "sha256": "9cfc290accd3ffda212123a68719d88165624eb7b1527eb19c9f87404c57ab56",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_sample.py",
+      "sha256": "bc841196392abdb8b413ca6b4c2a5698e1c8816f28a20ea0b573c4d8a8045743",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_sfx_fusion_proof.py",
+      "sha256": "4775f27bdb82755e70599dac4e8670a36f2a605b3735c428bd6f2776f65eacf4",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_surface_eval.py",
+      "sha256": "ecb8ade4bd534d17c4e8c21ff83e1cf96e8352c1e8754c8de3781ff34da83900",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_tactile_benchmark.py",
+      "sha256": "6919a3dcee105862e94f39b44408c11e40223175d9648ccae6f2bcf1df97d2c7",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_tactile_data_audit.py",
+      "sha256": "e2a6e3dd1e1c61eebec138fb2e73bf2368dd7829d0d458b024f5ff3919464a26",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_train_minimax_h3_reference_attention.py",
+      "sha256": "da9207e21832ad090a89020e6080066232dfd890681e207f11738668bb8db04e",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "tests/test_v3_policy.py",
+      "sha256": "330470375da92b2049e57963240ff2f69b585da300f675b6965ce2c3da17a3b5",
+      "action": "omit",
+      "reason": "Exercises omitted research surface"
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "2c22b71b073b36eb63a32c78511c08f71482c23c3c1202508918a1c4e472deef",
+      "action": "retain",
+      "reason": "Product runtime, compatibility dependency, test, example, or supporting documentation"
+    },
+    {
+      "path": "workflows/duetx/decision1_api.json",
+      "sha256": "9aff8ad9df49cfaa1b823b80cb78853330c6b3c7b1c9674bcb036c0325681dd4",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "workflows/duetx/decision1_production_api.json",
+      "sha256": "846a61da2364259a88b8fb68137f5546c9b978c859e1a5badb654fba6fcfcc15",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "workflows/duetx/ltx23_native_i2v_121_api.json",
+      "sha256": "e5776fe1d96b46dc2b4ee66d120cd4f1bce90c6ebc6d5c50a91cf704277812c9",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    },
+    {
+      "path": "workflows/duetx/ltx23_native_i2v_two_guide_121_api.json",
+      "sha256": "612d4d6d310030f4a5f3c77766697ece07169aea3399c25c8a0de2402ca11d7a",
+      "action": "omit",
+      "reason": "Research publication, experiment configuration, or remote launch tooling"
+    }
+  ],
+  "merged_pull_requests": [
+    {
+      "number": 8,
+      "head": "65dfb7db079d2e00810b1402abe43c0dcf51f91d",
+      "merge_commit": "f1eeff2a146ec57b07bf27e1afed5b33aef55bc7",
+      "url": "https://github.com/skishore23/duet/pull/8"
+    },
+    {
+      "number": 7,
+      "head": "f1eeff2a146ec57b07bf27e1afed5b33aef55bc7",
+      "merge_commit": "5a27714426f949f878e8a3178b908d8de6625550",
+      "url": "https://github.com/skishore23/duet/pull/7"
+    },
+    {
+      "number": 6,
+      "head": "5a27714426f949f878e8a3178b908d8de6625550",
+      "merge_commit": "0d8004e0ebb909f7eb471cb457adacdc28b7e3aa",
+      "url": "https://github.com/skishore23/duet/pull/6"
+    },
+    {
+      "number": 5,
+      "head": "0d8004e0ebb909f7eb471cb457adacdc28b7e3aa",
+      "merge_commit": "b2e93d805b71bedcc2099c8d60b0887d42a149d7",
+      "url": "https://github.com/skishore23/duet/pull/5"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "library": {
+    "project_name": "The Open Door",
+    "references": [
+      {
+        "name": "Ada",
+        "role": "Character",
+        "file": "ada.png",
+        "note": "Keep this person and wardrobe unchanged."
+      }
+    ]
+  },
+  "shots": [
+    {
+      "world": "doorway.png",
+      "variation": 101
+    },
+    {
+      "world": null,
+      "variation": 102,
+      "intent": "Next Shot"
+    }
+  ],
+  "audio": []
+}

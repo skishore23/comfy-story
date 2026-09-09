@@ -1,0 +1,43 @@
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+
+# Tooling and editor state
+.coverage
+.coverage.*
+.DS_Store
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.idea/
+.vscode/
+/.worktrees/
+/.superpowers/brainstorm/
+/Duet/.worktrees/
+
+# Training data, checkpoints, samples, and experiment logs
+/artifacts/
+/assets/
+/checkpoints/
+/data/
+/output/
+/outputs/
+/runs/
+/wandb/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.wav
+*.flac

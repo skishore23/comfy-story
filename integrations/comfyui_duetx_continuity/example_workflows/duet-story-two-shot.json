@@ -1,0 +1,75 @@
+{
+  "last_node_id": 20,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 10,
+      "type": "DuetStory",
+      "pos": [80, 120],
+      "size": [450, 1080],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "video", "type": "VIDEO", "links": null, "slot_index": 0},
+        {"name": "last_frame", "type": "IMAGE", "links": [1], "slot_index": 1},
+        {"name": "story_state", "type": "DUET_STORY", "links": [2], "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "DuetStory"},
+      "widgets_values": [
+        "Start Story",
+        "{\"project_name\":\"Coast Story\",\"references\":[{\"file\":\"maya.png\",\"name\":\"Maya\",\"note\":\"vivid asymmetric red scarf\",\"role\":\"Character\"},{\"file\":\"wooden-chest.png\",\"name\":\"WoodenChest\",\"note\":\"marked wooden lid\",\"role\":\"Prop\"},{\"file\":\"coast.png\",\"name\":\"Coast\",\"note\":\"windswept coast\",\"role\":\"Location\"}]}",
+        "Native",
+        "coast.png",
+        "@Maya opens @WoodenChest on the windswept coast.",
+        "5 seconds",
+        101,
+        "",
+        "Automatic",
+        "Native res_multistep",
+        "[]"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "DuetStory",
+      "pos": [640, 120],
+      "size": [450, 1080],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "Previous Story", "type": "DUET_STORY", "link": 2},
+        {"name": "Previous Frame", "type": "IMAGE", "link": 1}
+      ],
+      "outputs": [
+        {"name": "video", "type": "VIDEO", "links": null, "slot_index": 0},
+        {"name": "last_frame", "type": "IMAGE", "links": null, "slot_index": 1},
+        {"name": "story_state", "type": "DUET_STORY", "links": null, "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "DuetStory"},
+      "widgets_values": [
+        "Continue This Shot",
+        "{\"project_name\":\"Coast Story\",\"references\":[{\"file\":\"maya.png\",\"name\":\"Maya\",\"note\":\"vivid asymmetric red scarf\",\"role\":\"Character\"},{\"file\":\"wooden-chest.png\",\"name\":\"WoodenChest\",\"note\":\"marked wooden lid\",\"role\":\"Prop\"},{\"file\":\"coast.png\",\"name\":\"Coast\",\"note\":\"windswept coast\",\"role\":\"Location\"}]}",
+        "Native",
+        "None",
+        "@Maya closes @WoodenChest and turns toward the sea.",
+        "5 seconds",
+        202,
+        "",
+        "Automatic",
+        "Native res_multistep",
+        "[]"
+      ]
+    }
+  ],
+  "links": [
+    [1, 10, 1, 20, 1, "IMAGE"],
+    [2, 10, 2, 20, 0, "DUET_STORY"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {"ds": {"scale": 0.75, "offset": [0, 0]}},
+  "version": 0.4
+}
