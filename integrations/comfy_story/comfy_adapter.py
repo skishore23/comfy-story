@@ -23,6 +23,7 @@ from comfy_story.h3_acceleration import CACHE_CONFIGURATION, NVFP4_MODEL
 from comfy_story.h3_prompt import H3_PROMPT_FORMAT, H3_PROMPT_PROTOCOL, compile_h3_prompt
 from comfy_story.h3_quality import FULL_HD_CONFIGURATION, UPSCALER_MODEL
 from comfy_story.h3_sol_attention import SOL_CONFIGURATION
+from comfy_story.memory.settings import configured_memory
 from comfy_story.samplers import StorySampler
 from comfy_story.story_attempts import StoryAttemptIndex
 from comfy_story.story_contracts import (
@@ -546,6 +547,13 @@ def _bind_execution(
     assets = _generation_assets(configuration)
     if "lora" in configuration:
         assets["lora"] = _generation_asset_digest("loras", str(configuration["lora"]))
+    memory = request.associative_memory
+    if memory is not None and (
+        assets["model"] != memory.foundation_sha256 or assets["video_vae"] != memory.vae_sha256
+    ):
+        raise ValueError(
+            "associative checkpoint foundation/VAE does not match the generation models"
+        )
     binding = {
         "format": "comfy-story-execution-v1",
         "generation_configuration": configuration,
@@ -570,6 +578,8 @@ def _bind_execution(
         "memory_runtime": NATIVE_REFERENCE_RUNTIME_SHA256,
         "native_capture_policy": NATIVE_RGB_CAPTURE_POLICY_SHA256,
     }
+    if memory is not None:
+        binding["associative_memory"] = memory.binding()
     if prompt_protocol is not None:
         binding["prompt_compiler"] = prompt_protocol
     if request.shot_state_evidence:
@@ -609,6 +619,9 @@ def recover_node_generation(
         state,
         model_configuration_sha256=request.model_configuration_sha256,
     )
+    from comfy_story.memory.service import verify_memory_revision
+
+    verify_memory_revision(loaded, request.associative_memory, store)
     if loaded.shot_metadata.get("execution_sha256") != request.execution_sha256:
         raise ValueError("Completed shot does not match this generation request")
     video_digest = str(loaded.shot_metadata["video_sha256"])
@@ -696,6 +709,7 @@ def prepare_node_generation(inputs: dict[str, Any]) -> PreparedNodeGeneration:
         project_id = state.project_id
         branch_id = state.branch_id
     request = StoryGenerationRequest(
+        associative_memory=configured_memory(),
         intent=intent,
         project_id=project_id,
         branch_id=branch_id,
@@ -808,6 +822,7 @@ def commit_node_generation(
     decoded_images: torch.Tensor,
     saved_video: object,
     filename_prefix: str = "comfy_story/shot",
+    memory_vae: object | None = None,
 ) -> NativeStoryCommitResult:
     """Publish shot evidence after MiniMax decoding and saving complete."""
     video = _read_regular(
@@ -817,12 +832,25 @@ def commit_node_generation(
     digest = hashlib.sha256(video).hexdigest()
     store = StoryProjectStore(_story_root())
     store.put_asset(video)
-    native_result = commit_native_story_generation(
-        StoryCommitRequest(
-            prepared, decoded_images, digest, f"comfy-evidence://story/sha256/{digest}"
-        ),
-        store=store,
-    )
+    memory = prepared.request.associative_memory
+    runtime = None
+    try:
+        if memory is not None:
+            from .memory_adapter import ComfyMiniMaxH3Codec
+
+            # Recheck the pinned checkpoint at commit; a mid-render file change
+            # cannot publish a revision under the earlier execution identity.
+            runtime = memory.load(ComfyMiniMaxH3Codec(memory_vae))
+        native_result = commit_native_story_generation(
+            StoryCommitRequest(
+                prepared, decoded_images, digest, f"comfy-evidence://story/sha256/{digest}"
+            ),
+            store=store,
+            memory_runtime=runtime,
+        )
+    finally:
+        if runtime is not None:
+            runtime.close()
     if prepared.request.execution_sha256 is not None:
         StoryAttemptIndex(store.root).publish(
             prepared.request.execution_sha256, native_result.state

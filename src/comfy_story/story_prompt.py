@@ -53,7 +53,7 @@ def structured_reference_prompt(prepared: PreparedStoryGeneration) -> str:
                 retention.append(
                     f"{label}: partially_preserved - retain context, not its old framing or action."
                 )
-        elif role == "inclusive-core":
+        elif role in {"inclusive-core", "associative-history"}:
             anchors.append(f"{label} supplies historical visual context, not a requested shot.")
             retention.append(
                 f"{label}: partially_preserved - retain identity; "

@@ -2,6 +2,8 @@
 
 Build a film in ComfyUI with a reusable cast, named visual references, shot planning, and saved
 Story State. Generate a first cut, review individual takes, change a shot, and export the result.
+An optional checkpoint-backed associative runtime adds ordered dense history and persistent fusion
+trees; see [memory configuration](docs/getting-started.md#associative-memory) for setup and limits.
 
 ## Get started
 

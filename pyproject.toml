@@ -1,6 +1,6 @@
 [project]
 name = "comfy-story"
-version = "0.4.0"
+version = "0.5.0"
 description = "Reusable cast, story continuity and film production for ComfyUI and MiniMax H3."
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -32,6 +32,7 @@ Issues = "https://github.com/skishore23/comfy-story/issues"
 [project.scripts]
 comfy-story-film = "comfy_story.film_runner:main"
 comfy-story-audit = "comfy_story.film_audit_cli:main"
+comfy-story-memory = "comfy_story.memory.inspect:main"
 
 [build-system]
 requires = ["hatchling"]

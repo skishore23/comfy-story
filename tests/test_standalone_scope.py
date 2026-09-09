@@ -66,6 +66,7 @@ def test_only_product_console_commands_are_installed() -> None:
     assert set(project["scripts"]) == {
         "comfy-story-film",
         "comfy-story-audit",
+        "comfy-story-memory",
     }
     for value in project["scripts"].values():
         module, name = value.split(":")
@@ -103,6 +104,10 @@ def test_local_imported_symbols_exist_without_host_test_stubs() -> None:
                 target = ROOT / "src" / (node.module.replace(".", "/") + ".py")
             else:
                 continue
+            if target not in symbols:
+                package = target.with_suffix("") / "__init__.py"
+                if package in symbols:
+                    target = package
             assert target in symbols, f"{path.name} imports missing {target}"
             for alias in node.names:
                 assert alias.name in symbols[target], (

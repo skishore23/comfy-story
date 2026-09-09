@@ -130,7 +130,7 @@ def compile_h3_prompt(
             else:
                 definitions.append(f"{picture} supplies earlier scene context.")
                 retention.append(f"{picture}: weak_reference - scene context, not the old action.")
-        elif role == "inclusive-core":
+        elif role in {"inclusive-core", "associative-history"}:
             definitions.append(f"{picture} supplies historical visual context.")
             retention.append(f"{picture}: weak_reference - recognizable details, not old events.")
         else:

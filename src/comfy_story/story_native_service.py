@@ -9,6 +9,8 @@ import numpy as np
 import torch
 from PIL import Image
 
+from comfy_story.memory.runtime import MiniMaxH3StoryRuntime
+from comfy_story.memory.service import append_associative_memory
 from comfy_story.story_contracts import ComfyStoryStateRef, canonical_story_json
 from comfy_story.story_native_archive import (
     NativeArchiveRevision,
@@ -65,6 +67,7 @@ def commit_native_story_generation(
     request: StoryCommitRequest,
     *,
     store: StoryProjectStore,
+    memory_runtime: MiniMaxH3StoryRuntime | None = None,
 ) -> NativeStoryCommitResult:
     prepared = request.prepared
     settings = prepared.request
@@ -138,6 +141,15 @@ def commit_native_story_generation(
         "declared_scene_entities": list(entity_ids),
         "render_profile": settings.render_profile,
     }
+    if settings.associative_memory is not None:
+        if memory_runtime is None:
+            raise ValueError("associative memory runtime is required before publishing a shot")
+        metadata["memory_backend"] = "minimax-h3-associative"
+        metadata["associative_memory"] = append_associative_memory(
+            prepared, packet, images, store, memory_runtime
+        )
+    elif memory_runtime is not None:
+        raise ValueError("native memory must not receive an associative runtime")
     receipt = NativeReferenceReceipt(
         execution,
         _sha256(settings.prompt.strip().encode()),

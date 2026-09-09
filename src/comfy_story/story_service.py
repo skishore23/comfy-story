@@ -11,6 +11,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from comfy_story.memory.settings import MemoryConfiguration
 from comfy_story.samplers import (
     StorySampler,
 )
@@ -111,6 +112,7 @@ class StoryGenerationRequest:
     shot_length_seconds: int
     variation: int
     model_configuration_sha256: str
+    associative_memory: MemoryConfiguration | None = None
     reference_policy: str = "Automatic"
     sampler: StorySampler = StorySampler.NATIVE_RES_MULTISTEP
     memory_commands: tuple[StoryMemoryCommand, ...] = ()
@@ -482,9 +484,12 @@ def prepare_story_generation(
         if current_source is None
         else validate_comfy_images(current_source, field="current-or-starting-frame")[:1]
     )
-    return _prepare_native_references(
+    from comfy_story.memory.service import prepare_memory_guides
+
+    prepared = _prepare_native_references(
         request, store=store, parent=parent, library=library, current=current
     )
+    return prepare_memory_guides(prepared, store)
 
 
 @dataclass(frozen=True, slots=True)

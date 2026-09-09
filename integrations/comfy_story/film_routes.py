@@ -28,6 +28,7 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
     import folder_paths
 
     from comfy_story.film_bundle import _asset_path, _slots
+    from comfy_story.memory.settings import InspectionCodec, configured_memory
 
     from .comfy_adapter import (
         _generation_asset_digest,
@@ -36,6 +37,10 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
         render_configuration,
     )
 
+    memory = configured_memory()
+    if memory is not None:
+        runtime = memory.load(InspectionCodec())
+        runtime.close()
     inputs = recipe["inputs"]
     staging = {}
     if any(row.get("opening_prompt", "").strip() for row in inputs["shots_by_id"].values()):
@@ -57,9 +62,13 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
             profile, _story_sampler(row.get("sampler", "Native res_multistep"))
         )
         prefix = "" if profile == "Reference shot" else profile + ":"
-        models.update(
-            {prefix + key: value for key, value in _generation_assets(configuration).items()}
-        )
+        generation_assets = _generation_assets(configuration)
+        if memory is not None and (
+            generation_assets["model"] != memory.foundation_sha256
+            or generation_assets["video_vae"] != memory.vae_sha256
+        ):
+            raise ValueError("film models do not match the associative checkpoint foundation/VAE")
+        models.update({prefix + key: value for key, value in generation_assets.items()})
         if row.get("sampler") in {"Turbo 4-step", "Turbo 8-step"}:
             # Preserve historical keys while binding both adapters in a mixed-profile film.
             lora_key = "lora:turbo-8step" if row["sampler"] == "Turbo 8-step" else "lora"
@@ -105,9 +114,12 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
     ):
         for path in sorted(paths):
             implementation[label + "/" + path.relative_to(base).as_posix()] = file_digest(path)
+    from comfy_story.memory.settings import configured_memory
     from comfy_story.story_native_archive import NATIVE_REFERENCE_RUNTIME_SHA256
 
+    memory = configured_memory()
     return {
+        **({"associative_memory": memory.binding()} if memory is not None else {}),
         "model_files": models,
         **staging,
         "memory_runtime": NATIVE_REFERENCE_RUNTIME_SHA256,

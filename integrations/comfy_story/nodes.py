@@ -423,6 +423,11 @@ class ComfyStory(io.ComfyNode):
             "filename_prefix": "comfy_story/shot",
             "prepared": prepared.prepared,
         }
+        if (
+            getattr(getattr(prepared.prepared, "request", None), "associative_memory", None)
+            is not None
+        ):
+            commit_inputs["memory_vae"] = video_vae.out(0)
         commit_inputs["owner_node_id"] = owner_node_id
         committed = graph.node(
             "ComfyStoryCommit",
@@ -446,6 +451,7 @@ class ComfyStoryCommit(io.ComfyNode):
                 io.Video.Input("saved_video"),
                 io.String.Input("filename_prefix", default="comfy_story/shot"),
                 PreparedType.Input("prepared"),
+                io.Vae.Input("memory_vae", optional=True),
                 io.String.Input("owner_node_id", default="", optional=True),
             ],
             outputs=[
@@ -461,6 +467,7 @@ class ComfyStoryCommit(io.ComfyNode):
             decoded_images=inputs["decoded_images"],
             saved_video=inputs["saved_video"],
             filename_prefix=inputs["filename_prefix"],
+            memory_vae=inputs.get("memory_vae"),
         )
         owner_node_id = str(inputs.get("owner_node_id", ""))
         ui = (

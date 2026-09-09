@@ -1358,3 +1358,26 @@ def test_full_hd_identity_binds_upscaler_weights(
     config = adapter.render_configuration("Reference shot", StorySampler.FULL_HD_2PASS)
     assert adapter._generation_assets(config)["upscaler"] == "d" * 64
     assert ("latent_upscale_models", "minimax_h3_latent_upscaler_3d_fp16.safetensors") in requested
+
+
+def test_associative_graph_passes_the_generation_vae_to_commit(
+    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = importlib.import_module(f"{_MODULE}.nodes")
+    prepared = SimpleNamespace(
+        prepared=SimpleNamespace(request=SimpleNamespace(associative_memory=object())),
+        visual_guides=(_image(0.1),),
+        resolved_prompt="A shot",
+        frame_count=124,
+        variation=7,
+        sampler=StorySampler.NATIVE_RES_MULTISTEP,
+    )
+    monkeypatch.setattr(module, "prepare_node_generation", lambda inputs: prepared)
+    output = continuity_integration.ComfyStory.execute()
+    assert output.expand is not None
+    commit = next(row for row in output.expand.values() if row["class_type"] == "ComfyStoryCommit")
+    vae = next(key for key, row in output.expand.items() if row["class_type"] == "VAELoader")
+    assert commit["inputs"]["memory_vae"] == [vae, 0]
+    schema = continuity_integration.ComfyStoryCommit.define_schema()
+    field = next(field for field in schema.inputs if field.id == "memory_vae")
+    assert field.options["optional"] is True
