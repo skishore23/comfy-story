@@ -64,6 +64,8 @@ def test_project_http_save_conflict_resume_configuration_and_origin(
     soundtrack_reads = []
 
     def soundtrack(root: Path, name: str) -> dict[str, object]:
+        if name.startswith("story-audio-upload-") and (root / name).read_bytes() != b"test audio":
+            raise ValueError("could not inspect the uploaded soundtrack")
         soundtrack_reads.append((root, name))
         return {"path": name, "sha256": "a" * 64, "duration_ms": 5000}
 
@@ -117,6 +119,49 @@ def test_project_http_save_conflict_resume_configuration_and_origin(
             )
             assert response.status == 403
             assert len(soundtrack_reads) == 1
+            # File uploads get server-owned paths and are published only after validation.
+            form = FormData()
+            form.add_field("audio", b"test audio", filename="../../score.wav")
+            response = await client.post("/comfy/story/films/upload-soundtrack", data=form)
+            assert response.status == 200
+            uploaded = await response.json()
+            assert uploaded["path"].startswith("story-audio-")
+            assert "/" not in uploaded["path"]
+            assert (tmp_path / uploaded["path"]).read_bytes() == b"test audio"
+            assert not list(tmp_path.glob("story-audio-upload-*"))
+            assert runner.store.load("project") == saved
+            files_before = set(tmp_path.iterdir())
+            for filename, content, extra in [
+                ("score.wav", b"invalid audio", False),
+                ("score.txt", b"test audio", False),
+                ("score.wav", b"test audio", True),
+            ]:
+                form = FormData()
+                form.add_field("audio", content, filename=filename)
+                if extra:
+                    form.add_field("extra", b"test audio", filename="second.wav")
+                response = await client.post("/comfy/story/films/upload-soundtrack", data=form)
+                assert response.status == 400
+                assert set(tmp_path.iterdir()) == files_before
+            response = await client.post("/comfy/story/films/upload-soundtrack", json={})
+            assert response.status == 400
+            form = FormData()
+            form.add_field("audio", b"test audio", filename="score.wav")
+            response = await client.post(
+                "/comfy/story/films/upload-soundtrack",
+                data=form,
+                headers={"Origin": "https://unrelated.example"},
+            )
+            assert response.status == 403
+            assert set(tmp_path.iterdir()) == files_before
+            with monkeypatch.context() as upload_limit:
+                upload_limit.setattr(module, "_MAX_SOUNDTRACK_UPLOAD", 4)
+                form = FormData()
+                form.add_field("audio", b"too much audio", filename="score.wav")
+                response = await client.post("/comfy/story/films/upload-soundtrack", data=form)
+                assert response.status == 400
+                assert "exceeds" in (await response.json())["error"]
+                assert set(tmp_path.iterdir()) == files_before
             response = await client.get(
                 "/comfy/story/films/project/inputs-bundle?revision=" + saved["revision"]
             )

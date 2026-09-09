@@ -14,13 +14,15 @@ from urllib.parse import urlsplit
 from aiohttp import BodyPartReader, web
 
 from comfy_story.film_audio_asset import inspect_soundtrack
-from comfy_story.film_bundle import export_film_inputs, import_film_inputs
+from comfy_story.film_bundle import _asset_path, export_film_inputs, import_film_inputs
 from comfy_story.film_export import file_digest
 from comfy_story.film_io import film_plan_from_json
 from comfy_story.film_project import FilmProjectConflict, FilmProjectStore
 from comfy_story.film_project_runs import FilmProjectRunner
 
 from .comfy_adapter import _story_root
+
+_MAX_SOUNDTRACK_UPLOAD = 256 * 1024 * 1024
 
 
 def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
@@ -148,6 +150,37 @@ class FilmRoutes:
             )
         return self.runner
 
+    async def upload_soundtrack(
+        self, request: web.Request, service: FilmProjectRunner
+    ) -> web.Response:
+        """Validate a bounded upload before publishing it under a new server-owned name."""
+        if not request.content_type.startswith("multipart/"):
+            raise ValueError("upload one audio file as multipart form data")
+        reader = await request.multipart()
+        part = await reader.next()
+        if not isinstance(part, BodyPartReader) or part.name != "audio" or not part.filename:
+            raise ValueError("choose one soundtrack file")
+        root = service.comfy_input.resolve()
+        suffix = Path(part.filename).suffix.lower()
+        # Only the suffix is used. Client names never choose an output path or overwrite a file.
+        final = _asset_path(root, f"story-audio-{uuid.uuid4().hex}{suffix}", "audio")
+        with tempfile.TemporaryDirectory(prefix="story-audio-upload-", dir=root) as temporary:
+            staged = Path(temporary) / ("audio" + suffix)
+            total = 0
+            with staged.open("wb") as output:
+                while chunk := await part.read_chunk(size=1024 * 1024):
+                    total += len(chunk)
+                    if total > _MAX_SOUNDTRACK_UPLOAD:
+                        raise ValueError("soundtrack upload exceeds 256 MiB")
+                    output.write(chunk)
+            if await reader.next() is not None:
+                raise ValueError("upload one soundtrack at a time")
+            metadata = await asyncio.to_thread(
+                inspect_soundtrack, root, staged.relative_to(root).as_posix()
+            )
+            os.link(staged, final)
+        return web.json_response({**metadata, "path": final.name})
+
     async def import_inputs(self, request: web.Request, service: FilmProjectRunner) -> web.Response:
         if not request.content_type.startswith("multipart/"):
             raise ValueError("upload a multipart film inputs bundle")
@@ -249,6 +282,8 @@ class FilmRoutes:
                 )
             if project_id is None and request.path.endswith("/import-inputs"):
                 return await self.import_inputs(request, service)
+            if project_id is None and request.path.endswith("/upload-soundtrack"):
+                return await self.upload_soundtrack(request, service)
             data = await request.json()
             if not isinstance(data, dict):
                 raise ValueError("film request must be an object")
@@ -306,6 +341,7 @@ def register_film_routes(server: Any) -> None:
     server.routes.post(root)(handler.handle)
     server.routes.post(root + "/import-inputs")(handler.handle)
     server.routes.post(root + "/soundtrack")(handler.handle)
+    server.routes.post(root + "/upload-soundtrack")(handler.handle)
     server.routes.get(root + "/{project_id}/inputs-bundle")(handler.handle)
     server.routes.get(root + "/{project_id}")(handler.handle)
     server.routes.put(root + "/{project_id}")(handler.handle)

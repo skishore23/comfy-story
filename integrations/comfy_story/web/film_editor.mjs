@@ -1,3 +1,5 @@
+import { filmEditorStyles } from "./film_editor_styles.mjs"
+
 // Project recipes are server-owned; this editor never selects or repairs generated takes.
 export function filmRunStage(run) {
   if (run.mode === 'first_cut' && run.phase === 'complete') return 'First cut ready to watch and edit'
@@ -21,6 +23,7 @@ export function filmRenderApproach(shot, settings) {
   const composition = shot.composition || 'Continue frame'
   if (profile === 'Animate frame' && composition === 'Continue frame' && settings.sampler !== 'SPEED Euler 2-stage') return 'Animate starting frame'
   if (profile === 'Reference shot' && composition === 'New composition') return 'Compose from references'
+  if (profile === 'Reference shot' && composition === 'Continue frame') return 'Continue with references'
   return 'Custom settings'
 }
 
@@ -35,6 +38,8 @@ export function setFilmRenderApproach(shot, settings, approach) {
     shot.composition = 'Continue frame'; settings.render_profile = 'Animate frame'
   } else if (approach === 'Compose from references') {
     shot.composition = 'New composition'; delete settings.render_profile
+  } else if (approach === 'Continue with references') {
+    shot.composition = 'Continue frame'; delete settings.render_profile
   } else if (approach !== 'Custom settings') throw new Error('Choose a supported render approach.')
 }
 
@@ -149,14 +154,16 @@ export async function openFilmEditor(api, node, values, document = window.docume
   const existing = document.getElementById('comfy-film-editor')
   if (existing) { existing.focus(); return }
   const dialog = document.createElement('dialog'); dialog.id = 'comfy-film-editor'
-  dialog.style.cssText = 'width:min(1160px,94vw);max-height:92vh;overflow:auto;background:#171922;color:#eee;border:1px solid #5c5475;border-radius:14px;padding:24px;font:14px system-ui'
+  dialog.setAttribute('aria-labelledby', 'comfy-film-title')
   const style = document.createElement('style')
-  style.textContent = '#comfy-film-editor input,#comfy-film-editor textarea,#comfy-film-editor select{box-sizing:border-box;width:100%;padding:8px;background:#232635;color:#eee;border:1px solid #514b66;border-radius:6px}#comfy-film-editor label{display:block;margin:8px 0}#comfy-film-editor button{padding:8px 12px;margin:4px;border:0;border-radius:6px;cursor:pointer}#comfy-film-editor section,#comfy-film-editor details.comfy-film-shot{border:1px solid #494154;padding:14px;margin:12px 0;border-radius:8px}#comfy-film-editor details.comfy-film-shot>summary{cursor:pointer;font-weight:600}#comfy-film-editor video{width:260px;max-width:100%}'
+  style.textContent = filmEditorStyles
   dialog.append(style)
   const el = (tag, text, parent = dialog) => { const x = document.createElement(tag); if (text) x.textContent = text; parent.append(x); return x }
-  const heading = el('h2', 'Comfy Story · Film project')
-  el('p', 'Generate → Watch → Edit. Generation runs on the Comfy host and continues when this panel closes.')
-  const status = el('p', '')
+  const header = el('header', ''); header.className = 'film-header'
+  const brand = el('div', '', header)
+  const heading = el('h2', 'Comfy Story', brand); heading.id = 'comfy-film-title'
+  el('p', 'Your story, one shot at a time.', brand)
+  const status = document.createElement('p'); status.className = 'film-status'
   status.setAttribute('role', 'status')
   const reportError = error => { status.textContent = error.message ?? String(error) }
   const button = (label, action, parent = dialog) => {
@@ -170,6 +177,8 @@ export async function openFilmEditor(api, node, values, document = window.docume
     return result
   }
   let recipe, run = null, knownRuns = [], dirty = false, pollTimer, newReferenceName = ''
+  let activeSection = 'Shots', selectedShot = null, savedImpact = null
+  const shotCards = new Map(), sectionPanels = new Map(), timelineButtons = new Map()
   // Disclosure state belongs to this editor session, never to a film recipe or seed.
   const expandedShots = new Map()
   const expandedControls = new Map()
@@ -182,7 +191,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
   }
   const soundtrackLevels = new Map()
   const shotViewKey = id => JSON.stringify([recipe.plan.project_id, id])
-  const changed = () => { dirty = true; refreshStateCoverage(); refreshStoryboard(); status.textContent = 'Unsaved changes. Save to inspect which shots are affected.' }
+  const changed = () => { dirty = true; savedImpact = null; refreshStateCoverage(); refreshStoryboard(); showPreview(watchingFilm); status.textContent = 'Unsaved changes · Save plan to check which shots need rendering again.' }
   const field = (parent, label, value, onChange, options, affectsRecipe = true) => {
     const wrapper = el('label', label, parent)
     const control = el(options ? 'select' : 'input', '', wrapper)
@@ -215,10 +224,35 @@ export async function openFilmEditor(api, node, values, document = window.docume
     field(parent, label, value, file => { update(file); refresh(file) })
     refresh(value)
   }
-  const chooser = el('select', ''); chooser.setAttribute('aria-label', 'Open film project')
+  const chooser = el('select', '', header); chooser.setAttribute('aria-label', 'Open film project')
   el('option', 'Choose a saved project…', chooser).value = ''
-  const actions = el('div', '')
-  const projectTools = el('details', '')
+  const actions = el('div', ''); actions.className = 'film-actions'
+  // Keep feedback below the sticky actions in visual and reading order.
+  dialog.append(status)
+  const workspace = el('div', ''); workspace.className = 'film-workspace'
+  const viewer = el('section', '', workspace); viewer.className = 'film-preview'
+  const screen = el('div', '', viewer); screen.className = 'film-screen'
+  const player = el('video', '', screen); player.controls = true; player.preload = 'metadata'; player.hidden = true
+  const emptyPreview = el('p', 'Your film starts here. Plan a short opening shot, add your references, then save and generate.', screen)
+  const viewing = el('div', '', viewer)
+  el('span', 'Story memory · Always on', viewing).className = 'film-badge'
+  const viewingTitle = el('h3', 'Plan your opening', viewing)
+  const liveReason = el('p', '', viewing)
+  const liveStatus = el('p', '', viewing); liveStatus.setAttribute('aria-live', 'polite')
+  const viewingHelp = el('p', 'Memory carries story history between shots. Review each take before keeping its appearance as evidence.', viewing)
+  const watchFilm = button('Watch assembled film', () => { watchingFilm = true; showPreview(true) }, viewing); watchFilm.hidden = true
+  const storyboard = el('section', '', workspace)
+  const tabs = el('nav', '', workspace); tabs.className = 'film-tabs'; tabs.setAttribute('aria-label', 'Film workspace sections')
+  const tabButtons = new Map()
+  const selectSection = name => {
+    activeSection = name
+    for (const [key, panel] of sectionPanels) panel.hidden = key !== name
+    for (const [key, control] of tabButtons) control.setAttribute('aria-pressed', String(key === name))
+  }
+  for (const name of ['Shots', 'Cast & world', 'Soundtrack']) {
+    tabButtons.set(name, button(name, () => selectSection(name), tabs))
+  }
+  const projectTools = el('details', ''); projectTools.className = 'film-tools'
   el('summary', 'Project tools and run settings', projectTools)
   const stateCoverage = document.createElement('p')
   stateCoverage.setAttribute('aria-label', 'Declared state checks')
@@ -230,34 +264,89 @@ export async function openFilmEditor(api, node, values, document = window.docume
       ? 'State checks use your declared facts and their visual meanings. They do not verify every detail in Opening composition. Passing a check is a model judgment, not a guarantee.'
       : 'This draft has no explicit starting or ending facts. General action and visibility review can still run, but opening prose does not create state checks. For events that depend on a specific setup, add Required starting facts and Visible ending facts; define their visual meaning in State meanings.'
   }
-  const content = el('div', '')
-  const storyboard = document.createElement('section')
+  const content = el('div', '', workspace)
   storyboard.setAttribute('aria-label', 'Story at a glance')
-  const refreshStoryboard = () => {
-    storyboard.replaceChildren()
+  const showPreview = (assembled = false) => {
     if (!recipe) return
-    el('h3', 'Story at a glance', storyboard)
-    el('p', 'Read the sequence before generating. These are planned events, not verified footage. Changes listed here come only from your declared ending facts; prose alone does not add state checks.', storyboard)
-    const table = el('table', '', storyboard); table.style.cssText = 'width:100%;border-collapse:collapse;text-align:left'
-    const head = el('tr', '', el('thead', '', table))
-    for (const label of ['Time', 'Visible event', 'Planned state change']) el('th', label, head).setAttribute('scope', 'col')
-    const body = el('tbody', '', table)
-    for (const row of filmStoryboardRows(recipe.plan)) {
-      const tr = el('tr', '', body)
-      el('td', `${row.start_ms / 1000}–${row.end_ms / 1000}s`, tr).style.verticalAlign = 'top'
-      const event = el('td', '', tr); event.style.padding = '8px'
-      el('strong', row.purpose, event); el('p', row.action, event)
-      const change = el('td', '', tr); change.style.padding = '8px'
-      for (const text of row.changes.length ? row.changes : ['No ending state change declared.']) el('p', text, change)
-      for (const text of row.conflicts) el('p', 'Setup conflict: ' + text, change).setAttribute('role', 'alert')
+    const shot = recipe.plan.shots.find(x => x.shot_id === selectedShot) || recipe.plan.shots[0]
+    const takes = [...(run?.rendered ?? []), ...(run?.selected ?? [])]
+    const take = takes.find(x => x.shot_id === shot?.shot_id)
+    const complete = run && ['draft_ready', 'ready_for_review'].includes(run.status)
+    watchFilm.hidden = !complete
+    let source = null
+    if (assembled && complete) source = '/comfy/story/films' + projectPath() + '/runs/' + run.run_id + '/video'
+    else if (take) source = '/comfy/story/video/' + encodeURIComponent(take.video_sha256)
+    // A status poll must not restart a playing video or switch away from the assembled film.
+    const previous = player.getAttribute?.('data-source')
+    const url = source ? api.apiURL(source) : null
+    if (url && previous !== url) { player.src = url; player.muted = !assembled; player.setAttribute('data-source', url) }
+    if (!url && previous) { player.pause?.(); player.removeAttribute('src'); player.removeAttribute('data-source'); player.load?.() }
+    player.hidden = !url; emptyPreview.hidden = !!url
+    viewingTitle.textContent = assembled && complete ? 'Assembled film' : shot?.purpose || 'Plan your opening'
+    const earlier = run && (run.revision !== recipe.revision || dirty)
+    viewingHelp.textContent = url
+      ? (earlier ? 'Saved footage from an earlier plan. Save your edits to check what needs rendering again. ' : '') +
+        (assembled ? 'Review the complete picture and soundtrack. Generation does not imply approval.' : 'Saved take · Preview starts muted. Watch the assembled film to review its soundtrack. Approval remains yours.')
+      : 'Choose references and describe a visible action. Save the plan, then generate your first cut. Memory is included automatically.'
+  }
+  let watchingFilm = false
+  const selectShot = id => {
+    selectedShot = id; watchingFilm = false; selectSection('Shots')
+    for (const [key, card] of shotCards) {
+      card.hidden = key !== id
+      if (key === id) { card.open = true; expandedShots.set(shotViewKey(key), true) }
+    }
+    refreshStoryboard(); showPreview(); timelineButtons.get(id)?.focus()
+  }
+  const refreshStoryboard = () => {
+    const scroll = storyboard.firstElementChild?.scrollLeft || 0
+    const focused = document.activeElement?.getAttribute('data-shot-id')
+    storyboard.replaceChildren(); timelineButtons.clear()
+    if (!recipe) return
+    const strip = el('div', '', storyboard); strip.className = 'film-strip'; strip.setAttribute('aria-label', 'Shot timeline')
+    const rows = filmStoryboardRows(recipe.plan)
+    for (const [index, row] of rows.entries()) {
+      const settings = recipe.inputs.shots_by_id[row.shot_id] || {}
+      const tile = button('', () => selectShot(row.shot_id), strip); tile.className = 'film-tile'; timelineButtons.set(row.shot_id, tile); tile.setAttribute('data-shot-id', row.shot_id)
+      tile.setAttribute('aria-label', `Edit shot ${index + 1}: ${row.purpose}`)
+      tile.setAttribute('aria-pressed', String(row.shot_id === selectedShot))
+      const thumb = el('span', '', tile); thumb.className = 'film-thumb'
+      const path = filmImagePreviewPath(settings.world)
+      if (path) { const image = el('img', '', thumb); image.src = api.apiURL(path); image.alt = ''; image.loading = 'lazy'; image.addEventListener('error', () => { image.hidden = true }) }
+      else thumb.textContent = String(index + 1).padStart(2, '0')
+      el('strong', `${index + 1}. ${row.purpose}`, tile)
+      el('small', `${row.start_ms / 1000}–${row.end_ms / 1000}s`, tile)
+      const hasTake = [...(run?.rendered ?? []), ...(run?.selected ?? [])].some(x => x.shot_id === row.shot_id)
+      const affected = savedImpact?.requires_generation_review.includes(row.shot_id)
+      const label = row.conflicts.length ? 'Setup conflict' : dirty ? 'Draft · save to check' : affected ? 'Needs generation review' : hasTake ? (run.revision === recipe.revision ? 'Rendered · review take' : 'Earlier take') : 'Planned'
+      el('span', label, tile).className = 'film-shot-status'
+    }
+    strip.scrollLeft = scroll
+    if (focused) timelineButtons.get(focused)?.focus()
+    if (!rows.length) el('p', 'Add your first shot to begin the story.', storyboard)
+    if (savedImpact) {
+      const kept = savedImpact.reusable_prefix.length, affected = savedImpact.requires_generation_review.length
+      el('p', `${kept} unchanged earlier shots eligible for reuse · ${affected} shots need generation review. Reuse also checks saved outputs and runtime compatibility.`, storyboard).className = 'film-help'
+    }
+    const detail = disclosure('Planned continuity changes', JSON.stringify([recipe.plan.project_id, 'overview']))
+    storyboard.append(detail)
+    el('p', 'These are your declared intentions, not verified events. Memory remains required whether or not you add state checks.', detail)
+    for (const row of rows) {
+      el('strong', row.purpose, detail)
+      el('p', row.action, detail)
+      for (const text of row.changes) el('p', text, detail)
+      for (const text of row.conflicts) el('p', 'Setup conflict: ' + text, detail).setAttribute('role', 'alert')
     }
   }
-  const progress = el('section', '')
+  const progress = el('details', ''); progress.className = 'film-review'
   let configured = null, projectLoading = true, savePending = false, launchPending = false, importPending = false, audioPending = false
   const projectBusy = () => projectLoading || savePending || launchPending || importPending || audioPending
   const projectPath = () => '/' + encodeURIComponent(recipe.plan.project_id)
   const renderProgress = () => {
-    progress.replaceChildren(); el('h3', 'Watch and edit', progress)
+    progress.replaceChildren(); el('summary', 'Generation history & review details', progress)
+    liveReason.textContent = ''
+    liveStatus.textContent = run ? filmRunStage(run) || 'Saved generation' : 'No takes yet'
+    showPreview(watchingFilm); refreshStoryboard()
     resumeButton.hidden = !run || ['draft_ready', 'ready_for_review'].includes(run.status)
     pauseButton.hidden = run?.status !== 'running' || run?.mode === 'first_cut'
     if (generationMode === 'checked' && configured === null) el('p', 'Save the plan to check the host’s verification setup.', progress)
@@ -267,7 +356,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
       const select = el('select', '', progress); select.setAttribute('aria-label', 'Film run')
       for (const item of knownRuns) { const option = el('option', `${item.status} · recipe ${item.revision.slice(0,8)} · ${item.mode === "first_cut" ? "first cut" : `${item.max_attempts} attempts`}`, select); option.value = item.run_id }
       select.value = run?.run_id || ''
-      select.addEventListener('change', () => { clearTimeout(pollTimer); run = knownRuns.find(x => x.run_id === select.value); refreshRun().catch(reportError) })
+      select.addEventListener('change', () => { clearTimeout(pollTimer); run = knownRuns.find(x => x.run_id === select.value); watchingFilm = false; refreshRun().catch(reportError) })
     }
     if (!run) { el('p', 'No run selected. Save the plan before generating.', progress); return }
     if (run.revision !== recipe.revision) el('p', 'This run belongs to an earlier saved plan. Current edits do not change it.', progress)
@@ -279,7 +368,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     if (stage) el('p', `${run.status === 'running' ? 'Current stage' : 'Last stage'}: ${stage}`, progress)
     if (run.reason) {
       const explanation = run.reason.split(' Recovery record:')[0].trim()
-      if (explanation) el('p', explanation, progress)
+      if (explanation) liveReason.textContent = explanation
       const detail = el('details', '', progress)
       el('summary', 'Run details and recovery information', detail)
       el('p', run.reason, detail)
@@ -318,7 +407,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     if ((run.selected ?? []).length) el('p', 'Visual take previews are muted by default. Use the film preview to review the soundtrack.', progress)
     for (const take of [...(run.rendered ?? []), ...(run.selected ?? [])]) {
       const card = el('section', '', progress); el('strong', take.shot_id, card)
-      const video = el('video', '', card); video.controls = true; video.preload = 'metadata'; video.muted = true
+      const video = el('video', '', card); video.controls = true; video.preload = 'none'; video.muted = true
       video.src = api.apiURL('/comfy/story/video/' + encodeURIComponent(take.video_sha256))
     }
     if (['ready_for_review', 'draft_ready'].includes(run.status)) {
@@ -337,22 +426,27 @@ export async function openFilmEditor(api, node, values, document = window.docume
   const upload = (parent, label, update) => {
     const input = el('input', '', parent); input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp'; input.setAttribute('aria-label', label)
     input.addEventListener('change', async () => {
+      if (projectBusy() || !input.files[0]) return
+      const target = recipe; audioPending = true; syncProjectActions()
       try {
-        if (!input.files[0]) return
         const form = new FormData(); form.append('image', input.files[0]); form.append('type', 'input')
         const response = await api.fetchApi('/upload/image', { method: 'POST', body: form })
         if (!response.ok) throw new Error('Image upload failed')
-        const saved = await response.json(); update([saved.subfolder, saved.name].filter(Boolean).join('/')); changed(); render()
-      } catch (error) { reportError(error) }
+        const saved = await response.json(); if (recipe !== target) throw new Error('The project changed during upload. Upload the image again.'); update([saved.subfolder, saved.name].filter(Boolean).join('/')); changed(); render()
+      } catch (error) { reportError(error) } finally { audioPending = false; syncProjectActions() }
     })
   }
   const render = () => {
-    content.replaceChildren(); validateEditorSeeds(recipe.inputs)
+    content.replaceChildren(); shotCards.clear(); sectionPanels.clear(); validateEditorSeeds(recipe.inputs)
     refreshStateCoverage()
     const plan = recipe.plan, inputs = recipe.inputs
     heading.textContent = `Comfy Story · ${plan.title}`
-    field(content, 'Film title', plan.title, x => { plan.title = x })
-    const narrative = el('details', '', content)
+    field(content, 'Film title', plan.title, x => { plan.title = x; heading.textContent = `Comfy Story · ${x}` })
+    const shotsPanel = el('div', '', content); sectionPanels.set('Shots', shotsPanel)
+    const refsPanel = el('div', '', content); sectionPanels.set('Cast & world', refsPanel)
+    const soundPanel = el('div', '', content); sectionPanels.set('Soundtrack', soundPanel)
+    if (!plan.shots.some(x => x.shot_id === selectedShot)) selectedShot = plan.shots[0]?.shot_id || null
+    const narrative = el('details', '', shotsPanel)
     el('summary', 'Intended story (optional)', narrative)
     if (plan.narrative) narrative.open = true
     el('p', 'Describe the goal, obstacle, decision and outcome viewers should understand. The finished film’s blind retelling is compared with this intent. This does not write the screenplay or guarantee the result. Leave all four blank to omit this comparison.', narrative)
@@ -364,18 +458,21 @@ export async function openFilmEditor(api, node, values, document = window.docume
       })
     }
     const filmAdvanced = disclosure('Advanced film settings', JSON.stringify([plan.project_id, 'film']))
-    content.append(filmAdvanced)
+    refsPanel.append(filmAdvanced)
     filmAdvanced.append(stateCoverage)
-    field(filmAdvanced, 'State memory', inputs.recall_selected_state ? 'Selected state evidence' : 'Original references', x => {
+    field(filmAdvanced, 'Appearance references', inputs.recall_selected_state ? 'Selected state evidence' : 'Original references', x => {
       if (x === 'Selected state evidence') inputs.recall_selected_state = true
       else delete inputs.recall_selected_state
     }, ['Original references', 'Selected state evidence'])
     el('p', 'Selected state evidence carries checked appearance changes into later reference shots without creator approval. Animate frame uses its starting image only. Requires the host native Story archive.', filmAdvanced)
-    el('p', `${plan.shots.length} shots · ${plan.shots.reduce((n,s) => n+s.duration_ms, 0)/1000} seconds`, content)
-    refreshStoryboard(); content.append(storyboard)
-    const library = el('section', '', content); el('h3', 'Cast, props and world', library)
+    el('p', `${plan.shots.length} shots · ${plan.shots.reduce((n,s) => n+s.duration_ms, 0)/1000} seconds`, shotsPanel)
+    refreshStoryboard()
+    const library = el('section', '', refsPanel); el('h3', 'Cast, props and world', library)
+    el('p', 'Give each reference a name, upload its image, then select it in a shot. Use @Name in the action to direct that character or prop.', library)
+    el('p', 'Associative memory is always required. Appearance references below choose exact visual evidence; this does not turn learned memory on or off.', library).className = 'film-help'
+    const referenceGrid = el('div', '', library); referenceGrid.className = 'film-reference-grid'
     for (const ref of inputs.library.references) {
-      const row = el('section', '', library)
+      const row = el('section', '', referenceGrid)
       // Existing reference names are IDs; renaming them requires updating the plan explicitly.
       el('strong', ref.name, row)
       field(row, 'Reference role', ref.role, x => { ref.role = x }, ['Character', 'Prop', 'Location', 'Product', 'Style', 'Costume'])
@@ -411,8 +508,8 @@ export async function openFilmEditor(api, node, values, document = window.docume
       (plan.state_definitions ??= []).push({key:'',value:'',definition:''}); changed(); render()
     }, meanings)
     for (const [index, shot] of plan.shots.entries()) {
-      const card = el('details', '', content), settings = inputs.shots_by_id[shot.shot_id]
-      card.className = 'comfy-film-shot'
+      const card = el('details', '', shotsPanel), settings = inputs.shots_by_id[shot.shot_id]
+      card.className = 'comfy-film-shot'; card.hidden = shot.shot_id !== selectedShot; shotCards.set(shot.shot_id, card)
       const key = shotViewKey(shot.shot_id)
       if (!expandedShots.has(key)) expandedShots.set(key, index === 0)
       card.open = expandedShots.get(key)
@@ -421,13 +518,23 @@ export async function openFilmEditor(api, node, values, document = window.docume
       const refreshSummary = () => { summary.textContent = `${index + 1}. ${shot.purpose} · ${shot.duration_ms / 1000} seconds` }
       refreshSummary()
       field(card, 'Purpose', shot.purpose, x => { shot.purpose = x; refreshSummary() })
-      area(card, 'Visible action', shot.action, x => { shot.action = x })
+      const action = area(card, 'Visible action', shot.action, x => { shot.action = x })
+      action.placeholder = 'Describe who acts, what changes, and where the camera follows. Example: @Aiko draws @Moonblade as rain scatters across the rooftop.'
       const timing = field(card, 'Seconds', String(shot.duration_ms / 1000), x => { shot.duration_ms = parseShotSeconds(x) })
       timing.inputMode = 'decimal'
       timing.addEventListener('change', () => { if (!timing.validationMessage) render() })
       const advanced = disclosure('Advanced shot settings', JSON.stringify([plan.project_id, shot.shot_id, 'advanced']))
       el('p', 'H3 renders a 5, 10 or 15-second block before trimming to your cut length. Shorter cuts do not guarantee lower generation cost or better action.', advanced)
-      field(card, 'Present reference names', (shot.present || []).join(', '), x => { shot.present = names(x) })
+      el('h4', 'Who and what is in this shot?', card)
+      const chips = el('div', '', card); chips.className = 'film-reference-chips'
+      if (!inputs.library.references.length) button('Add cast or props', () => selectSection('Cast & world'), chips)
+      const referenceChecks = new Map()
+      for (const ref of inputs.library.references) {
+        const label = el('label', '', chips), check = el('input', '', label); check.type = 'checkbox'; referenceChecks.set(ref.name, check); check.checked = (shot.present || []).includes(ref.name)
+        check.setAttribute('aria-label', `Include @${ref.name} in shot ${index + 1}`); el('span', `@${ref.name}`, label)
+        check.addEventListener('change', () => { shot.present = check.checked ? [...new Set([...(shot.present || []), ref.name])] : (shot.present || []).filter(x => x !== ref.name); presentControl.value = shot.present.join(', '); changed() })
+      }
+      const presentControl = field(advanced, 'Present reference names', (shot.present || []).join(', '), x => { shot.present = names(x); for (const [name, check] of referenceChecks) check.checked = shot.present.includes(name) })
       field(advanced, 'Must remain visible throughout', (shot.visible_throughout || []).join(', '), x => { shot.visible_throughout = names(x) })
       field(advanced, 'Must remain fully visible', (shot.fully_visible_throughout || []).join(', '), x => { shot.fully_visible_throughout = names(x) })
       el('p', 'Full visibility also rejects cropping or being hidden behind another subject or object. Leave blank when the shot allows occlusion.', advanced)
@@ -438,10 +545,11 @@ export async function openFilmEditor(api, node, values, document = window.docume
       area(advanced, 'Visible ending facts', factsText(shot.effects), x => { shot.effects = parseFacts(x) })
       field(advanced, 'Depends on shot IDs', (shot.depends_on || []).join(', '), x => { shot.depends_on = names(x) })
       el('small', `Shot ID: ${shot.shot_id}`, advanced)
-      const approachControl = field(advanced, 'Render approach', filmRenderApproach(shot, settings), x => {
+      const approachControl = field(card, 'Render approach', filmRenderApproach(shot, settings), x => {
         if (x === 'Custom settings') { advanced.open = true; return }
         setFilmRenderApproach(shot, settings, x); changed(); render()
-      }, ['Animate starting frame', 'Compose from references', 'Stage then animate', 'Custom settings'], false)
+      }, ['Continue with references', 'Compose from references', 'Animate starting frame', 'Stage then animate', 'Custom settings'], false)
+      if (settings.render_profile === 'Animate frame') el('p', 'This saved animation profile needs a compatible FL2VA memory checkpoint. The bundled checkpoint supports Reference shot. Choose Continue with references or Compose from references for the bundled setup.', card).className = 'film-help'
       if (Object.hasOwn(settings, 'opening_prompt')) {
         field(advanced, 'Opening image mode', settings.opening_mode || 'Compose', x => { settings.opening_mode = x }, ['Compose', 'Refine'])
         el('p', 'Compose creates a new arrangement from references. Refine is an alpha option for an existing scene with every required subject already placed: it uses a conservative edit to blend the image while trying to retain layout. It cannot reliably add missing subjects or stage a different action. Supply an uploaded scene or a previous selected frame. Both modes remain subject to the same starting-state and visibility checks.', advanced)
@@ -456,21 +564,25 @@ export async function openFilmEditor(api, node, values, document = window.docume
       el('p', 'Positive instructions describe a continuous view without naming forbidden edit effects. Absent entities remain review requirements but are omitted from generation instructions. Legacy instructions preserve older saved prompts. Changing this setting invalidates the shot and its dependent work; the seed is preserved.', advanced)
       field(advanced, 'Transition', settings.intent || 'New Scene', x => { settings.intent = x }, ['New Scene', 'Next Shot', 'Continue This Shot'])
       field(advanced, 'Composition', shot.composition || 'Continue frame', x => { shot.composition = x; approachControl.value = filmRenderApproach(shot, settings) }, ['Continue frame', 'New composition'])
-      field(advanced, 'Camera policy', shot.camera_policy || 'Follow prompt', x => { shot.camera_policy = x; cameraHint.hidden = x !== 'Single continuous shot' }, ['Follow prompt', 'Locked frame', 'Single continuous shot'])
+      field(card, 'Camera policy', shot.camera_policy || 'Follow prompt', x => { shot.camera_policy = x; cameraHint.hidden = x !== 'Single continuous shot' }, ['Follow prompt', 'Locked frame', 'Single continuous shot'])
       const cameraHint = el('p', 'Single continuous shot requests one take and checks sampled frame pairs for visible dissolves, ghosted scene layers and wipes. Camera movement is allowed. Unsampled transitions and hard cuts without blending may be missed; this is not a guarantee of uninterrupted motion.', advanced)
       cameraHint.hidden = shot.camera_policy !== 'Single continuous shot'
       field(advanced, 'Frame borders', shot.border_policy || 'Follow prompt', x => { shot.border_policy = x }, ['Follow prompt', 'Preserve opening borders'])
       const setupHint = {
+        'Continue with references': 'Continue from the previous frame with your selected references and historical memory guidance. Supply a starting image for the opening shot.',
         'Animate starting frame': 'Begin from your starting image, or the previous shot’s closing frame. Every needed character and prop should already be in that image.',
         'Compose from references': 'This shot creates a new view from its selected references. A starting image is optional for the first shot or a new scene.',
         'Stage then animate': 'This shot prepares an opening image from its saved composition before animation. You can review that composition in Advanced shot settings.',
         'Custom settings': 'This shot keeps its saved setup. Advanced shot settings describes its starting-image and reference requirements.',
       }
       el('p', setupHint[filmRenderApproach(shot, settings)], card)
-      imageField(card, 'Starting image (blank uses previous frame)', settings.world || '', x => { settings.world = x || null })
-      upload(card, 'Upload starting image', x => { settings.world = x })
-      imageField(advanced, 'Ending image (optional)', settings.ending_frame || '', x => { if (x) settings.ending_frame = x; else delete settings.ending_frame })
-      upload(advanced, 'Upload ending image', x => { settings.ending_frame = x })
+      const frames = el('div', '', card); frames.className = 'film-frames'
+      const startFrame = el('section', '', frames); el('h4', 'Start frame', startFrame)
+      const endFrame = el('section', '', frames); el('h4', 'End frame', endFrame)
+      imageField(startFrame, 'Starting image (blank uses previous frame)', settings.world || '', x => { settings.world = x || null })
+      upload(startFrame, 'Upload starting image', x => { settings.world = x })
+      imageField(endFrame, 'Ending image (optional)', settings.ending_frame || '', x => { if (x) settings.ending_frame = x; else delete settings.ending_frame })
+      upload(endFrame, 'Upload ending image', x => { settings.ending_frame = x })
       field(advanced, 'Sampler', settings.sampler || 'Native res_multistep', x => { settings.sampler = x; approachControl.value = filmRenderApproach(shot, settings) }, ['Native res_multistep', 'Turbo 4-step', 'Turbo 8-step', 'Full HD 2-pass', 'SPEED Euler 2-stage', 'NVFP4 Exact', 'NVFP4 Balanced', 'NVFP4 Ultra Fast', 'NVFP4 Turbo 4-step'])
       field(advanced, 'Render profile', settings.render_profile || 'Reference shot', x => { if (x === 'Reference shot') delete settings.render_profile; else settings.render_profile = x; approachControl.value = filmRenderApproach(shot, settings) }, ['Reference shot', 'Animate frame'])
       el('p', 'Custom combinations remain available. Reference shot with Continue frame supplies a guide but may reframe or introduce cuts. Use Animate starting frame when the opening composition matters.', advanced)
@@ -479,33 +591,41 @@ export async function openFilmEditor(api, node, values, document = window.docume
         const seed = Number(x); if (!x.trim() || !Number.isSafeInteger(seed) || seed < 0) throw new Error('Use an exact nonnegative browser-safe seed')
         settings.variation = seed
       })
-      button('New take seed', () => { settings.variation = newSeed(); changed(); render() }, advanced)
       el('p', 'Your seed and rendering settings stay fixed when you save or reopen. Additional controls are optional.', advanced)
       card.append(advanced)
+      button('New take seed', () => { settings.variation = newSeed(); changed(); render() }, card)
       button('Move earlier', () => { if (index) { [plan.shots[index-1], plan.shots[index]] = [shot, plan.shots[index-1]]; changed(); render() } }, card)
       button('Move later', () => { if (index < plan.shots.length-1) { [plan.shots[index+1], plan.shots[index]] = [shot, plan.shots[index+1]]; changed(); render() } }, card)
       button('Remove shot', () => { plan.shots.splice(index, 1); delete inputs.shots_by_id[shot.shot_id]; expandedShots.delete(key); changed(); render() }, card)
     }
     button('Add shot', () => {
       const id = 'shot-' + crypto.randomUUID().slice(0,8)
-      expandedShots.set(shotViewKey(id), true)
+      expandedShots.set(shotViewKey(id), true); selectedShot = id; watchingFilm = false
       const priorShot = plan.shots.at(-1)
-      const prior = priorShot ? inputs.shots_by_id[priorShot.shot_id] : {render_profile:'Animate frame', prompt_format:'H3 automatic v1'}
+      const prior = priorShot ? inputs.shots_by_id[priorShot.shot_id] : {prompt_format:'H3 automatic v1'}
       plan.shots.push({ shot_id: id, direction_version: priorShot?.direction_version ?? 2, duration_ms: 5000, purpose: 'Next event', action: '', present: [], visible_throughout: [], composition: priorShot?.composition || 'Continue frame' })
       inputs.shots_by_id[id] = { world: null, variation: newSeed(), intent: 'Next Shot', sampler: prior.sampler || 'Native res_multistep' }
       if (prior.prompt_format) inputs.shots_by_id[id].prompt_format = prior.prompt_format
       if (prior.render_profile) inputs.shots_by_id[id].render_profile = prior.render_profile
       changed(); render()
-    }, content)
-    const sound = el('section', '', content); el('h3', 'Soundtrack', sound)
+    }, shotsPanel)
+    const sound = el('section', '', soundPanel); el('h3', 'Soundtrack', sound)
     const shotSound = el('select', '', sound); shotSound.setAttribute('aria-label','Shot audio')
     for (const label of ['Silent shots', 'Generated speech and effects']) { const option = el('option',label,shotSound); option.value=label }
     shotSound.value = inputs.generated_audio ? 'Generated speech and effects' : 'Silent shots'
     shotSound.addEventListener('change', () => { inputs.generated_audio = shotSound.value === 'Generated speech and effects'; changed() })
-    el('p', 'Choose an audio file already uploaded to Comfy, for example through Load Audio. Tracks mix together. Silent shots omit generated audio. Generated speech and effects keeps the model soundtrack and requires H3 automatic prompts. Add exact spoken lines and language to each shot; listen for accuracy. Captions are not added. Soundtrack edits keep visual recipes unchanged. Generate the saved revision to create a new export.', sound)
+    el('p', 'Upload music or dialogue, then set where it starts and how loud it plays. Tracks mix together in the export; they do not drive the generated motion.', sound)
+    const audioHelp = disclosure('Speech, effects and exporting', JSON.stringify([plan.project_id, 'audio-help']))
+    sound.append(audioHelp)
+    el('p', 'Silent shots omit generated audio. Generated speech and effects keeps the model soundtrack and requires H3 automatic prompts. Set Prompt format in Advanced shot settings, include exact dialogue and language in the action, and listen for accuracy. Soundtrack edits keep visual recipes unchanged. Save and generate again to export the new mix.', audioHelp)
     for (const [index, track] of (inputs.audio ?? []).entries()) {
       const row = el('section', '', sound)
       el('strong', track.path, row)
+      const lane = el('div', '', row); lane.className = 'film-sound-lane'; lane.setAttribute('aria-label', 'Soundtrack placement in the film')
+      const clip = el('div', '', lane); clip.className = 'film-sound-clip'
+      const totalDuration = Math.max(1, plan.shots.reduce((n, shot) => n + shot.duration_ms, 0))
+      const positionClip = () => { clip.style.left = `${Math.max(0, Math.min(100, track.start_ms / totalDuration * 100))}%`; clip.style.width = `${Math.max(0, Math.min(100, track.duration_ms / totalDuration * 100))}%`; lane.title = `${track.start_ms / 1000}–${(track.start_ms + track.duration_ms) / 1000}s of ${totalDuration / 1000}s` }
+      positionClip()
       const levels = soundtrackLevels.get(track.sha256)
       if (levels?.status === 'measured') {
         el('p', levels.silent ? 'This audio stream is silent.' : `Audio sample peak: ${levels.peak_dbfs.toFixed(1)} dBFS.`, row)
@@ -524,15 +644,37 @@ export async function openFilmEditor(api, node, values, document = window.docume
       if (track.cue_id) el('p', `Authored speech cue: ${track.cue_id}`, row)
       const number = (label, value, update) => field(row, label, String(value), x => {
         if (!x.trim() || !Number.isFinite(Number(x))) throw new Error('Enter a finite number')
-        update(Number(x))
+        update(Number(x)); positionClip()
       })
       number('Soundtrack start (seconds)', track.start_ms / 1000, x => { track.start_ms = Math.round(x * 1000) })
       number('Soundtrack duration (seconds)', track.duration_ms / 1000, x => { track.duration_ms = Math.round(x * 1000) })
       number('Soundtrack volume', track.gain ?? 1, x => { track.gain = x })
       button('Remove soundtrack', () => { inputs.audio.splice(index, 1); changed(); render() }, row)
     }
+    const audioUpload = el('input', '', sound); audioUpload.type = 'file'; audioUpload.accept = '.wav,.flac,.mp3,.ogg,.m4a,.aac,.opus,.mp4,.webm'; audioUpload.setAttribute('aria-label', 'Upload soundtrack')
+    el('small', 'WAV, FLAC, MP3 and other supported audio · Up to 256 MB. Timing is relative to the start of your film.', sound)
+    audioUpload.addEventListener('change', async () => {
+      if (projectBusy() || !audioUpload.files?.[0]) return
+      const file = audioUpload.files[0], target = recipe
+      if (file.size > 256 * 1024 * 1024) { reportError(new Error('Choose an audio file smaller than 256 MiB.')); audioUpload.value = ''; return }
+      audioPending = true; syncProjectActions(); status.textContent = 'Uploading soundtrack and checking its duration…'
+      try {
+        const body = new FormData(); body.append('audio', file)
+        const response = await api.fetchApi('/comfy/story/films/upload-soundtrack', {method:'POST', body})
+        const asset = await response.json()
+        if (!response.ok) throw new Error(asset.error || 'Soundtrack upload failed. Check the audio format and host version, then try again.')
+        if (recipe !== target) throw new Error('The film changed during upload. Add the soundtrack again.')
+        soundtrackLevels.set(asset.sha256, asset.levels ?? {status:'unavailable'})
+        inputs.audio ??= []
+        inputs.audio.push({path:asset.path, sha256:asset.sha256, start_ms:0, duration_ms:Math.min(asset.duration_ms, plan.shots.reduce((n, shot) => n + shot.duration_ms, 0)), gain:1})
+        changed(); render()
+      } catch (error) { reportError(error) }
+      finally { audioPending = false; audioUpload.value = ''; syncProjectActions() }
+    })
+    const existingAudio = disclosure('Use an already uploaded file', JSON.stringify([plan.project_id, 'audio-file']))
+    sound.append(existingAudio)
     let audioName = ''
-    field(sound, 'Uploaded soundtrack filename', '', x => { audioName = x.trim() }, undefined, false)
+    field(existingAudio, 'Uploaded soundtrack filename', '', x => { audioName = x.trim() }, undefined, false)
     const addAudio = button('Add soundtrack', async () => {
       if (addAudio.disabled || projectBusy()) return
       if (!audioName) throw new Error('Enter an uploaded Comfy audio filename')
@@ -548,8 +690,8 @@ export async function openFilmEditor(api, node, values, document = window.docume
         inputs.audio.push({ path: asset.path, sha256: asset.sha256, start_ms: 0, duration_ms: Math.min(asset.duration_ms, total), gain: 1 })
         changed(); render()
       } finally { addAudio.disabled = false; audioPending = false; syncProjectActions() }
-    }, sound)
-    renderProgress()
+    }, existingAudio)
+    selectSection(activeSection); renderProgress()
   }
   const save = async () => {
     if (projectBusy()) return
@@ -558,6 +700,8 @@ export async function openFilmEditor(api, node, values, document = window.docume
       for (let parent = invalid.parentElement; parent && parent !== dialog; parent = parent.parentElement) {
         if (parent.tagName === 'DETAILS') parent.open = true
       }
+      for (const [name, panel] of sectionPanels) if (panel.contains?.(invalid)) selectSection(name)
+      for (const [id, card] of shotCards) if (card.contains?.(invalid)) selectShot(id)
       invalid.reportValidity(); throw new Error('Correct the highlighted field before saving.')
     }
     validateEditorSeeds(recipe.inputs)
@@ -568,11 +712,11 @@ export async function openFilmEditor(api, node, values, document = window.docume
       if (!recipe.inputs.library.project_name?.trim()) recipe.inputs.library.project_name = recipe.plan.title.trim()
       recipe.plan.target_duration_ms = recipe.plan.shots.reduce((n,s) => n+s.duration_ms, 0)
       const result = await request(recipe.revision ? projectPath() : '', recipe.revision ? 'PUT' : 'POST', { plan: recipe.plan, inputs: recipe.inputs, expected_revision: recipe.revision || null })
-      recipe = result.recipe; dirty = false; node.properties ??= {}; node.properties.comfy_film_project_id = recipe.plan.project_id
+      recipe = result.recipe; dirty = false; discardButton.hidden = true; savedImpact = result.impact || null; node.properties ??= {}; node.properties.comfy_film_project_id = recipe.plan.project_id
       const option = Array.from(chooser.children).find(x => x.value === recipe.plan.project_id) || el('option', '', chooser)
       option.value = recipe.plan.project_id; option.textContent = recipe.plan.title; chooser.value = option.value
       const detail = await request(projectPath()); configured = detail.verification_configured
-      status.textContent = result.impact ? `Saved. Reusable prefix: ${result.impact.reusable_prefix.join(', ') || 'none'}. Recheck: ${result.impact.requires_generation_review.join(', ') || 'none'}.` : 'Saved immutable film recipe.'
+      status.textContent = result.impact ? `Saved. ${result.impact.reusable_prefix.length} unchanged earlier shots eligible for reuse. ${result.impact.requires_generation_review.length} shots need generation review.` : 'Plan saved. Ready to generate your first cut.'
       if (result.impact?.narrative_review_changed) status.textContent += ' Whole-film review is required for the changed story intent.'
       render()
     } finally { savePending = false; syncProjectActions() }
@@ -584,9 +728,9 @@ export async function openFilmEditor(api, node, values, document = window.docume
     const id = 'film-' + crypto.randomUUID(), shotId = 'shot-1'
     recipe = {
       plan: {project_id:id, title:'New film', target_duration_ms:5000, initial_facts:[], shots:[{shot_id:shotId, direction_version:2, duration_ms:5000, purpose:'Opening', action:'', present:[], composition:'Continue frame'}]},
-      inputs: {library:{project_name:'', references:[]}, shots_by_id:{[shotId]:{world:null, variation:newSeed(), sampler:'Native res_multistep', render_profile:'Animate frame', prompt_format:'H3 automatic v1'}}, burn_subtitles:false},
+      inputs: {library:{project_name:'', references:[]}, shots_by_id:{[shotId]:{world:null, variation:newSeed(), sampler:'Native res_multistep', prompt_format:'H3 automatic v1'}}, burn_subtitles:false},
     }
-    run = null; knownRuns = []; configured = null; chooser.value = ''; attempts = 2; budgetControl.value = '2'; generationMode = 'first_cut'; modeControl.value = 'First cut'; newReferenceName = ''
+    run = null; knownRuns = []; savedImpact = null; selectedShot = null; watchingFilm = false; activeSection = 'Shots'; configured = null; chooser.value = ''; attempts = 2; budgetControl.value = '2'; generationMode = 'first_cut'; modeControl.value = 'First cut'; newReferenceName = ''
     changed(); render()
     status.textContent = 'New unsaved film. Add your story and references, then save. Previous projects and host runs are unchanged.'
   }, actions)
@@ -615,6 +759,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     }
   }
   const generateButton = button('Generate saved plan', () => launch(false), actions)
+  generateButton.className = 'film-primary'
   const resumeButton = button('Resume selected run', () => launch(true), actions)
   const pauseButton = button('Pause after current shot', async () => {
     if (projectBusy()) return
@@ -657,14 +802,14 @@ export async function openFilmEditor(api, node, values, document = window.docume
       if (importFile.files[0].size > 2*1024*1024) throw new Error('Recipe exceeds 2 MiB')
       const imported = JSON.parse(await importFile.files[0].text()); validateEditorSeeds(imported.inputs)
       imported.plan.project_id = 'film-' + crypto.randomUUID(); imported.revision = null
-      recipe = imported; run = null; knownRuns = []; changed(); render()
+      recipe = imported; run = null; knownRuns = []; selectedShot = null; watchingFilm = false; changed(); render()
     } catch(error) { reportError(error) }
     finally { importFile.value = ''; importPending = false; syncProjectActions() }
   })
   function syncProjectActions() {
     const pending = projectBusy()
-    for (const control of [chooser, newFilmButton, saveButton, generateButton, resumeButton, budgetControl, modeControl, pauseButton, downloadBundleButton, importBundleButton, downloadRecipeButton, bundleUpload, importFile]) control.disabled = pending
-    content.inert = progress.inert = pending
+    for (const control of [chooser, newFilmButton, saveButton, generateButton, resumeButton, budgetControl, modeControl, pauseButton, downloadBundleButton, importBundleButton, downloadRecipeButton, bundleUpload, importFile, discardButton]) control.disabled = pending
+    content.inert = progress.inert = viewer.inert = tabs.inert = storyboard.inert = pending
   }
   const load = async id => {
     clearTimeout(pollTimer)
@@ -673,7 +818,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     try {
       const data = await request('/' + encodeURIComponent(id)); validateEditorSeeds(data.recipe.inputs)
       node.properties ??= {}; node.properties.comfy_film_project_id = id; chooser.value = id
-      recipe = data.recipe; configured = data.verification_configured; knownRuns = data.runs; run = data.runs[0] || null; if (run) { attempts = run.max_attempts; budgetControl.value = String(attempts) } dirty = false; render(); await refreshRun()
+      recipe = data.recipe; savedImpact = null; selectedShot = null; watchingFilm = false; configured = data.verification_configured; knownRuns = data.runs; run = data.runs[0] || null; if (run) { attempts = run.max_attempts; budgetControl.value = String(attempts) } dirty = false; render(); await refreshRun()
       status.textContent = 'Opened saved film project.'
     } catch (error) {
       chooser.value = node.properties?.comfy_film_project_id || ''; throw error
@@ -684,7 +829,13 @@ export async function openFilmEditor(api, node, values, document = window.docume
     if (dirty) { chooser.value = node.properties?.comfy_film_project_id || ''; status.textContent = 'Save the current draft before opening another project.'; return }
     if (chooser.value) { try { await load(chooser.value) } catch (error) { reportError(error) } }
   })
-  button('Close', () => dialog.close(), actions)
+  const discardButton = button('Discard draft and close', () => dialog.close(), actions); discardButton.hidden = true
+  const requestClose = () => {
+    if (dirty) { discardButton.hidden = false; status.textContent = 'You have unsaved edits. Save the plan to keep them, or choose Discard draft and close.'; return }
+    dialog.close()
+  }
+  button('Close', requestClose, actions)
+  dialog.addEventListener('cancel', event => { event.preventDefault(); requestClose() })
   dialog.addEventListener('close', () => { clearTimeout(pollTimer); dialog.remove() })
   syncProjectActions()
   document.body.append(dialog); dialog.showModal()
@@ -702,10 +853,6 @@ export async function openFilmEditor(api, node, values, document = window.docume
       recipe = {plan: {project_id:id,title:library.project_name || 'New story',target_duration_ms:duration,initial_facts:[],shots:[{shot_id:shotId,direction_version:2,duration_ms:duration,purpose:'Opening',action,present:library.references.filter(x=>action.includes('@'+x.name)).map(x=>x.name),composition:values.Composition || 'Continue frame'}]},
         inputs: {library,shots_by_id:{[shotId]:{world:values['World / starting frame'] === 'None' ? null : (values['World / starting frame'] || null),variation:values.Variation ?? 0,sampler:values.Sampler || 'Native res_multistep'}},burn_subtitles:false}}
       if (values['Render profile'] && values['Render profile'] !== 'Reference shot') recipe.inputs.shots_by_id[shotId].render_profile = values['Render profile']
-      if (!action.trim() && !library.references.length && !library.project_name &&
-          (!values.Composition || values.Composition === 'Continue frame') &&
-          (!values.Sampler || values.Sampler === 'Native res_multistep') &&
-          (!values['Render profile'] || values['Render profile'] === 'Reference shot')) recipe.inputs.shots_by_id[shotId].render_profile = 'Animate frame'
       if (values['Prompt format'] && values['Prompt format'] !== 'Current') recipe.inputs.shots_by_id[shotId].prompt_format = values['Prompt format']
       dirty = false; render()
     }

@@ -59,6 +59,8 @@ def test_release_bundle_contains_living_canon_panel_and_minimax_install_contract
         names = frozenset(archive.namelist())
         assert "custom_nodes/comfy_story/web/story_panel.js" in names
         assert "custom_nodes/comfy_story/web/story_state.mjs" in names
+        assert "custom_nodes/comfy_story/web/film_editor.mjs" in names
+        assert "custom_nodes/comfy_story/web/film_editor_styles.mjs" in names
         assert "custom_nodes/comfy_story/example_workflows/two-shot-with-memory.json" in names
         install = archive.read("INSTALL.md").decode()
         assert "Add **Comfy Story**" in install

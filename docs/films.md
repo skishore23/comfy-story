@@ -1,7 +1,14 @@
 # Plan, generate, and edit a film
 
-Select **Open Story** on the Comfy Story node. Create a project, add references, and supply a starting
-image. Describe each shot's visible action, required subjects, and starting and ending state.
+Select **Open Story** on the Comfy Story node. In **Cast & world**, name your characters, props and
+locations and upload reference images. In **Shots**, select a shot on the thumbnail timeline,
+describe its visible action, choose its subjects and supply a starting image. Start/end frame and
+camera controls are beside the action; seeds, state checks and model settings are under Advanced.
+
+New films use **Continue with references**, compatible with the bundled memory checkpoint. Use
+**Compose from references** for a new composition. Existing animation profiles are preserved, but
+require a compatible checkpoint for their different foundation model; changing the UI selection
+does not install that model or checkpoint.
 
 ## First cut
 
@@ -13,9 +20,18 @@ Review the film and edit the relevant shot cards. Save a new revision and genera
 earlier shots can recover their saved outputs; dependent later shots regenerate. Use **New take
 seed** only when you want a new variation.
 
+Select a timeline card to preview its saved take, or **Watch assembled film** to review the film
+with sound. Earlier-plan footage is labeled when it differs from your current draft. Saving shows
+how many shots are eligible for reuse and marks affected shots for generation review. Reuse also
+requires matching runtime identities and intact saved outputs. Open **Generation history & review
+details** for prior runs, machine assessments and recovery information; previews do not approve takes.
+
 ## Audio and timing
 
-Use the soundtrack controls to add reviewed audio. Soundtrack edits can reuse the existing visuals.
+Open **Soundtrack** to upload reviewed audio directly (up to 256 MiB), or expand **Use an already
+uploaded file** to choose an existing Comfy input. Set the start, duration and volume; the placement
+bar shows its interval within the film. Tracks mix together. This is soundtrack mixing, not native
+audio conditioning of motion. Soundtrack edits can reuse the existing visuals.
 Generated speech and effects requires the H3 automatic prompt format. Supply the intended language,
 exact dialogue, speaker, and timing window for each line, then listen to the output.
 

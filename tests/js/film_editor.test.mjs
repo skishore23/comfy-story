@@ -76,6 +76,8 @@ class Element {
   constructor(tag) { this.tag = tag; this.children = []; this.listeners = {}; this.attrs = {}; this.isConnected = false; this.value = ''; this.validityMessage = '' }
   append(child) { child.parent = this; child.isConnected = true; this.children.push(child) }
   replaceChildren() { this.children = [] }
+  getAttribute(name) { return this.attrs[name] ?? null }
+  contains(child) { return this === child || this.all().includes(child) }
   setAttribute(name,value) { this.attrs[name] = value }
   removeAttribute(name) { delete this.attrs[name]; delete this[name] }
   addEventListener(name,callback) { (this.listeners[name] ??= []).push(callback) }
@@ -158,13 +160,13 @@ test('advanced controls stay optional, preserve saved settings, and reveal inval
   await openFilmEditor(api,node,{},document)
   for (const label of ['Advanced shot settings','Advanced film settings']) assert.equal(details(label).open,false)
   const advanced = details('Advanced shot settings')
-  for (const label of ['Locked seed','Sampler','Render approach','Camera policy','Required starting facts','Ending image (optional)']) {
+  for (const label of ['Locked seed','Sampler','Required starting facts','Present reference names']) {
     assert.ok(advanced.all().includes(control(label)), label)
   }
-  for (const label of ['Purpose','Visible action','Seconds','Present reference names','Starting image (blank uses previous frame)']) {
+  for (const label of ['Purpose','Visible action','Seconds','Render approach','Camera policy','Ending image (optional)','Starting image (blank uses previous frame)']) {
     assert.ok(!advanced.all().includes(control(label)), label)
   }
-  assert.ok(details('Advanced film settings').all().includes(control('State memory')))
+  assert.ok(details('Advanced film settings').all().includes(control('Appearance references')))
   assert.ok(details('Project tools and run settings').all().includes(control('Maximum attempts per shot')))
   assert.equal(button('Resume selected run').hidden,true)
   assert.equal(button('Pause after current shot').hidden,true)
@@ -183,6 +185,7 @@ test('advanced controls stay optional, preserve saved settings, and reveal inval
   assert.equal(card.open,true)
   assert.equal(stored.inputs.shots_by_id.one.variation,42)
   await button('Close').fire('click')
+  await button('Discard draft and close').fire('click')
   await openFilmEditor(api,node,{},document)
   assert.equal(details('Advanced shot settings').open,false)
   assert.equal(control('Locked seed').value,'42')
@@ -219,6 +222,7 @@ test('editor reopens precise timings and preserves seed while editing a cut', as
   await button('Save plan').fire('click')
   assert.equal(saves,before)
   await button('Close').fire('click')
+  await button('Discard draft and close').fire('click')
   await openFilmEditor(api,node,{},document)
   assert.equal(control('Seconds').value,'2.375')
 })
@@ -265,7 +269,7 @@ for (const renderProfile of ['Animate frame', 'Reference shot']) for (const came
   control('Ending image (optional)').value='guides/end.png'; await control('Ending image (optional)').fire('input')
   control('Render profile').value=renderProfile; await control('Render profile').fire('change')
   control('Sampler').value='Turbo 8-step'; await control('Sampler').fire('change')
-  control('State memory').value='Selected state evidence'; await control('State memory').fire('change')
+  control('Appearance references').value='Selected state evidence'; await control('Appearance references').fire('change')
   await button('Save plan').fire('click')
   assert.equal(stored.inputs.shots_by_id['shot-1'].variation,123456)
   assert.equal(stored.inputs.recall_selected_state,true)
@@ -411,7 +415,7 @@ test('reopened editor shows current or last review stage without starting work',
     const explanation = body.all().find(x=>x.textContent==='An object was obscured.')
     assert.ok(explanation)
     assert.notEqual(explanation.parent.tag,'details')
-    assert.equal(body.all().find(x=>x.tag==='video').muted, true)
+    assert.equal(body.all().find(x=>x.tag==='video' && !x.hidden).muted, true)
     const preview = body.all().find(x=>x.tag==='a' && x.textContent==='Preview latest candidate film')
     assert.equal(preview.href, `/comfy/story/films/saved/runs/${run.run_id}/preview`)
     assert.ok(body.all().some(x=>x.textContent?.includes('It may be incomplete or rejected.')))
@@ -449,8 +453,8 @@ test('new film starts a blank draft without changing the previous project or hos
   await openFilmEditor(api,node,{},document)
   await button('New film').fire('click')
   assert.equal(control('Film title').value,'New film')
-  assert.equal(control('Render approach').value,'Animate starting frame')
-  assert.equal(control('Render profile').value,'Animate frame')
+  assert.equal(control('Render approach').value,'Continue with references')
+  assert.equal(control('Render profile').value,'Reference shot')
   assert.equal(control('Prompt format').value,'H3 automatic v1')
   assert.equal(control('Visible action').value,'')
   assert.equal(control('Open film project').value,'')
@@ -586,9 +590,9 @@ test('actual editor previews uploaded guides and updates them without saving or 
   }, document)
   const control = label=>body.all().find(x=>x.attrs['aria-label']===label)
   const pictures = ()=>body.all().filter(x=>x.tag==='img')
-  assert.equal(pictures()[0].src, '/comfy'+filmImagePreviewPath('cast/boat.png'))
-  const start = pictures().find(x=>x.alt.startsWith('Starting image'))
-  const ending = pictures().find(x=>x.alt.startsWith('Ending image'))
+  assert.equal(pictures().find(x=>x.alt === 'Reference image preview').src, '/comfy'+filmImagePreviewPath('cast/boat.png'))
+  const start = pictures().find(x=>x.alt?.startsWith('Starting image'))
+  const ending = pictures().find(x=>x.alt?.startsWith('Ending image'))
   assert.equal(start.src, '/comfy'+filmImagePreviewPath('scenes/dock.png'))
   assert.equal(ending.parent.hidden, true)
   control('Ending image (optional)').value='scenes/arrival.png'
@@ -647,7 +651,7 @@ test('render approaches preserve legacy settings until an explicit choice', () =
   const shot={composition:'Continue frame',action:'An unfamiliar object moves.',camera_policy:'Locked frame'}
   const settings={variation:918273,world:'scene.png',sampler:'Native res_multistep'}
   const before=structuredClone({shot,settings})
-  assert.equal(filmRenderApproach(shot,settings),'Custom settings')
+  assert.equal(filmRenderApproach(shot,settings),'Continue with references')
   setFilmRenderApproach(shot,settings,'Custom settings')
   assert.deepEqual({shot,settings},before)
   setFilmRenderApproach(shot,settings,'Animate starting frame')
@@ -697,7 +701,7 @@ test('editor approach selection persists a coherent pair and added shots inherit
   const control=name=>body.all().find(x=>x.attrs['aria-label']===name)
   const button=name=>body.all().find(x=>x.tag==='button'&&x.textContent===name)
   await openFilmEditor(api,{properties:{}},{'Story Library':JSON.stringify({project_name:'Existing draft',references:[]}),'What happens next?':'A shape moves.','World / starting frame':'scene.png',Variation:42},document)
-  assert.equal(control('Render approach').value,'Custom settings')
+  assert.equal(control('Render approach').value,'Continue with references')
   assert.equal(mutations,0)
   control('Render approach').value='Compose from references';await control('Render approach').fire('change')
   assert.equal(control('Composition').value,'New composition')
@@ -1052,4 +1056,140 @@ for (const fails of [false,true]) test(`slow soundtrack attachment prevents an i
     assert.equal(stored.inputs.shots_by_id['shot-17'].variation,18)
   }
   await button('Close').fire('click')
+})
+
+function workspaceFixture() {
+  const body = new Element('body')
+  const document = {body,createElement:tag=>new Element(tag),getElementById:id=>body.all().find(x=>x.id===id)}
+  const recipe = {revision:'a'.repeat(64),plan:{project_id:'workspace',title:'A journey',initial_facts:[],shots:[
+    {shot_id:'one',duration_ms:5000,purpose:'Arrival',action:'@Aiko arrives.',present:['Aiko']},
+    {shot_id:'two',duration_ms:5000,purpose:'Departure',action:'@Aiko leaves.',present:[]},
+  ]},inputs:{library:{project_name:'A journey',references:[{name:'Aiko',role:'Character',file:'aiko.png',note:'Blue coat.'}]},shots_by_id:{one:{variation:11},two:{variation:22}}}}
+  const run = {run_id:'b'.repeat(64),revision:recipe.revision,status:'draft_ready',mode:'first_cut',phase:'complete',rendered:[{shot_id:'one',video_sha256:'c'.repeat(64)},{shot_id:'two',video_sha256:'d'.repeat(64)}]}
+  const writes = []
+  const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
+    if (options.method !== 'GET') { writes.push(JSON.parse(options.body)); return {ok:true,json:async()=>({recipe:{...writes.at(-1),revision:'e'.repeat(64)},impact:{reusable_prefix:['one'],requires_generation_review:['two']}})} }
+    return {ok:true,json:async()=>structuredClone(path==='/comfy/story/films'?{projects:[]}:path.includes('/runs/')?run:{recipe,runs:[run],verification_configured:false})}
+  }}
+  const control = label=>body.all().find(x=>x.attrs['aria-label']===label)
+  const button = label=>body.all().find(x=>x.tag==='button' && x.textContent===label)
+  return {body,document,recipe,run,writes,api,control,button,node:{properties:{comfy_film_project_id:'workspace'}}}
+}
+
+test('shot navigation and workspace sections preserve draft inputs without saves or new seeds', async () => {
+  const f = workspaceFixture(); await openFilmEditor(f.api,f.node,{},f.document)
+  const before = structuredClone(f.recipe)
+  f.control('Visible action').value='@Aiko pauses.'; await f.control('Visible action').fire('input')
+  await f.control('Edit shot 2: Departure').fire('click')
+  const cards=()=>f.body.all().filter(x=>x.className==='comfy-film-shot')
+  assert.deepEqual(cards().map(x=>x.hidden),[true,false])
+  await f.button('Cast & world').fire('click')
+  assert.equal(f.button('Cast & world').attrs['aria-pressed'],'true')
+  await f.button('Shots').fire('click')
+  await f.control('Edit shot 1: Arrival').fire('click')
+  assert.equal(f.control('Visible action').value,'@Aiko pauses.')
+  assert.deepEqual(cards().map(x=>x.hidden),[false,true])
+  assert.deepEqual(f.recipe,before)
+  assert.equal(f.writes.length,0)
+  await f.button('Save plan').fire('click')
+  assert.equal(f.writes[0].plan.shots[0].action,'@Aiko pauses.')
+  assert.deepEqual(f.writes[0].inputs,before.inputs)
+  assert.ok(f.body.all().some(x=>x.textContent==='Needs generation review'))
+  await f.button('Close').fire('click')
+})
+
+test('playback survives status refreshes and switches explicitly between a take and the film', async () => {
+  const f=workspaceFixture(); await openFilmEditor(f.api,f.node,{},f.document)
+  const player=f.body.all().find(x=>x.tag==='video')
+  let source=player.src, replacements=0
+  Object.defineProperty(player,'src',{get:()=>source,set:x=>{source=x;replacements++}})
+  player.muted=false
+  f.control('Generation mode').value='First cut';await f.control('Generation mode').fire('change')
+  assert.equal(replacements,0)
+  assert.equal(player.muted,false)
+  await f.button('Watch assembled film').fire('click')
+  assert.match(player.src,/\/runs\/[b]+\/video$/)
+  assert.equal(player.muted,false)
+  await f.control('Generation mode').fire('change')
+  assert.equal(replacements,1)
+  await f.control('Edit shot 2: Departure').fire('click')
+  assert.ok(player.src.endsWith('d'.repeat(64)))
+  assert.equal(player.muted,true)
+  assert.equal(replacements,2)
+  await f.button('Close').fire('click')
+})
+
+test('reference chips update the saved roster and exact-name edits update chips', async () => {
+  const f=workspaceFixture(); await openFilmEditor(f.api,f.node,{},f.document)
+  await f.control('Edit shot 2: Departure').fire('click')
+  const chip=f.control('Include @Aiko in shot 2'); chip.checked=true;await chip.fire('change')
+  const second=f.body.all().filter(x=>x.className==='comfy-film-shot')[1]
+  const names=second.all().find(x=>x.attrs['aria-label']==='Present reference names')
+  assert.equal(names.value,'Aiko')
+  names.value='';await names.fire('input');assert.equal(chip.checked,false)
+  chip.checked=true;await chip.fire('change')
+  await f.button('Save plan').fire('click')
+  assert.deepEqual(f.writes[0].plan.shots[1].present,['Aiko'])
+  assert.equal(f.writes[0].inputs.shots_by_id.two.variation,22)
+  await f.button('Close').fire('click')
+})
+
+test('saving reveals an invalid field even after switching sections and shots', async () => {
+  const f=workspaceFixture(); await openFilmEditor(f.api,f.node,{},f.document)
+  f.control('Locked seed').value='bad';await f.control('Locked seed').fire('input')
+  await f.control('Edit shot 2: Departure').fire('click')
+  await f.button('Soundtrack').fire('click')
+  await f.button('Save plan').fire('click')
+  assert.equal(f.writes.length,0)
+  assert.equal(f.button('Shots').attrs['aria-pressed'],'true')
+  assert.equal(f.body.all().find(x=>x.className==='comfy-film-shot').hidden,false)
+  assert.ok(f.control('Locked seed').validationMessage)
+  await f.button('Close').fire('click')
+})
+
+for (const fails of [false,true]) test(`audio file upload preserves the film while pending (${fails?'failure':'success'})`, async () => {
+  const f=workspaceFixture(), fallback=f.api.fetchApi
+  let finish, uploads=0
+  const pending=new Promise(resolve=>{finish=resolve})
+  f.api.fetchApi=async(path,options)=>{
+    if (!path.endsWith('/upload-soundtrack')) return fallback(path,options)
+    uploads++;assert.ok(options.body instanceof FormData);assert.equal(options.body.get('audio').name,'music.wav')
+    await pending
+    return {ok:!fails,json:async()=>({path:'story-audio-new.wav',sha256:'f'.repeat(64),duration_ms:7000})}
+  }
+  await openFilmEditor(f.api,f.node,{},f.document)
+  await f.button('Soundtrack').fire('click')
+  const input=f.control('Upload soundtrack');input.files=[new File(['audio fixture'],'music.wav')]
+  const upload=input.fire('change');await Promise.resolve()
+  assert.equal(f.button('Save plan').disabled,true)
+  await f.button('Save plan').fire('click');await input.fire('change')
+  assert.equal(uploads,1);assert.equal(f.writes.length,0)
+  finish();await upload
+  assert.equal(f.button('Save plan').disabled,false)
+  if (!fails) {
+    assert.equal(f.control('Soundtrack duration (seconds)').value,'7')
+    await f.button('Save plan').fire('click')
+    assert.equal(f.writes[0].inputs.audio[0].path,'story-audio-new.wav')
+    assert.deepEqual(f.writes[0].inputs.shots_by_id,f.recipe.inputs.shots_by_id)
+  } else {
+    assert.match(f.body.all().find(x=>x.attrs.role==='status').textContent,/upload failed/)
+    assert.equal(f.control('Soundtrack duration (seconds)'),undefined)
+  }
+  await f.button('Close').fire('click')
+})
+
+
+test('closing a dirty draft requires an explicit discard and never saves it silently', async () => {
+  const f=workspaceFixture();await openFilmEditor(f.api,f.node,{},f.document)
+  f.control('Visible action').value='A different action.';await f.control('Visible action').fire('input')
+  await f.button('Close').fire('click')
+  assert.ok(f.document.getElementById('comfy-film-editor'))
+  assert.equal(f.button('Discard draft and close').hidden,false)
+  assert.equal(f.writes.length,0)
+  await f.button('Discard draft and close').fire('click')
+  assert.equal(f.document.getElementById('comfy-film-editor'),undefined)
+  await openFilmEditor(f.api,f.node,{},f.document)
+  assert.equal(f.control('Visible action').value,'@Aiko arrives.')
+  assert.equal(f.writes.length,0)
+  await f.button('Close').fire('click')
 })
