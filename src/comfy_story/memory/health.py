@@ -31,6 +31,6 @@ def history_effect_report(
     ):
         raise ValueError(
             "memory checkpoint has no measurable history/order effect; "
-            "use native memory or an active checkpoint"
+            "install an active, compatible associative memory checkpoint"
         )
     return report

@@ -148,19 +148,24 @@ def test_project_http_save_conflict_resume_configuration_and_origin(
 def test_film_generation_identity_tracks_inputs_models_and_integration(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    from comfy_story.memory import settings
+
     package = ModuleType("film_identity_test")
     package.__path__ = []
     adapter = ModuleType("film_identity_test.comfy_adapter")
     monkeypatch.setattr(adapter, "_story_root", lambda: tmp_path, raising=False)
     monkeypatch.setattr(
-        adapter, "_generation_assets", lambda config: {"model": config["model"]}, raising=False
+        adapter,
+        "_generation_assets",
+        lambda config: {"model": config["model"], "video_vae": "c" * 64},
+        raising=False,
     )
     monkeypatch.setattr(adapter, "_story_sampler", lambda value: value, raising=False)
     monkeypatch.setattr(
         adapter,
         "render_configuration",
         lambda profile, sampler: {
-            "model": ("a" if profile == "Reference shot" else "e") * 64,
+            "model": "a" * 64,
             "lora": ("reference-eight" if profile == "Reference shot" else "animate-eight")
             if sampler == "Turbo 8-step"
             else ("turbo" if profile == "Reference shot" else "animate-turbo"),
@@ -195,7 +200,26 @@ def test_film_generation_identity_tracks_inputs_models_and_integration(
             "shots_by_id": {"one": {"world": "frame.png", "sampler": "Native res_multistep"}},
         }
     }
+    # Whole-film runs enforce the same required configuration as individual nodes.
+    with monkeypatch.context() as environment:
+        environment.delenv("COMFY_STORY_MEMORY", raising=False)
+        environment.delenv("COMFY_STORY_MEMORY_CHECKPOINT", raising=False)
+        with pytest.raises(ValueError, match="CHECKPOINT is required"):
+            module._film_generation_identity(recipe)
+        environment.setenv("COMFY_STORY_MEMORY", "native")
+        with pytest.raises(ValueError, match="requires associative memory"):
+            module._film_generation_identity(recipe)
+
+    # Keep the required memory binding while isolating checkpoint I/O from asset identity tests.
+    memory = settings.MemoryConfiguration(
+        str(tmp_path / "memory.pt"), "b" * 64, "a" * 64, "d" * 64, "c" * 64
+    )
+    monkeypatch.setattr(settings, "configured_memory", lambda: memory)
+    monkeypatch.setattr(
+        settings.MemoryConfiguration, "load", lambda *_: SimpleNamespace(close=lambda: None)
+    )
     native = module._film_generation_identity(recipe)
+    assert native["associative_memory"] == memory.binding()
     assert requested == []  # Native-only installs do not require the Turbo adapter.
     assert "integration/nodes.py" in native["implementation"]
     recipe["inputs"]["shots_by_id"]["one"]["sampler"] = "Turbo 4-step"
@@ -204,7 +228,7 @@ def test_film_generation_identity_tracks_inputs_models_and_integration(
     assert requested == [("loras", "turbo")]
     recipe["inputs"]["shots_by_id"]["one"]["render_profile"] = "Animate frame"
     animated = module._film_generation_identity(recipe)
-    assert animated["model_files"]["Animate frame:model"] == "e" * 64
+    assert animated["model_files"]["Animate frame:model"] == "a" * 64
     assert "model" not in animated["model_files"]
     assert requested[-1] == ("loras", "animate-turbo")
     recipe["inputs"]["shots_by_id"]["two"] = {

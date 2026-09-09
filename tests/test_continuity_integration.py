@@ -652,7 +652,7 @@ def test_saved_video_path_recovers_native_savevideo_destination(
     assert adapter._saved_video_path(video, "comfy_story/shot") == saved
 
 
-def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
+def test_legacy_archive_commit_recall_and_recovery_without_checkpoint(
     continuity_integration: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -668,13 +668,15 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
     from comfy_story.story_store import StoryProjectStore
 
     adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
+    # Exercise historical archive contracts, not the current production configuration gate.
+    monkeypatch.setattr(adapter, "configured_memory", lambda: None)
     monkeypatch.delenv("COMFY_STORY_MEMORY_RUNTIME", raising=False)
     monkeypatch.delenv("COMFY_STORY_MINIMAX_CHECKPOINT", raising=False)
     monkeypatch.delenv("COMFY_H3_COMPILER_INTERNAL_TEST", raising=False)
     monkeypatch.setenv("COMFY_STORY_ROOT", str(tmp_path / "stories"))
 
     def forbidden_checkpoint() -> None:
-        pytest.fail("Public native archive must not inspect or load a trained checkpoint")
+        pytest.fail("Legacy archive fixture must not load a trained checkpoint")
 
     monkeypatch.setattr(torch, "load", lambda *args, **kwargs: forbidden_checkpoint())
     reference = tmp_path / "acorn.png"
@@ -1094,12 +1096,14 @@ def test_animate_frame_uses_its_own_checkpoint_and_exact_ending_guide(
         assert nodes["BasicScheduler"][1]["steps"] == 20
 
 
-def test_reference_only_public_start_recovers_and_changes_scene_without_world(
+def test_legacy_reference_only_start_recovers_and_changes_scene_without_world(
     continuity_integration: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
+    # Keep legacy archive behavior covered without offering a production opt-out.
+    monkeypatch.setattr(adapter, "configured_memory", lambda: None)
     monkeypatch.setenv("COMFY_STORY_MEMORY_RUNTIME", "native-reference")
     monkeypatch.setenv("COMFY_STORY_ROOT", str(tmp_path / "stories"))
     reference = tmp_path / "acorn.png"
@@ -1381,3 +1385,24 @@ def test_associative_graph_passes_the_generation_vae_to_commit(
     schema = continuity_integration.ComfyStoryCommit.define_schema()
     field = next(field for field in schema.inputs if field.id == "memory_vae")
     assert field.options["optional"] is True
+
+
+@pytest.mark.parametrize("mode", [None, "native"])
+def test_public_generation_requires_memory_before_project_or_gpu_work(
+    continuity_integration: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    mode: str | None,
+) -> None:
+    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
+    if mode is None:
+        monkeypatch.delenv("COMFY_STORY_MEMORY", raising=False)
+    else:
+        monkeypatch.setenv("COMFY_STORY_MEMORY", mode)
+    monkeypatch.delenv("COMFY_STORY_MEMORY_CHECKPOINT", raising=False)
+    root = tmp_path / "must-not-be-created"
+    monkeypatch.setenv("COMFY_STORY_ROOT", str(root))
+    expected = "CHECKPOINT is required" if mode is None else "requires associative memory"
+    with pytest.raises(ValueError, match=expected):
+        adapter.prepare_node_generation({})
+    assert not root.exists()

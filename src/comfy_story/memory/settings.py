@@ -1,4 +1,4 @@
-"""Explicit, portable checkpoint pins for optional associative Story memory."""
+"""Required, portable checkpoint pins for associative Story memory."""
 
 from __future__ import annotations
 
@@ -84,12 +84,13 @@ class InspectionCodec:
         pass
 
 
-def configured_memory() -> MemoryConfiguration | None:
-    mode = os.environ.get("COMFY_STORY_MEMORY", "native")
-    if mode == "native":
-        return None
+def configured_memory() -> MemoryConfiguration:
+    mode = os.environ.get("COMFY_STORY_MEMORY", "associative")
     if mode != "associative":
-        raise ValueError("COMFY_STORY_MEMORY must be native or associative")
+        raise ValueError(
+            "Comfy Story requires associative memory; remove COMFY_STORY_MEMORY "
+            "or set it to associative, then configure the checkpoint and identity hashes"
+        )
     fields = {
         "checkpoint": "CHECKPOINT",
         "checkpoint_sha256": "CHECKPOINT_SHA256",

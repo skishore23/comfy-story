@@ -21,7 +21,8 @@ Extract the ZIP and use the ComfyUI environment's Python:
 
 The preflight checks the bundle, installed dependencies, and destination. Resolve any reported
 missing dependencies in the ComfyUI environment. Installation preserves its Torch/CUDA build.
-Restart ComfyUI after installation. Cloning the source into `custom_nodes` alone does not install it.
+Configure and preflight the required [associative memory](#associative-memory) checkpoint before
+restarting ComfyUI. Cloning the source into `custom_nodes` alone does not install it.
 
 For an upgrade, validate a staged installation first. Back up the existing node, environment,
 workflow, and complete story directory before switching while the render queue is empty.
@@ -56,22 +57,24 @@ matching inputs instead of bypassing checks. Projects currently support up to 12
 
 ## Associative memory
 
-The default `native` mode stores approved reference images and shot evidence. Optional
-`associative` mode also encodes opening/change/closing observations into ordered operators,
+Associative memory is required for generation, alongside approved reference images and shot
+evidence. It encodes opening/change/closing observations into ordered operators,
 maintains sixteen eight-shot fusion trees, and saves authenticated dense-memory snapshots.
 With **Reference shot** and **Continue frame**, it supplies a historical context image alongside
 exact references. That image uses one of H3's nine source slots. New composition and Animate frame
 omit the inherited context image while continuing to store memory. Forgetting an observation
 removes its whole source shot from dense history in subsequent revisions.
 
-Associative memory is experimental. Its checkpoint must respond to changes in history and order;
+The trained checkpoint must respond to changes in history and order;
 a successful preflight does not establish rendered continuity quality. The foundation model and
-video VAE must match the configured hashes. Checkpoints are installed separately from source.
+video VAE must match the configured hashes. Checkpoints are installed separately from source and
+are not included in the installer. No public checkpoint download is currently provided by this
+repository; obtain compatible trained weights and their identity manifest from the checkpoint
+provider. Without them, you can install and edit projects, but generation cannot run.
 
 Set these variables before starting ComfyUI, using independently recorded checkpoint/model hashes:
 
 ```bash
-export COMFY_STORY_MEMORY=associative
 export COMFY_STORY_MEMORY_CHECKPOINT=/absolute/path/to/h3-memory.pt
 export COMFY_STORY_MEMORY_CHECKPOINT_SHA256='CHECKPOINT_SHA256'
 export COMFY_STORY_MEMORY_FOUNDATION_SHA256='FOUNDATION_MODEL_SHA256'
@@ -79,9 +82,16 @@ export COMFY_STORY_MEMORY_MODEL_CONFIGURATION_SHA256='CHECKPOINT_TRAINING_CONFIG
 export COMFY_STORY_MEMORY_VAE_SHA256='VIDEO_VAE_SHA256'
 ```
 
-Replace the uppercase placeholders with the actual hashes. Start a new story when changing memory
-mode or checkpoint; an existing associative branch requires its original configuration. Preserve
-all project assets when backing up or moving a story, including its memory snapshots.
+Replace the uppercase placeholders with the actual lowercase SHA-256 hashes. The configuration
+hash identifies the checkpoint training configuration, not the workflow. Associative memory is
+selected automatically; remove old `COMFY_STORY_MEMORY=native` settings. If set explicitly, only
+`COMFY_STORY_MEMORY=associative` is supported. Missing pins or unsupported modes fail before a node
+creates its story store or prepares generation.
+
+Start a new story when changing checkpoint, model or memory runtime implementation; an existing
+branch requires its original configuration. Keep the previous installation for historical branches.
+Legacy reference-only history is not automatically converted to learned memory. Preserve all
+project assets when backing up or moving a story, including its memory snapshots.
 
 Before allocating GPU models, inspect the checkpoint using ComfyUI's Python environment:
 
@@ -96,5 +106,7 @@ python -m comfy_story.memory.inspect \
 
 The check verifies the training envelope, tensor hashes, architecture and causal history response.
 ComfyUI also checks the actual generation model and VAE files. It rejects inactive or mismatched
-checkpoints rather than silently substituting native memory. Completed-shot recovery and the
-creator's exact-evidence approvals remain available in both modes.
+checkpoints rather than silently substituting reference-only storage. Completed-shot recovery and
+the creator's exact-evidence approvals remain part of the workflow. A successful report includes
+`checkpoint_authenticated: true` and nonzero history/order deltas. It explicitly leaves
+`rendered_quality_validated: false`: checkpoint integrity does not establish visual quality.

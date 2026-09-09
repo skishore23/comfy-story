@@ -653,6 +653,7 @@ def _scene_entities(value: object) -> tuple[str, ...] | None:
 
 def prepare_node_generation(inputs: dict[str, Any]) -> PreparedNodeGeneration:
     """Convert customer widgets to a validated, model-free generation request."""
+    memory = configured_memory()
     store = StoryProjectStore(_story_root())
     state = _state_from_inputs(inputs)
     sampler = _story_sampler(inputs.get("Sampler", "Native res_multistep"))
@@ -709,7 +710,7 @@ def prepare_node_generation(inputs: dict[str, Any]) -> PreparedNodeGeneration:
         project_id = state.project_id
         branch_id = state.branch_id
     request = StoryGenerationRequest(
-        associative_memory=configured_memory(),
+        associative_memory=memory,
         intent=intent,
         project_id=project_id,
         branch_id=branch_id,

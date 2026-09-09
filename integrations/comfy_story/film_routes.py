@@ -38,9 +38,8 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
     )
 
     memory = configured_memory()
-    if memory is not None:
-        runtime = memory.load(InspectionCodec())
-        runtime.close()
+    runtime = memory.load(InspectionCodec())
+    runtime.close()
     inputs = recipe["inputs"]
     staging = {}
     if any(row.get("opening_prompt", "").strip() for row in inputs["shots_by_id"].values()):
@@ -63,7 +62,7 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
         )
         prefix = "" if profile == "Reference shot" else profile + ":"
         generation_assets = _generation_assets(configuration)
-        if memory is not None and (
+        if (
             generation_assets["model"] != memory.foundation_sha256
             or generation_assets["video_vae"] != memory.vae_sha256
         ):
@@ -117,7 +116,7 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
     from comfy_story.story_native_archive import NATIVE_REFERENCE_RUNTIME_SHA256
 
     return {
-        **({"associative_memory": memory.binding()} if memory is not None else {}),
+        "associative_memory": memory.binding(),
         "model_files": models,
         **staging,
         "memory_runtime": NATIVE_REFERENCE_RUNTIME_SHA256,
