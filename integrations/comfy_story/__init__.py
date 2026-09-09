@@ -13,6 +13,7 @@ from .nodes import (
     ComfyStoryKeyframeTiming,
     ComfyStoryTrim,
 )
+from .reference_nodes import ComfyStoryReferenceVAE
 
 WEB_DIRECTORY = "./web"
 
@@ -31,6 +32,7 @@ class ComfyStoryExtension(ComfyExtension):
             ComfyH3VideoLatent,
             ComfyH3ReplaceVideoLatent,
             ComfyH3RefinementSigmas,
+            ComfyStoryReferenceVAE,
         ]
 
 

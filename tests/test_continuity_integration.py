@@ -244,6 +244,7 @@ def test_extension_exposes_story_nodes_and_hidden_internal_nodes(
         continuity_integration.ComfyH3VideoLatent,
         continuity_integration.ComfyH3ReplaceVideoLatent,
         continuity_integration.ComfyH3RefinementSigmas,
+        continuity_integration.ComfyStoryReferenceVAE,
     ]
     assert registered[0].define_schema().is_deprecated is False
     assert all(not node.define_schema().is_deprecated for node in registered)
@@ -282,7 +283,7 @@ def test_living_canon_expansion_marks_request_and_routes_commit_to_visible_node(
     output = getattr(continuity_integration, node_name).execute()
 
     assert observed == [True]
-    assert output.expand["16"]["inputs"]["owner_node_id"] == "42"
+    assert output.expand["17"]["inputs"]["owner_node_id"] == "42"
 
 
 def test_internal_commit_returns_inspector_metadata_for_the_visible_canon_node(
@@ -356,6 +357,7 @@ def test_expand_generates_decodes_saves_then_commits(
         "RandomNoise",
         "KSamplerSelect",
         "BasicScheduler",
+        "ComfyStoryReferenceVAE",
         "MiniMaxH3ReferenceToVideo",
         "MiniMaxH3AddGuide",
         "BasicGuider",
@@ -366,13 +368,13 @@ def test_expand_generates_decodes_saves_then_commits(
         "SaveVideo",
         "ComfyStoryCommit",
     ]
-    commit = output.expand["16"]
-    assert commit["inputs"]["decoded_images"] == ["12", 0]
-    assert commit["inputs"]["saved_video"] == ["15", 0]
+    commit = output.expand["17"]
+    assert commit["inputs"]["decoded_images"] == ["13", 0]
+    assert commit["inputs"]["saved_video"] == ["16", 0]
     assert "memory_vae" not in commit["inputs"]
     assert commit["inputs"]["filename_prefix"] == "comfy_story/shot"
-    assert output.args == (["15", 0], ["16", 1], ["16", 0])
-    generator = output.expand["8"]["inputs"]
+    assert output.args == (["16", 0], ["17", 1], ["17", 0])
+    generator = output.expand["9"]["inputs"]
     assert generator["width"] == 1344
     assert generator["height"] == 768
     assert generator["length"] == 124
@@ -1410,3 +1412,38 @@ def test_public_generation_requires_memory_before_project_or_gpu_work(
     with pytest.raises(ValueError, match=expected):
         adapter.prepare_node_generation({})
     assert not root.exists()
+
+
+def test_reference_review_http_cost_and_origin(
+    continuity_integration: ModuleType, tmp_path: Path
+) -> None:
+    from aiohttp import web
+    from aiohttp.test_utils import TestClient, TestServer
+
+    module = importlib.import_module(f"{_MODULE}.film_routes")
+    Image.new("RGB", (2688, 1536)).save(tmp_path / "cast.png")
+
+    async def scenario() -> None:
+        routes = web.RouteTableDef()
+        module.register_film_routes(SimpleNamespace(routes=routes))
+        app = web.Application()
+        app.add_routes(routes)
+        async with TestClient(TestServer(app)) as client:
+            payload: dict[str, Any] = {
+                "references": [{"name": "Aiko", "file": "cast.png"}],
+                "sampler": "Turbo 8-step",
+            }
+            result = await client.post("/comfy/story/films/reference-review", json=payload)
+            assert result.status == 200
+            assert (await result.json())["named_image_tokens"] == 1008
+            denied = await client.post(
+                "/comfy/story/films/reference-review",
+                json=payload,
+                headers={"Origin": "https://other.example"},
+            )
+            assert denied.status == 403
+            payload["references"][0]["file"] = "../cast.png"
+            bad = await client.post("/comfy/story/films/reference-review", json=payload)
+            assert bad.status == 400
+
+    asyncio.run(scenario())

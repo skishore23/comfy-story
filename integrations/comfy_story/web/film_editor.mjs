@@ -102,6 +102,12 @@ export function filmImagePreviewPath(value) {
 }
 
 const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0]
+export function filmReferenceReviewInputs(shot, settings, library) {
+  const selected = new Set((shot.present ?? []).map(name => name.toLowerCase()))
+  return {sampler: settings.sampler || 'Native res_multistep',
+    references: library.references.filter(ref => selected.has(ref.name.toLowerCase()))
+      .map(ref => ({name: ref.name, file: ref.file}))}
+}
 // Authoring aid only: these are declared intentions, never inferred video observations.
 export function filmStoryboardRows(plan) {
   const state = new Map((plan.initial_facts ?? []).map(fact => [fact.key, fact.value]))
@@ -191,7 +197,9 @@ export async function openFilmEditor(api, node, values, document = window.docume
   }
   const soundtrackLevels = new Map()
   const shotViewKey = id => JSON.stringify([recipe.plan.project_id, id])
-  const changed = () => { dirty = true; savedImpact = null; refreshStateCoverage(); refreshStoryboard(); showPreview(watchingFilm); status.textContent = 'Unsaved changes · Save plan to check which shots need rendering again.' }
+  let reviewEpoch = 0
+  const referenceReviews = new Set()
+  const changed = () => { reviewEpoch++; for (const panel of referenceReviews) panel.replaceChildren(); dirty = true; savedImpact = null; refreshStateCoverage(); refreshStoryboard(); showPreview(watchingFilm); status.textContent = 'Unsaved changes · Save plan to check which shots need rendering again.' }
   const field = (parent, label, value, onChange, options, affectsRecipe = true) => {
     const wrapper = el('label', label, parent)
     const control = el(options ? 'select' : 'input', '', wrapper)
@@ -437,7 +445,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     })
   }
   const render = () => {
-    content.replaceChildren(); shotCards.clear(); sectionPanels.clear(); validateEditorSeeds(recipe.inputs)
+    referenceReviews.clear(); reviewEpoch++; content.replaceChildren(); shotCards.clear(); sectionPanels.clear(); validateEditorSeeds(recipe.inputs)
     refreshStateCoverage()
     const plan = recipe.plan, inputs = recipe.inputs
     heading.textContent = `Comfy Story · ${plan.title}`
@@ -535,6 +543,32 @@ export async function openFilmEditor(api, node, values, document = window.docume
         check.addEventListener('change', () => { shot.present = check.checked ? [...new Set([...(shot.present || []), ref.name])] : (shot.present || []).filter(x => x !== ref.name); presentControl.value = shot.present.join(', '); changed() })
       }
       const presentControl = field(advanced, 'Present reference names', (shot.present || []).join(', '), x => { shot.present = names(x); for (const [name, check] of referenceChecks) check.checked = shot.present.includes(name) })
+      const referenceReview = el('section', '', card)
+      el('h4', 'Reference review', referenceReview)
+      el('p', 'Unchanged image and motion-reference encodings are reused automatically at full quality. Story memory continues to update after each shot.', referenceReview)
+      const reviewResult = el('div', '', referenceReview); referenceReviews.add(reviewResult)
+      button('Preview selected references and cost', async () => {
+        const epoch = reviewEpoch
+        reviewResult.replaceChildren()
+        if ((settings.render_profile || 'Reference shot') !== 'Reference shot' || Object.hasOwn(settings, 'opening_prompt')) {
+          el('p', 'This approach animates a starting frame. Separate reference-token estimates apply to Reference shot; staging inputs are reviewed separately.', reviewResult)
+          return
+        }
+        el('p', 'Checking selected images…', reviewResult)
+        const result = await request('/reference-review', 'POST', filmReferenceReviewInputs(shot, settings, inputs.library))
+        if (epoch !== reviewEpoch || !reviewResult.isConnected) return
+        reviewResult.replaceChildren()
+        el('strong', `${result.references.length} named images · ${result.named_image_tokens.toLocaleString()} estimated reference tokens`, reviewResult)
+        el('p', result.scope, reviewResult)
+        const grid = el('div', '', reviewResult); grid.className = 'film-reference-grid'
+        for (const ref of result.references) {
+          const tile = el('section', '', grid)
+          const path = filmImagePreviewPath(ref.file)
+          if (path) { const image = el('img', '', tile); image.src = api.apiURL ? api.apiURL(path) : path; image.alt = `Original reference for @${ref.name}`; image.style.maxWidth = '100%'; image.style.maxHeight = '180px'; image.style.objectFit = 'contain' }
+          el('strong', `@${ref.name}`, tile)
+          el('p', `${ref.width} × ${ref.height} → ${ref.encoded_width} × ${ref.encoded_height} · ${ref.tokens.toLocaleString()} tokens`, tile)
+        }
+      }, referenceReview)
       field(advanced, 'Must remain visible throughout', (shot.visible_throughout || []).join(', '), x => { shot.visible_throughout = names(x) })
       field(advanced, 'Must remain fully visible', (shot.fully_visible_throughout || []).join(', '), x => { shot.fully_visible_throughout = names(x) })
       el('p', 'Full visibility also rejects cropping or being hidden behind another subject or object. Leave blank when the shot allows occlusion.', advanced)

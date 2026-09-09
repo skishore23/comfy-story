@@ -92,6 +92,16 @@ When you like a result, the node's **Keep this moment** and **Keep @Name look** 
 save visual evidence for future shots. Review faces, clothing, props, and action as you go;
 memory helps guide continuity, but a generated take still needs your eye.
 
+In each shot, **Preview selected references and cost** shows the original images and estimated
+reference-token counts. Historical context and approved evidence can change the final reference
+set at render time; these estimates are not GPU memory predictions.
+
+Reference shots automatically reuse unchanged image and motion-reference encodings at full quality.
+The cache also works after restarting ComfyUI and refreshes when the image or encoder changes.
+It uses up to 2 GiB under `reference_cache` in your story directory. You can remove that folder
+while ComfyUI is stopped to reclaim space; it is disposable and does not contain your story memory.
+Caching saves reference preparation work, not the main video-generation steps.
+
 Use **Continue with references** to continue from the previous frame with historical context.
 Choose **Compose from references** to create a new view from your selected references. The
 [film guide](docs/films.md) explains other render approaches and their model requirements.

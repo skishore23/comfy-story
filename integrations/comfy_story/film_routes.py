@@ -229,6 +229,27 @@ class FilmRoutes:
             origin = request.headers.get("Origin")
             if request.method != "GET" and origin and urlsplit(origin).netloc != request.host:
                 raise web.HTTPForbidden(text="Use the Comfy application's own origin")
+            if request.method == "POST" and request.path.endswith("/reference-review"):
+                import folder_paths
+
+                from comfy_story.reference_review import review_image_references
+
+                from .comfy_adapter import _story_sampler, render_configuration
+
+                payload = await request.json()
+                if not isinstance(payload, dict):
+                    raise ValueError("Reference review must be an object")
+                config = render_configuration(
+                    "Reference shot", _story_sampler(payload.get("sampler", "Native res_multistep"))
+                )
+                result = await asyncio.to_thread(
+                    review_image_references,
+                    Path(folder_paths.get_input_directory()).resolve(),
+                    payload.get("references"),
+                    (config["width"], config["height"]),
+                    "match" if "lora" in config else "max",
+                )
+                return web.json_response(result)
             service = self.service(request)
             project_id = request.match_info.get("project_id")
             run_id = request.match_info.get("run_id")
@@ -342,6 +363,7 @@ def register_film_routes(server: Any) -> None:
     server.routes.post(root + "/import-inputs")(handler.handle)
     server.routes.post(root + "/soundtrack")(handler.handle)
     server.routes.post(root + "/upload-soundtrack")(handler.handle)
+    server.routes.post(root + "/reference-review")(handler.handle)
     server.routes.get(root + "/{project_id}/inputs-bundle")(handler.handle)
     server.routes.get(root + "/{project_id}")(handler.handle)
     server.routes.put(root + "/{project_id}")(handler.handle)

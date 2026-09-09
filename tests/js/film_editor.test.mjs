@@ -1193,3 +1193,15 @@ test('closing a dirty draft requires an explicit discard and never saves it sile
   assert.equal(f.writes.length,0)
   await f.button('Close').fire('click')
 })
+
+import { filmReferenceReviewInputs } from '../../integrations/comfy_story/web/film_editor.mjs'
+
+test('reference review uses declared cast, preserves library order and leaves recipes intact', () => {
+  const shot = {present:['moonblade','AIKO']}
+  const settings = {sampler:'Turbo 8-step'}
+  const library = {references:[{name:'Aiko',file:'a.png',note:'keep face'}, {name:'Forest',file:'f.png'}, {name:'Moonblade',file:'m.png'}]}
+  const before = JSON.stringify({shot,settings,library})
+  assert.deepEqual(filmReferenceReviewInputs(shot,settings,library), {sampler:'Turbo 8-step',references:[{name:'Aiko',file:'a.png'},{name:'Moonblade',file:'m.png'}]})
+  assert.equal(JSON.stringify({shot,settings,library}),before)
+  assert.deepEqual(filmReferenceReviewInputs({}, {}, library), {sampler:'Native res_multistep', references:[]})
+})

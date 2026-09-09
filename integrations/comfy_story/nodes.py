@@ -304,6 +304,12 @@ class ComfyStory(io.ComfyNode):
                 ),
             )
         else:
+            reference_vae = graph.node(
+                "ComfyStoryReferenceVAE",
+                vae=video_vae.out(0),
+                vae_name=configuration["video_vae"],
+            )
+            conditioning_inputs["vae"] = reference_vae.out(0)
             conditioning = graph.node("MiniMaxH3ReferenceToVideo", **conditioning_inputs)
         positive = conditioning.out(0)
         if (
