@@ -2,7 +2,7 @@
 
 Use Python 3.11 or newer in an existing ComfyUI environment with working MiniMax H3 nodes and
 authorized model access. Install the foundation, text/vision encoders, and video/audio VAEs using
-your supported ComfyUI model setup. Model files and credentials are not included.
+your supported ComfyUI model setup. Foundation model files and credentials are not included.
 
 ## Install
 
@@ -15,8 +15,8 @@ run with ComfyUI's Python:
 ```
 
 The same command works from a clean cloned source checkout. It fetches the pinned memory asset
-and builds the installable bundle automatically. Private repository downloads require an
-authenticated `gh` CLI; the complete ZIP needs no checkpoint download or GitHub credentials.
+and builds the installable bundle automatically. No GitHub credentials are needed. The complete
+ZIP includes the checkpoint and needs no separate checkpoint download.
 
 The installer verifies the bundle, supplies associative memory automatically, installs missing
 Python dependencies and checks required H3 files, checkpoint behavior, and ffmpeg/ffprobe. It pins

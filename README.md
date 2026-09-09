@@ -89,8 +89,7 @@ cd comfy-story
 
 The source installer downloads the checksum-pinned memory release once and caches it under
 `artifacts/checkpoints/`. The complete installer ZIP includes it already and needs no checkpoint
-download. While the repository is private, source installation requires repository access and an
-authenticated `gh` CLI for that download. Users of the complete ZIP do not need `gh`.
+download. Neither installation method needs GitHub credentials or memory environment variables.
 
 1. Restart ComfyUI after installation. Add **Comfy Story** from **Comfy / Story**.
 2. Choose **Start Story**, add named character/prop/location references and a starting frame, then
@@ -125,7 +124,7 @@ start new stories on the upgraded version.
 ## Development
 
 ```bash
-uv sync --locked --extra dev
+uv sync --locked --extra dev --python 3.11
 uv run python -m ruff format .
 uv run python -m ruff check .
 uv run python -m ruff format --check .
