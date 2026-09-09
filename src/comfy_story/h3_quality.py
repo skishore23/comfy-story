@@ -1,7 +1,7 @@
 """Versioned H3 spatial refinement preset, distinct from SPEED sampling."""
 
 FULL_HD_SAMPLER = "Full HD 2-pass"
-FULL_HD_PROTOCOL = "duet-h3-full-hd-v1"
+FULL_HD_PROTOCOL = "comfy-h3-full-hd-v1"
 UPSCALER_MODEL = "minimax_h3_latent_upscaler_3d_fp16.safetensors"
 UPSCALER_NODE_REVISION = "d7c01b9011f2e8439493f6c02c29995a27df276f"
 UPSCALER_SOURCE_SHA256 = "744063b43e0f3eec23e2485cb7c65503069946ca9690906ecb548d7515cb89e2"

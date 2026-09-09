@@ -1,4 +1,4 @@
-"""Immutable public contracts for Duet Story projects and Comfy state links."""
+"""Immutable public contracts for Comfy Story projects and Comfy state links."""
 
 from __future__ import annotations
 
@@ -13,11 +13,11 @@ _PROJECT_NAME = re.compile(r"^[^/\\\x00-\x1f]{1,96}$")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
 _MENTION = re.compile(r"(?<![A-Za-z0-9_])@([A-Za-z][A-Za-z0-9_-]{0,63})")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
-_ASSET_LOCATOR = re.compile(r"^duet-story://assets/sha256/([0-9a-f]{64})$")
+_ASSET_LOCATOR = re.compile(r"^comfy-story://assets/sha256/([0-9a-f]{64})$")
 
 
 class ShotIntent(StrEnum):
-    """Value-oriented action performed by one Duet Story node."""
+    """Value-oriented action performed by one Comfy Story node."""
 
     START_STORY = "Start Story"
     CONTINUE_THIS_SHOT = "Continue This Shot"
@@ -61,7 +61,7 @@ def _wire(value: object) -> object:
         }
     if isinstance(value, dict):
         if any(not isinstance(key, str) for key in value):
-            raise TypeError("Duet Story canonical mappings require string keys")
+            raise TypeError("Comfy Story canonical mappings require string keys")
         return {key: _wire(item) for key, item in value.items()}
     if isinstance(value, list):
         return [_wire(item) for item in value]
@@ -69,7 +69,7 @@ def _wire(value: object) -> object:
         return [_wire(item) for item in value]
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
-    raise TypeError(f"unsupported Duet Story canonical value: {type(value).__name__}")
+    raise TypeError(f"unsupported Comfy Story canonical value: {type(value).__name__}")
 
 
 def canonical_story_json(value: object) -> bytes:
@@ -219,45 +219,31 @@ class StoryLibrary:
             raise ValueError("Story Library reference names must be unique, ignoring case")
         return self
 
-    def _resolve_explicit_mentions(self, prompt: str) -> tuple[StoryReference, ...]:
-        """Resolve unique explicit mentions without imposing a backend limit."""
+    def resolve_references(
+        self,
+        prompt: str,
+        *,
+        limit: int = 9,
+        require_mentions: bool = False,
+    ) -> tuple[StoryReference, ...]:
+        """Resolve unique names in prompt order within the requested image budget."""
         self.validate()
-        if not isinstance(prompt, str) or not prompt.strip():
-            raise ValueError("What happens next? must not be empty")
-        mentioned = {match.group(1).casefold() for match in _MENTION.finditer(prompt)}
-        lookup = {reference.name.casefold(): reference for reference in self.references}
-        unknown = tuple(name for name in mentioned if name not in lookup)
-        if unknown:
-            original = next(
-                match.group(1)
-                for match in _MENTION.finditer(prompt)
-                if match.group(1).casefold() in unknown
-            )
-            raise ValueError(f"Unknown Story Library reference: @{original}")
-        selected = tuple(
-            reference for reference in self.references if reference.name.casefold() in mentioned
-        )
-        return selected
-
-    def resolve_mentions(self, prompt: str) -> tuple[StoryReference, ...]:
-        """Resolve the legacy one-or-two-reference roster in library order."""
-        selected = self._resolve_explicit_mentions(prompt)
-        if len(selected) > 2:
-            raise ValueError("MiniMax shots support at most two exact references")
-        if not selected:
-            raise ValueError("Mention one or two Story Library references with @name")
-        return selected
-
-    def resolve_for_h3(self, prompt: str, *, limit: int = 9) -> tuple[StoryReference, ...]:
-        """Resolve a larger explicit MiniMax H3 semantic roster in library order."""
         if type(limit) is not int or not 1 <= limit <= 9:
             raise ValueError("H3 reference limit must be in range [1,9]")
-        selected = self._resolve_explicit_mentions(prompt)
-        if not selected:
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError("What happens next? must be nonempty")
+        lookup = {reference.name.casefold(): reference for reference in self.references}
+        selected: dict[str, StoryReference] = {}
+        for match in _MENTION.finditer(prompt):
+            name = match.group(1).casefold()
+            if name not in lookup:
+                raise ValueError(f"Unknown Story Library reference: @{match.group(1)}")
+            selected.setdefault(name, lookup[name])
+        if not selected and require_mentions:
             raise ValueError("Mention at least one Story Library reference with @name")
         if len(selected) > limit:
-            raise ValueError(f"MiniMax H3 semantic roster supports at most {limit} references")
-        return selected
+            raise ValueError(f"MiniMax H3 supports at most {limit} named references")
+        return tuple(selected.values())
 
     def to_json(self) -> bytes:
         self.validate()
@@ -277,8 +263,8 @@ class StoryLibrary:
 
 
 @dataclass(frozen=True, slots=True)
-class DuetStoryStateRef:
-    """Opaque, content-bound state passed through a ``DUET_STORY`` socket."""
+class ComfyStoryStateRef:
+    """Opaque, content-bound state passed through a ``COMFY_STORY`` socket."""
 
     project_id: str
     branch_id: str
@@ -315,10 +301,10 @@ class DuetStoryStateRef:
         return canonical_story_json(self)
 
     @classmethod
-    def from_json(cls, encoded: bytes) -> DuetStoryStateRef:
-        data = decode_canonical_story_object(encoded, field="DuetStoryStateRef")
+    def from_json(cls, encoded: bytes) -> ComfyStoryStateRef:
+        data = decode_canonical_story_object(encoded, field="ComfyStoryStateRef")
         expected = frozenset(field.name for field in fields(cls))
-        _exact_fields(data, expected, "DuetStoryStateRef")
+        _exact_fields(data, expected, "ComfyStoryStateRef")
         parent = data["parent_revision_sha256"]
         if parent is not None and not isinstance(parent, str):
             raise ValueError("parent_revision_sha256 must be a digest or null")
@@ -341,7 +327,7 @@ class DuetStoryStateRef:
 
 
 __all__ = (
-    "DuetStoryStateRef",
+    "ComfyStoryStateRef",
     "ReferenceRole",
     "ShotIntent",
     "StoryLibrary",

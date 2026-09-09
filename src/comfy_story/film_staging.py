@@ -58,7 +58,7 @@ def fit_authored_opening(server: str, directory: Path, root: Path, world: str) -
         "101": {"class_type": "LoadImage", "inputs": {"image": world}},
         "25": {
             "class_type": "SaveImage",
-            "inputs": {"images": ["101", 0], "filename_prefix": "duet_story_canvas/raw"},
+            "inputs": {"images": ["101", 0], "filename_prefix": "comfy_story_canvas/raw"},
         },
         "26": {
             "class_type": "ImageScale",
@@ -72,7 +72,7 @@ def fit_authored_opening(server: str, directory: Path, root: Path, world: str) -
         },
         "24": {
             "class_type": "SaveImage",
-            "inputs": {"images": ["26", 0], "filename_prefix": "duet_story_canvas/fitted"},
+            "inputs": {"images": ["26", 0], "filename_prefix": "comfy_story_canvas/fitted"},
         },
     }
     fitted = _render(
@@ -96,7 +96,7 @@ def _asset(root: Path, name: str) -> Path:
 
 def _publish(root: Path, data: bytes) -> str:
     digest = hashlib.sha256(data).hexdigest()
-    name = f"duet_story_staging/{digest}.png"
+    name = f"comfy_story_staging/{digest}.png"
     path = root / name
     if not path.resolve().is_relative_to(root.resolve()):
         raise ValueError("staging upload directory escapes Comfy input")
@@ -222,7 +222,7 @@ def _render(
             raise ValueError("Comfy is missing required opening staging nodes")
         payload = {
             "prompt": workflow,
-            "client_id": "duet-stage-" + hashlib.sha256(encoded).hexdigest()[:24],
+            "client_id": "comfy-stage-" + hashlib.sha256(encoded).hexdigest()[:24],
         }
         with intent.open("xb") as handle:
             handle.write(canonical_story_json(payload))

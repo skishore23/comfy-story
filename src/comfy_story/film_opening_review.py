@@ -136,7 +136,7 @@ def opening_candidates(
                 image=image,
                 raw_image=raw,
                 fitted=json.loads(request_bytes).get("format")
-                in ("duet-film-opening-stage-v2", "duet-film-opening-stage-v3"),
+                in ("comfy-film-opening-stage-v2", "comfy-film-opening-stage-v3"),
                 state=assessment["state"],
                 visibility=assessment["visibility"],
             )

@@ -68,7 +68,7 @@ test('inspector summary retains customer-facing recall and canon sections', () =
   assert.equal(pendingMemoryCommands(node)[0].target_id, 'key-bent')
   assert.equal(node.widgets[0].value, 'unchanged generating inputs')
   const reopened = { properties: JSON.parse(JSON.stringify(node.properties)) }
-  recordCompletedStory(reopened, reopened.properties.duet_story_inspector)
+  recordCompletedStory(reopened, reopened.properties.comfy_story_inspector)
   assert.equal(pendingMemoryCommands(reopened).length, 1)
   recordCompletedStory(reopened, { ...summary, revision_sha256: 'd'.repeat(64) })
   assert.deepEqual(pendingMemoryCommands(reopened), [])

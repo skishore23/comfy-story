@@ -7,7 +7,6 @@ import json
 import os
 import tempfile
 import uuid
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -33,21 +32,15 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
     from .comfy_adapter import (
         _generation_asset_digest,
         _generation_assets,
-        _minimax_identity,
-        _native_reference_runtime,
         _story_sampler,
         render_configuration,
     )
 
     inputs = recipe["inputs"]
-    if inputs.get("recall_selected_state") and not _native_reference_runtime():
-        raise ValueError("selected state recall currently requires native reference archives")
     staging = {}
     if any(row.get("opening_prompt", "").strip() for row in inputs["shots_by_id"].values()):
         from comfy_story.film_staging_workflow import STAGING_MODELS, STAGING_PROTOCOL
 
-        if not _native_reference_runtime():
-            raise ValueError("opening staging requires the native reference archive")
         staging = {
             "staging": {
                 "protocol": STAGING_PROTOCOL,
@@ -114,15 +107,10 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
             implementation[label + "/" + path.relative_to(base).as_posix()] = file_digest(path)
     from comfy_story.story_native_archive import NATIVE_REFERENCE_RUNTIME_SHA256
 
-    memory_identity = (
-        {"memory_runtime": NATIVE_REFERENCE_RUNTIME_SHA256}
-        if _native_reference_runtime()
-        else {"memory_checkpoint": asdict(_minimax_identity())}
-    )
     return {
         "model_files": models,
         **staging,
-        **memory_identity,
+        "memory_runtime": NATIVE_REFERENCE_RUNTIME_SHA256,
         "input_files": assets,
         "implementation": implementation,
     }
@@ -139,13 +127,13 @@ class FilmRoutes:
             address = request.transport.get_extra_info("sockname") if request.transport else None
             if not address:
                 raise ValueError("Comfy listener address is unavailable")
-            model = os.environ.get("DUET_STORY_VERIFY_MODEL", "").strip()
+            model = os.environ.get("COMFY_STORY_VERIFY_MODEL", "").strip()
             self.runner = FilmProjectRunner(
                 FilmProjectStore(_story_root() / "film_projects"),
                 f"{request.scheme}://127.0.0.1:{address[1]}",
                 Path(folder_paths.get_input_directory()),
                 Path(model) if model else None,
-                device=os.environ.get("DUET_STORY_VERIFY_DEVICE", "cpu"),
+                device=os.environ.get("COMFY_STORY_VERIFY_DEVICE", "cpu"),
                 generation_identity=_film_generation_identity,
                 story_root=_story_root(),
             )
@@ -159,7 +147,7 @@ class FilmRoutes:
         if not isinstance(part, BodyPartReader) or part.name != "bundle":
             raise ValueError("upload a film inputs bundle")
         with tempfile.TemporaryDirectory(
-            prefix="duet-bundle-upload-", dir=service.store.root
+            prefix="comfy-bundle-upload-", dir=service.store.root
         ) as temporary:
             path = Path(temporary) / "upload.zip"
             total = 0
@@ -226,7 +214,7 @@ class FilmRoutes:
                         path,
                         headers={
                             "Content-Type": "application/zip",
-                            "Content-Disposition": 'attachment; filename="duet-story-inputs.zip"',
+                            "Content-Disposition": 'attachment; filename="comfy-story-inputs.zip"',
                             "Cache-Control": "no-store",
                         },
                     )
@@ -304,7 +292,7 @@ class FilmRoutes:
 
 def register_film_routes(server: Any) -> None:
     handler = FilmRoutes()
-    root = "/duet/story/films"
+    root = "/comfy/story/films"
     server.routes.get(root)(handler.handle)
     server.routes.post(root)(handler.handle)
     server.routes.post(root + "/import-inputs")(handler.handle)

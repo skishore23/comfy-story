@@ -8,7 +8,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from comfy_story.story_contracts import DuetStoryStateRef, canonical_story_json
+from comfy_story.story_contracts import ComfyStoryStateRef, canonical_story_json
 
 
 class StoryAttemptIndex:
@@ -28,7 +28,7 @@ class StoryAttemptIndex:
             raise ValueError("attempt request must be a SHA-256 digest")
         return self.root / f"{request_sha256}.json"
 
-    def load(self, request_sha256: str) -> DuetStoryStateRef | None:
+    def load(self, request_sha256: str) -> ComfyStoryStateRef | None:
         path = self._path(request_sha256)
         if not path.exists():
             return None
@@ -43,9 +43,9 @@ class StoryAttemptIndex:
             or value["state_sha256"] != hashlib.sha256(state).hexdigest()
         ):
             raise ValueError("completed attempt binding changed")
-        return DuetStoryStateRef.from_json(state)
+        return ComfyStoryStateRef.from_json(state)
 
-    def publish(self, request_sha256: str, state: DuetStoryStateRef) -> None:
+    def publish(self, request_sha256: str, state: ComfyStoryStateRef) -> None:
         target = self._path(request_sha256)
         encoded_state = state.to_json()
         encoded = canonical_story_json(

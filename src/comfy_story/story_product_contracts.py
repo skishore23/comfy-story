@@ -1,4 +1,4 @@
-"""Typed, canonical product state for selective Duet Story recall."""
+"""Typed, canonical product state for selective Comfy Story recall."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from comfy_story.story_contracts import (
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
-_VIDEO_LOCATOR = re.compile(r"^duet-evidence://story/sha256/([0-9a-f]{64})$")
+_VIDEO_LOCATOR = re.compile(r"^comfy-evidence://story/sha256/([0-9a-f]{64})$")
 _Q16_MAX = 65_536
 _SALIENCE_MAX = 1_000_000
 
@@ -23,7 +23,6 @@ class ObservationKind(StrEnum):
     OPENING = "opening"
     CHANGE = "change"
     CLOSING = "closing"
-    LEGACY = "legacy"
 
 
 class CanonPresence(StrEnum):
@@ -96,87 +95,8 @@ def _ordered_unique(values: tuple[str, ...], field: str) -> tuple[str, ...]:
 
 
 @dataclass(frozen=True, slots=True)
-class StoryObservation:
-    evidence_id: str
-    kind: ObservationKind
-    frame_index: int
-    timestamp_start_ns: int
-    timestamp_stop_ns: int
-    geometry_q16: tuple[int, int, int, int]
-    asset_sha256: str
-    preprocessing_sha256: str
-    vae_sha256: str
-    latent_sha256: str
-    salience_q: int
-    change_score_q: int
-    entity_ids: tuple[str, ...]
-
-    def validate(self) -> Self:
-        _identifier(self.evidence_id, "evidence_id")
-        if not isinstance(self.kind, ObservationKind) or self.kind is ObservationKind.LEGACY:
-            raise ValueError("new observations require opening, change, or closing kind")
-        _integer(self.frame_index, "frame_index")
-        _integer(self.timestamp_start_ns, "timestamp_start_ns")
-        _integer(self.timestamp_stop_ns, "timestamp_stop_ns", minimum=1)
-        if self.timestamp_stop_ns <= self.timestamp_start_ns:
-            raise ValueError("observation timeline range must be nonempty")
-        if (
-            not isinstance(self.geometry_q16, tuple)
-            or len(self.geometry_q16) != 4
-            or any(type(value) is not int for value in self.geometry_q16)
-        ):
-            raise ValueError("geometry_q16 must contain four integers")
-        left, top, right, bottom = self.geometry_q16
-        if not (0 <= left < right <= _Q16_MAX and 0 <= top < bottom <= _Q16_MAX):
-            raise ValueError("geometry_q16 must be a nonempty normalized q16 rectangle")
-        for value, field in (
-            (self.asset_sha256, "asset_sha256"),
-            (self.preprocessing_sha256, "preprocessing_sha256"),
-            (self.vae_sha256, "vae_sha256"),
-            (self.latent_sha256, "latent_sha256"),
-        ):
-            _digest(value, field)
-        if type(self.salience_q) is not int or not 0 <= self.salience_q <= _SALIENCE_MAX:
-            raise ValueError("salience_q must be an integer in [0, 1000000]")
-        _integer(self.change_score_q, "change_score_q")
-        _ordered_unique(self.entity_ids, "entity_ids")
-        return self
-
-    @classmethod
-    def from_mapping(cls, value: object) -> StoryObservation:
-        names = frozenset(cls.__dataclass_fields__)
-        data = _mapping(value, "StoryObservation", names)
-        geometry = _array(data["geometry_q16"], "geometry_q16")
-        if len(geometry) != 4 or any(type(item) is not int for item in geometry):
-            raise ValueError("geometry_q16 must contain four integers")
-        try:
-            kind = ObservationKind(_text(data["kind"], "kind"))
-        except ValueError as error:
-            raise ValueError("observation kind is unsupported") from error
-        return cls(
-            _text(data["evidence_id"], "evidence_id"),
-            kind,
-            _integer(data["frame_index"], "frame_index"),
-            _integer(data["timestamp_start_ns"], "timestamp_start_ns"),
-            _integer(data["timestamp_stop_ns"], "timestamp_stop_ns"),
-            cast(tuple[int, int, int, int], tuple(geometry)),
-            _text(data["asset_sha256"], "asset_sha256"),
-            _text(data["preprocessing_sha256"], "preprocessing_sha256"),
-            _text(data["vae_sha256"], "vae_sha256"),
-            _text(data["latent_sha256"], "latent_sha256"),
-            _integer(data["salience_q"], "salience_q"),
-            _integer(data["change_score_q"], "change_score_q"),
-            _strings(data["entity_ids"], "entity_ids"),
-        ).validate()
-
-
-@dataclass(frozen=True, slots=True)
 class NativeRGBObservation:
-    """Exact RGB evidence without claiming a VAE encoding or learned latent.
-
-    The explicit wire format preserves the historical encoded-observation schema.
-    Retrieval rank is declared metadata; it is not a trained salience prediction.
-    """
+    """Exact RGB evidence with declared retrieval metadata."""
 
     evidence_id: str
     kind: ObservationKind
@@ -189,13 +109,13 @@ class NativeRGBObservation:
     salience_q: int
     change_score_q: int
     entity_ids: tuple[str, ...]
-    format: str = "duet-story-rgb-observation-v1"
+    format: str = "comfy-story-rgb-observation-v1"
 
     def validate(self) -> Self:
-        if self.format != "duet-story-rgb-observation-v1":
+        if self.format != "comfy-story-rgb-observation-v1":
             raise ValueError("native RGB observation format is unsupported")
         _identifier(self.evidence_id, "evidence_id")
-        if not isinstance(self.kind, ObservationKind) or self.kind is ObservationKind.LEGACY:
+        if not isinstance(self.kind, ObservationKind):
             raise ValueError("new observations require opening, change, or closing kind")
         _integer(self.frame_index, "frame_index")
         _integer(self.timestamp_start_ns, "timestamp_start_ns")
@@ -249,12 +169,6 @@ class NativeRGBObservation:
         ).validate()
 
 
-def _observation_from_mapping(value: object) -> StoryObservation | NativeRGBObservation:
-    if isinstance(value, dict) and "format" in value:
-        return NativeRGBObservation.from_mapping(value)
-    return StoryObservation.from_mapping(value)
-
-
 @dataclass(frozen=True, slots=True)
 class StoryObservationPacket:
     packet_id: str
@@ -266,7 +180,7 @@ class StoryObservationPacket:
     source_video_locator: str
     extraction_policy_sha256: str
     referenced_entity_ids: tuple[str, ...]
-    observations: tuple[StoryObservation | NativeRGBObservation, ...]
+    observations: tuple[NativeRGBObservation, ...]
 
     def validate(self) -> Self:
         _identifier(self.packet_id, "packet_id")
@@ -291,8 +205,8 @@ class StoryObservationPacket:
         if not isinstance(self.observations, tuple) or not self.observations:
             raise ValueError("packet must contain observations")
         for observation in self.observations:
-            if not isinstance(observation, (StoryObservation, NativeRGBObservation)):
-                raise ValueError("packet observations must be StoryObservation values")
+            if not isinstance(observation, NativeRGBObservation):
+                raise ValueError("packet observations must be native RGB evidence")
             observation.validate()
             if observation.frame_index >= self.frame_count:
                 raise ValueError("observation frame index exceeds decoded frame count")
@@ -327,7 +241,7 @@ class StoryObservationPacket:
             _text(data["extraction_policy_sha256"], "extraction_policy_sha256"),
             _strings(data["referenced_entity_ids"], "referenced_entity_ids"),
             tuple(
-                _observation_from_mapping(item)
+                NativeRGBObservation.from_mapping(item)
                 for item in _array(data["observations"], "observations")
             ),
         ).validate()
@@ -350,7 +264,7 @@ class StoryEvidenceRecord:
 
     @classmethod
     def from_observation(
-        cls, packet: StoryObservationPacket, observation: StoryObservation | NativeRGBObservation
+        cls, packet: StoryObservationPacket, observation: NativeRGBObservation
     ) -> StoryEvidenceRecord:
         packet.validate()
         observation.validate()
@@ -398,12 +312,8 @@ class StoryEvidenceRecord:
             self.timestamp_stop_ns,
             self.geometry_q16,
         )
-        if self.kind is ObservationKind.LEGACY:
-            if any(value is not None for value in detail) or self.entity_ids:
-                raise ValueError("legacy evidence must not claim unavailable provenance")
-            return self
         if any(value is None for value in detail):
-            raise ValueError("nonlegacy evidence requires exact packet and frame provenance")
+            raise ValueError("evidence requires exact packet and frame provenance")
         _identifier(self.packet_id, "packet_id")
         _integer(self.source_shot_index, "source_shot_index")
         _integer(self.frame_index, "frame_index")
@@ -694,7 +604,6 @@ class StoryRecallDecision:
     rejected_candidates: tuple[str, ...]
     selected_evidence_ids: tuple[str, ...]
     packet_specs: tuple[StoryEvidencePacketSpec, ...]
-    inclusive_core_sha256: str | None
     guide_bindings: tuple[GuideBinding, ...]
 
     def validate(self) -> Self:
@@ -706,8 +615,6 @@ class StoryRecallDecision:
             _ordered_unique(values, field)
         if len(self.selected_evidence_ids) > 2 or len(self.packet_specs) > 2:
             raise ValueError("MiniMax recall supports at most two evidence packets")
-        if self.inclusive_core_sha256 is not None:
-            _digest(self.inclusive_core_sha256, "inclusive_core_sha256")
         for value in self.resolved_canon_versions:
             _digest(value, "resolved canon revision")
         for value in self.rejected_candidates:
@@ -724,59 +631,6 @@ class StoryRecallDecision:
     def to_json(self) -> bytes:
         self.validate()
         return canonical_story_json(self)
-
-
-@dataclass(frozen=True, slots=True)
-class StoryGenerationReceipt:
-    prompt_sha256: str
-    parent_revision_sha256: str | None
-    memory_backend: str
-    checkpoint_sha256: str
-    sampler: str
-    selected_evidence_ids: tuple[str, ...]
-    guide_bindings: tuple[GuideBinding, ...]
-    recall_decision_sha256: str
-
-    def validate(self) -> Self:
-        _digest(self.prompt_sha256, "prompt_sha256")
-        if self.parent_revision_sha256 is not None:
-            _digest(self.parent_revision_sha256, "parent_revision_sha256")
-        if self.memory_backend not in {"ltx", "minimax-h3"}:
-            raise ValueError("memory_backend is unsupported")
-        _digest(self.checkpoint_sha256, "checkpoint_sha256")
-        _identifier(self.sampler, "sampler")
-        _ordered_unique(self.selected_evidence_ids, "selected_evidence_ids")
-        if len(self.selected_evidence_ids) > 2:
-            raise ValueError("generation receipt supports at most two recalled evidence items")
-        for binding in self.guide_bindings:
-            binding.validate()
-        _digest(self.recall_decision_sha256, "recall_decision_sha256")
-        return self
-
-    def to_json(self) -> bytes:
-        self.validate()
-        return canonical_story_json(self)
-
-    @classmethod
-    def from_json(cls, encoded: bytes) -> StoryGenerationReceipt:
-        data = decode_canonical_story_object(encoded, field="StoryGenerationReceipt")
-        _mapping(data, "StoryGenerationReceipt", frozenset(cls.__dataclass_fields__))
-        parent = data["parent_revision_sha256"]
-        if parent is not None and not isinstance(parent, str):
-            raise ValueError("parent_revision_sha256 must be a digest or null")
-        return cls(
-            _text(data["prompt_sha256"], "prompt_sha256"),
-            parent,
-            _text(data["memory_backend"], "memory_backend"),
-            _text(data["checkpoint_sha256"], "checkpoint_sha256"),
-            _text(data["sampler"], "sampler"),
-            _strings(data["selected_evidence_ids"], "selected_evidence_ids"),
-            tuple(
-                GuideBinding.from_mapping(item)
-                for item in _array(data["guide_bindings"], "guide_bindings")
-            ),
-            _text(data["recall_decision_sha256"], "recall_decision_sha256"),
-        ).validate()
 
 
 @dataclass(frozen=True, slots=True)
@@ -815,14 +669,12 @@ class StoryProductState:
             for observation in packet.observations
         }
         for record in self.evidence_records:
-            if record.kind is ObservationKind.LEGACY:
-                continue
             expected = observations.get(record.evidence_id)
             if (
                 expected != (record.packet_id, record.asset_sha256)
                 or record.packet_id not in packet_ids
             ):
-                raise ValueError("nonlegacy evidence must be owned by its exact observation packet")
+                raise ValueError("evidence must be owned by its exact observation packet")
         self.canon.validate()
         registry = set(evidence_ids)
         for entity in self.canon.entities:
@@ -870,10 +722,8 @@ __all__ = (
     "StoryCanon",
     "StoryEvidencePacketSpec",
     "StoryEvidenceRecord",
-    "StoryGenerationReceipt",
     "StoryMemoryCommand",
     "StoryMemoryPolicy",
-    "StoryObservation",
     "StoryObservationPacket",
     "StoryProductState",
     "StoryRecallDecision",

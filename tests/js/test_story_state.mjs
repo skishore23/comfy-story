@@ -6,8 +6,8 @@ import {
   encodeLibrary,
   extractMentions,
   fieldMapFromWidgets,
-  isDuetStoryNode,
-  migrateSerializedStoryWidgets,
+  isComfyStoryNode,
+  restoreSerializedStoryWidgets,
   nextShotWiring,
   normalizeLibrary,
 } from '../../integrations/comfy_story/web/story_state.mjs'
@@ -54,7 +54,7 @@ test('Add Next Shot connects shared state and last frame', () => {
   const source = { connect: (...args) => calls.push(args) }
   const target = {}
   assert.deepEqual(nextShotWiring(source, target), [
-    { from: 2, to: 0, type: 'DUET_STORY' },
+    { from: 2, to: 0, type: 'COMFY_STORY' },
     { from: 1, to: 1, type: 'IMAGE' },
   ])
   assert.deepEqual(calls, [[2, target, 0], [1, target, 1]])
@@ -66,47 +66,36 @@ test('Nodes 2.0 widget order remains a fallback and identity is exact', () => {
     { name: 'widget_2', value: 'Next Shot' }, { name: 'widget_3', value: encodeLibrary(library) },
   ])
   assert.equal(fields.Create, 'Next Shot')
-  assert.equal(isDuetStoryNode({ comfyClass: 'DuetStory' }), true)
-  assert.equal(isDuetStoryNode({ title: 'Duet Story' }), true)
-  assert.equal(isDuetStoryNode({ title: 'Comfy Story' }), true)
-  assert.equal(isDuetStoryNode({ type: 'DuetStory' }), true)
-  assert.equal(isDuetStoryNode({ title: 'Duet Story (legacy workflow alias)' }), true)
-  assert.equal(isDuetStoryNode({ title: 'Comfy Story (legacy workflow alias)' }), true)
-  assert.equal(isDuetStoryNode({ comfyClass: 'DuetStoryCanon' }), true)
-  assert.equal(isDuetStoryNode({ title: 'Duet Continuity' }), false)
+  assert.equal(isComfyStoryNode({ comfyClass: 'ComfyStory' }), true)
+  assert.equal(isComfyStoryNode({ title: 'Comfy Story' }), true)
+  assert.equal(isComfyStoryNode({ title: 'Comfy Story' }), true)
+  assert.equal(isComfyStoryNode({ type: 'ComfyStory' }), true)
+  assert.equal(isComfyStoryNode({ title: 'Comfy Story (legacy workflow alias)' }), false)
+  assert.equal(isComfyStoryNode({ title: 'Comfy Story (legacy workflow alias)' }), false)
+  assert.equal(isComfyStoryNode({ comfyClass: 'ComfyStoryCanon' }), false)
+  assert.equal(isComfyStoryNode({ title: 'Comfy Continuity' }), false)
 })
 
-test('saved Duet Story widget layouts migrate without positional drift', () => {
+test('unsupported saved layouts are rejected without positional drift', () => {
   const old = ['Next Shot', 'library', 'world.png', '@Maya runs', '10 seconds', 7, 'rev', 'Automatic']
-  assert.deepEqual(migrateSerializedStoryWidgets('DuetStory', old), [
-    'Next Shot', 'library', 'Native', 'world.png', '@Maya runs', '10 seconds', 7,
-    'rev', 'Automatic', 'Native res_multistep', '[]',
-  ])
-
-  const h3Proof = [
-    'Next Shot', 'library', 'Compiled preview', 'world.png', '@Maya runs', 'Maya',
-    '10 seconds', 7, 'rev', 'Automatic', 'MiniMax H3', 'SPEED Euler 2-stage',
-  ]
-  assert.deepEqual(migrateSerializedStoryWidgets('DuetStory', h3Proof), [
-    'Next Shot', 'library', 'Compiled preview', 'world.png', '@Maya runs',
-    '10 seconds', 7, 'rev', 'Automatic', 'SPEED Euler 2-stage', '[]',
-  ])
+  const compiled = ['Next Shot', 'library', 'Compiled preview', 'world.png', '@Maya runs', 'Maya', '10 seconds', 7, 'rev', 'Automatic', 'MiniMax H3', 'SPEED Euler 2-stage']
+  for (const values of [old,compiled]) {
+    const before=[...values]
+    assert.throws(() => restoreSerializedStoryWidgets(values), /Unsupported.*layout/)
+    assert.deepEqual(values,before)
+  }
 })
 
-test('saved Living Canon widget layout retains sampler and memory actions', () => {
-  const old = [
-    'Next Shot', 'library', 'world.png', '@Maya runs', '5 seconds', 9, 'rev',
-    'Prompt mentions only', 'SPEED Euler 2-stage', '[{"action":"keep"}]',
-  ]
-  assert.deepEqual(migrateSerializedStoryWidgets('DuetStoryCanon', old), [
-    'Next Shot', 'library', 'Native', 'world.png', '@Maya runs', '5 seconds', 9,
-    'rev', 'Prompt mentions only', 'SPEED Euler 2-stage', '[{"action":"keep"}]',
-  ])
+test('saved current widget layout retains sampler and memory actions', () => {
+  const values = ['Next Shot', 'library', 'world.png', '@Maya runs', '5 seconds', 9, 'rev', 'Prompt mentions only', 'SPEED Euler 2-stage', '[{"action":"keep"}]']
+  const restored = restoreSerializedStoryWidgets(values)
+  assert.deepEqual(restored, values)
+  assert.notEqual(restored, values)
 })
 
 test('new composition survives save/load without being mistaken for the historical twelve-field layout', () => {
-  const fields = ['Start Story', '{}', 'Native', 'world.png', '@Maya turns', '10 seconds', 12, '', 'Automatic', 'Native res_multistep', '[]', 'New composition']
-  assert.deepEqual(migrateSerializedStoryWidgets('DuetStory', fields), fields)
+  const fields = ['Start Story', '{}', 'world.png', '@Maya turns', '10 seconds', 12, '', 'Automatic', 'Native res_multistep', '[]', 'New composition']
+  assert.deepEqual(restoreSerializedStoryWidgets(fields), fields)
   assert.equal(fieldMapFromWidgets([{ name: 'Composition', value: 'New composition' }]).Composition, 'New composition')
 })
 

@@ -84,7 +84,7 @@ class FilmProjectRunner:
         self.device = device
         self.generation_identity = generation_identity
         self.story_root = story_root
-        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="duet-film")
+        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="comfy-film")
         self._mutex = threading.Lock()
         self._active: Future[None] | None = None
         self._active_key: tuple[str, str] | None = None
@@ -114,7 +114,7 @@ class FilmProjectRunner:
                 )
         if mode == "checked" and self.model is None:
             raise ValueError(
-                "Configure DUET_STORY_VERIFY_MODEL on the Comfy host before verified generation"
+                "Configure COMFY_STORY_VERIFY_MODEL on the Comfy host before verified generation"
             )
         policy = {
             "revision": revision,

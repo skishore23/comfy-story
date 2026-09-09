@@ -70,11 +70,11 @@ async def accepted_video(request: web.Request) -> web.FileResponse:
 
 
 def register_routes(server: Any) -> None:
-    if getattr(server, "_duet_story_routes_registered", False):
+    if getattr(server, "_comfy_story_routes_registered", False):
         return
-    server.routes.get("/duet/story/evidence/{digest}")(evidence_preview)
-    server.routes.get("/duet/story/video/{digest}")(accepted_video)
+    server.routes.get("/comfy/story/evidence/{digest}")(evidence_preview)
+    server.routes.get("/comfy/story/video/{digest}")(accepted_video)
     from .film_routes import register_film_routes
 
     register_film_routes(server)
-    server._duet_story_routes_registered = True
+    server._comfy_story_routes_registered = True

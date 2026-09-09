@@ -4,23 +4,49 @@
   "nodes": [
     {
       "id": 10,
-      "type": "DuetStory",
-      "pos": [80, 120],
-      "size": [450, 1080],
+      "type": "ComfyStory",
+      "pos": [
+        80,
+        120
+      ],
+      "size": [
+        450,
+        1080
+      ],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
-        {"name": "video", "type": "VIDEO", "links": null, "slot_index": 0},
-        {"name": "last_frame", "type": "IMAGE", "links": [1], "slot_index": 1},
-        {"name": "story_state", "type": "DUET_STORY", "links": [2], "slot_index": 2}
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "links": [
+            1
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "story_state",
+          "type": "COMFY_STORY",
+          "links": [
+            2
+          ],
+          "slot_index": 2
+        }
       ],
-      "properties": {"Node name for S&R": "DuetStory"},
+      "properties": {
+        "Node name for S&R": "ComfyStory"
+      },
       "widgets_values": [
         "Start Story",
         "{\"project_name\":\"Living Canon Test\",\"references\":[{\"file\":\"maya.png\",\"name\":\"Maya\",\"note\":\"vivid asymmetric red scarf\",\"role\":\"Character\"},{\"file\":\"brass-key.png\",\"name\":\"BrassKey\",\"note\":\"pristine brass key\",\"role\":\"Prop\"},{\"file\":\"workshop.png\",\"name\":\"Workshop\",\"note\":\"industrial workshop\",\"role\":\"Location\"}]}",
-        "Native",
         "workshop.png",
         "@Maya enters the workshop carrying @BrassKey.",
         "5 seconds",
@@ -33,26 +59,56 @@
     },
     {
       "id": 20,
-      "type": "DuetStory",
-      "pos": [640, 120],
-      "size": [450, 1080],
+      "type": "ComfyStory",
+      "pos": [
+        640,
+        120
+      ],
+      "size": [
+        450,
+        1080
+      ],
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
-        {"name": "Previous Story", "type": "DUET_STORY", "link": 2},
-        {"name": "Previous Frame", "type": "IMAGE", "link": 1}
+        {
+          "name": "Previous Story",
+          "type": "COMFY_STORY",
+          "link": 2
+        },
+        {
+          "name": "Previous Frame",
+          "type": "IMAGE",
+          "link": 1
+        }
       ],
       "outputs": [
-        {"name": "video", "type": "VIDEO", "links": null, "slot_index": 0},
-        {"name": "last_frame", "type": "IMAGE", "links": null, "slot_index": 1},
-        {"name": "story_state", "type": "DUET_STORY", "links": null, "slot_index": 2}
+        {
+          "name": "video",
+          "type": "VIDEO",
+          "links": null,
+          "slot_index": 0
+        },
+        {
+          "name": "last_frame",
+          "type": "IMAGE",
+          "links": null,
+          "slot_index": 1
+        },
+        {
+          "name": "story_state",
+          "type": "COMFY_STORY",
+          "links": null,
+          "slot_index": 2
+        }
       ],
-      "properties": {"Node name for S&R": "DuetStory"},
+      "properties": {
+        "Node name for S&R": "ComfyStory"
+      },
       "widgets_values": [
         "Next Shot",
         "{\"project_name\":\"Living Canon Test\",\"references\":[{\"file\":\"maya.png\",\"name\":\"Maya\",\"note\":\"vivid asymmetric red scarf\",\"role\":\"Character\"},{\"file\":\"brass-key.png\",\"name\":\"BrassKey\",\"note\":\"pristine brass key\",\"role\":\"Prop\"},{\"file\":\"workshop.png\",\"name\":\"Workshop\",\"note\":\"industrial workshop\",\"role\":\"Location\"}]}",
-        "Native",
         "None",
         "@Maya bends @BrassKey while opening the machine.",
         "5 seconds",
@@ -65,11 +121,33 @@
     }
   ],
   "links": [
-    [1, 10, 1, 20, 1, "IMAGE"],
-    [2, 10, 2, 20, 0, "DUET_STORY"]
+    [
+      1,
+      10,
+      1,
+      20,
+      1,
+      "IMAGE"
+    ],
+    [
+      2,
+      10,
+      2,
+      20,
+      0,
+      "COMFY_STORY"
+    ]
   ],
   "groups": [],
   "config": {},
-  "extra": {"ds": {"scale": 0.65, "offset": [0, 0]}},
+  "extra": {
+    "ds": {
+      "scale": 0.65,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
   "version": 0.4
 }

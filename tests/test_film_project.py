@@ -157,7 +157,7 @@ def test_optional_narrative_preserves_legacy_recipe_identity_and_requires_whole_
         row.pop("direction_version")
     legacy_plan.pop("state_definitions")
     legacy_plan.pop("narrative")
-    legacy = {"format": "duet-film-project-v1", "plan": legacy_plan, "inputs": original["inputs"]}
+    legacy = {"format": "comfy-film-project-v1", "plan": legacy_plan, "inputs": original["inputs"]}
     assert original["revision"] == hashlib.sha256(canonical_story_json(legacy)).hexdigest()
     assert "narrative" not in original["plan"]
     intent = FilmNarrativeContract("Deliver", "Locked gate", "Side path", "Delivered")

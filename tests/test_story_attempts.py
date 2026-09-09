@@ -6,11 +6,11 @@ from pathlib import Path
 import pytest
 
 from comfy_story.story_attempts import StoryAttemptIndex
-from comfy_story.story_contracts import DuetStoryStateRef
+from comfy_story.story_contracts import ComfyStoryStateRef
 
 
-def _state() -> DuetStoryStateRef:
-    return DuetStoryStateRef(
+def _state() -> ComfyStoryStateRef:
+    return ComfyStoryStateRef(
         "story", "main", None, "1" * 64, "2" * 64, "3" * 64, 1, 1, "4" * 64, "5" * 64
     ).validate()
 

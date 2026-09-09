@@ -33,14 +33,11 @@ test('extractMentions preserves first occurrence and canonical prompt order', ()
   assert.deepEqual(extractMentions('@Maya sees @Chest, then @maya leaves.'), ['Maya', 'Chest'])
 })
 
-test('compiled preview requires at least two selected visual sources', () => {
-  const view = deriveStoryView(values({
+test('unsupported compiled contexts are rejected before reference selection', () => {
+  assert.throws(() => deriveStoryView(values({
     'Reference context': 'Compiled preview',
     'What happens next?': 'An empty establishing shot.',
-  }), { story: false, frame: false, motion: false })
-
-  assert.equal(view.ready, false)
-  assert.match(view.message, /two visual references/)
+  }), {story:false,frame:false,motion:false}), /Unsupported reference context/)
 })
 
 test('native MiniMax roster accepts eight named references', () => {
@@ -86,12 +83,12 @@ test('protected names must also be active in this shot and are capped at two', (
 test('deriveStoryView returns exact-detail chips in library spelling', () => {
   const view = deriveStoryView(values({
     'Keep this detail': '@ref0',
-    'Reference context': 'Compiled preview',
+    'Reference context': 'Native',
   }), { story: false, frame: false, motion: false })
 
   assert.equal(view.ready, true)
   assert.deepEqual(view.protected, ['@Ref0'])
-  assert.match(view.message, /2 visual sources/)
+  assert.match(view.message, /1 active reference/)
 })
 
 test('nextShotWiring carries both story state and last frame', () => {
@@ -103,7 +100,7 @@ test('nextShotWiring carries both story state and last frame', () => {
 
   assert.deepEqual(calls, [[2, target, 0], [1, target, 1]])
   assert.deepEqual(result, [
-    { from: 2, to: 0, type: 'DUET_STORY' },
+    { from: 2, to: 0, type: 'COMFY_STORY' },
     { from: 1, to: 1, type: 'IMAGE' },
   ])
 })

@@ -19,29 +19,14 @@ import numpy as np
 import torch
 from PIL import Image
 
-from comfy_story.contracts import DuetXContract, tensor_sha256
 from comfy_story.h3_acceleration import CACHE_CONFIGURATION, NVFP4_MODEL
 from comfy_story.h3_prompt import H3_PROMPT_FORMAT, H3_PROMPT_PROTOCOL, compile_h3_prompt
 from comfy_story.h3_quality import FULL_HD_CONFIGURATION, UPSCALER_MODEL
-from comfy_story.h3_reference_cache import CompiledReferenceCache
-from comfy_story.h3_reference_checkpoint import load_h3_reference_compiler_checkpoint
-from comfy_story.h3_reference_compressors import H3ReferenceCompiler
-from comfy_story.h3_reference_contracts import (
-    H3ReferenceBudget,
-    H3ReferenceKind,
-    H3ReferenceMethod,
-    H3SelectedSource,
-)
 from comfy_story.h3_sol_attention import SOL_CONFIGURATION
-from comfy_story.ltx_quality_protocol import FROZEN_TRAINABLE_CHECKPOINT_SHA256
-from comfy_story.minimax_h3_memory import (
-    MiniMaxH3StoryRuntime,
-    inspect_minimax_h3_checkpoint,
-)
-from comfy_story.minimax_h3_training import MiniMaxH3TrainingProtocol
+from comfy_story.samplers import StorySampler
 from comfy_story.story_attempts import StoryAttemptIndex
 from comfy_story.story_contracts import (
-    DuetStoryStateRef,
+    ComfyStoryStateRef,
     ReferenceRole,
     ShotIntent,
     StoryLibrary,
@@ -49,7 +34,6 @@ from comfy_story.story_contracts import (
     canonical_story_json,
 )
 from comfy_story.story_language import AuthoredStoryAudio, prepare_authored_audio
-from comfy_story.story_memory_backend import StoryMemoryBackend, StorySampler
 from comfy_story.story_native_archive import (
     NATIVE_REFERENCE_RUNTIME_SHA256,
     NativeArchiveRevision,
@@ -66,17 +50,13 @@ from comfy_story.story_recall import parse_shot_state_evidence
 from comfy_story.story_service import (
     PreparedStoryGeneration,
     StoryCommitRequest,
-    StoryCommitResult,
     StoryGenerationRequest,
-    StoryLTXRuntime,
-    commit_story_generation,
     prepare_story_generation,
     validate_comfy_images,
 )
-from comfy_story.story_store import LoadedStoryRevision, StoryProjectStore
+from comfy_story.story_store import StoryProjectStore
 from comfy_story.story_video_canvas import H3_VIDEO_HEIGHT, H3_VIDEO_WIDTH
-
-from .h3_reference_node import PreparedReferenceCompile
+from comfy_story.tensors import tensor_sha256
 
 _IDENTIFIER = re.compile(r"[^A-Za-z0-9._-]+")
 _FRAME_COUNTS = {"5 seconds": 124, "10 seconds": 243, "15 seconds": 362}
@@ -189,22 +169,9 @@ NVFP4_CONFIGURATION = {
 NVFP4_BALANCED_CONFIGURATION = {**NVFP4_CONFIGURATION, "cache": CACHE_CONFIGURATION}
 NVFP4_ULTRA_CONFIGURATION = {**NVFP4_BALANCED_CONFIGURATION, "attention": SOL_CONFIGURATION}
 NVFP4_TURBO_CONFIGURATION = {**TURBO_CONFIGURATION, "model": NVFP4_MODEL}
-MODEL_CONFIGURATION_SHA256 = hashlib.sha256(canonical_story_json(_MODEL_CONFIGURATION)).hexdigest()
-_MINIMAX_MEMORY_CONFIGURATION = {
-    "backend": "minimax-h3",
-    "format": "duet-story-minimax-h3-memory-v1",
-    "history_items": 8,
-    "latent_channels": 24,
-    "protected_exceptions": 2,
-    "video_vae": _MODEL_CONFIGURATION["video_vae"],
-}
 MINIMAX_MODEL_CONFIGURATION_SHA256 = hashlib.sha256(
-    canonical_story_json(_MINIMAX_MEMORY_CONFIGURATION)
+    canonical_story_json({"format": "comfy-story-h3-v1", "model": _MODEL_CONFIGURATION})
 ).hexdigest()
-_BACKENDS = {
-    "LTX": StoryMemoryBackend.LTX,
-    "MiniMax H3": StoryMemoryBackend.MINIMAX_H3,
-}
 _SAMPLERS = {
     "Native res_multistep": StorySampler.NATIVE_RES_MULTISTEP,
     "SPEED Euler 2-stage": StorySampler.SPEED_EULER_2STAGE,
@@ -216,9 +183,6 @@ _SAMPLERS = {
     "NVFP4 Ultra Fast": StorySampler.NVFP4_ULTRA_FAST,
     "NVFP4 Turbo 4-step": StorySampler.NVFP4_TURBO,
 }
-_REFERENCE_CONTEXTS = {"Native", "Compiled preview"}
-_INTERNAL_COMPILER_METHODS = {method.value: method for method in H3ReferenceMethod}
-_STORY_CONTEXT_EXPERIMENTS = {"core_plus_recall", "retrieval_only"}
 _SPEED_INPUT_TYPES = {
     "Tolerance (Delta)": "FLOAT",
     "guider": "GUIDER",
@@ -263,10 +227,10 @@ def parse_memory_actions(encoded: object) -> tuple[StoryMemoryCommand, ...]:
 
 
 def story_inspector_summary(
-    loaded: LoadedStoryRevision | NativeArchiveRevision, *, owner_node_id: str
+    loaded: NativeArchiveRevision, *, owner_node_id: str
 ) -> dict[str, object]:
     """Build a bounded, path-free UI projection from an authenticated v3 revision."""
-    if not isinstance(loaded, (LoadedStoryRevision, NativeArchiveRevision)):
+    if not isinstance(loaded, NativeArchiveRevision):
         raise ValueError("inspector summary requires a loaded Story revision")
     if not isinstance(owner_node_id, str) or not owner_node_id or len(owner_node_id) > 128:
         raise ValueError("owner_node_id must be a bounded Comfy node identifier")
@@ -368,71 +332,9 @@ def _configured_path(name: str) -> Path:
 
 
 def _story_root() -> Path:
-    if "DUET_STORY_ROOT" in os.environ:
-        return _configured_path("DUET_STORY_ROOT")
-    return (Path(folder_paths.get_user_directory()) / "duet_story").resolve()
-
-
-def _checkpoint() -> Path:
-    path = _configured_path("DUET_STORY_CHECKPOINT")
-    if not path.is_file():
-        raise ValueError("DUET_STORY_CHECKPOINT must name an existing local checkpoint")
-    return path
-
-
-def _ltx_source_identity() -> tuple[str, str]:
-    commit = os.environ.get("DUET_STORY_SOURCE_COMMIT", "")
-    if not re.fullmatch(r"[0-9a-f]{40}", commit) or commit == "0" * 40:
-        raise ValueError("DUET_STORY_SOURCE_COMMIT must pin the actual deployed source revision")
-    archive = _required_digest_environment("DUET_STORY_SOURCE_ARCHIVE_SHA256")
-    if archive == "0" * 64:
-        raise ValueError("DUET_STORY_SOURCE_ARCHIVE_SHA256 must pin the actual source archive")
-    return commit, archive
-
-
-def _ltx_contract() -> DuetXContract:
-    return DuetXContract.default(decision1_fingerprint="0" * 64).validate()
-
-
-def _required_digest_environment(name: str) -> str:
-    value = os.environ.get(name)
-    if value is None:
-        raise ValueError(f"{name} must pin the local memory runtime")
-    if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
-        raise ValueError(f"{name} must be a lowercase SHA-256 digest")
-    return value
-
-
-@dataclass(frozen=True, slots=True)
-class _MiniMaxRuntimeSettings:
-    checkpoint: Path
-    checkpoint_sha256: str
-    foundation_sha256: str
-    vae_sha256: str
-    protocol_sha256: str
-
-
-def _minimax_runtime_settings() -> _MiniMaxRuntimeSettings:
-    checkpoint_value = os.environ.get("DUET_STORY_MINIMAX_CHECKPOINT")
-    if checkpoint_value is None:
-        raise ValueError(
-            "DUET_STORY_MINIMAX_CHECKPOINT must name the trained local memory checkpoint"
-        )
-    checkpoint = Path(checkpoint_value).resolve()
-    return _MiniMaxRuntimeSettings(
-        checkpoint,
-        _required_digest_environment("DUET_STORY_MINIMAX_CHECKPOINT_SHA256"),
-        _required_digest_environment("DUET_STORY_MINIMAX_FOUNDATION_SHA256"),
-        _required_digest_environment("DUET_STORY_MINIMAX_VAE_SHA256"),
-        MiniMaxH3TrainingProtocol.default().fingerprint(),
-    )
-
-
-def _memory_backend(value: object) -> StoryMemoryBackend:
-    try:
-        return _BACKENDS[str(value)]
-    except KeyError as error:
-        raise ValueError("Memory backend must be MiniMax H3 or LTX") from error
+    if "COMFY_STORY_ROOT" in os.environ:
+        return _configured_path("COMFY_STORY_ROOT")
+    return (Path(folder_paths.get_user_directory()) / "comfy_story").resolve()
 
 
 def _story_sampler(value: object) -> StorySampler:
@@ -473,52 +375,6 @@ def require_speed_sampler(node_classes: Mapping[str, object]) -> None:
         or "direct_coarse" not in noise_policy[0]
     ):
         raise ValueError("MiniMaxH3SPEEDSampler schema is incompatible")
-
-
-class ComfyMiniMaxH3Codec:
-    """Narrow adapter around the MiniMax video VAE already owned by Comfy."""
-
-    def __init__(self, vae: object) -> None:
-        if not callable(getattr(vae, "encode", None)) or not callable(getattr(vae, "decode", None)):
-            raise ValueError("memory_vae must be a loaded Comfy VAE")
-        self._vae = vae
-
-    def encode_frame(self, frame: np.ndarray[Any, Any]) -> torch.Tensor:
-        if frame.dtype != np.uint8 or frame.shape != (384, 384, 3):
-            raise ValueError("MiniMax H3 codec requires RGB uint8 384x384")
-        images = (
-            torch.from_numpy(np.array(frame, copy=True)).to(torch.float32).div(255).unsqueeze(0)
-        )
-        latent = self._vae.encode(images)  # type: ignore[attr-defined]
-        if (
-            not isinstance(latent, torch.Tensor)
-            or latent.ndim != 5
-            or latent.shape[0] != 1
-            or latent.shape[1] != 24
-            or any(dimension <= 0 for dimension in latent.shape[2:])
-            or not torch.is_floating_point(latent)
-            or not bool(torch.isfinite(latent).all().item())
-        ):
-            raise ValueError("Comfy MiniMax H3 VAE returned an invalid 24-channel latent")
-        return latent.detach()
-
-    def decode_frame(self, latent: torch.Tensor) -> np.ndarray[Any, Any]:
-        decoded = self._vae.decode(latent)  # type: ignore[attr-defined]
-        if not isinstance(decoded, torch.Tensor) or not torch.is_floating_point(decoded):
-            raise ValueError("Comfy MiniMax H3 VAE returned an invalid image tensor")
-        if decoded.ndim == 5 and decoded.shape[0] == 1:
-            image = decoded[0, -1]
-        elif decoded.ndim == 4:
-            image = decoded[-1]
-        else:
-            raise ValueError("Comfy MiniMax H3 VAE returned an unexpected image boundary")
-        if image.shape != (384, 384, 3) or not bool(torch.isfinite(image).all().item()):
-            raise ValueError("Comfy MiniMax H3 VAE returned an unexpected RGB frame")
-        value = image.detach().to(device="cpu", dtype=torch.float32).clamp(0, 1)
-        return np.ascontiguousarray(value.mul(255).round().to(torch.uint8).numpy())
-
-    def close(self) -> None:
-        """The VAE lifecycle remains owned by Comfy's graph executor."""
 
 
 def _portable_project_id(name: str) -> str:
@@ -592,7 +448,7 @@ def _library_from_editor(
             ReferenceRole(cast(str, role)),
             cast(str, note),
             digest,
-            f"duet-story://assets/sha256/{digest}",
+            f"comfy-story://assets/sha256/{digest}",
             (digest,),
             preprocessing,
         ).validate()
@@ -614,12 +470,12 @@ def _reference_images_from_store(
     return images
 
 
-def _state_from_inputs(inputs: dict[str, Any]) -> DuetStoryStateRef | None:
+def _state_from_inputs(inputs: dict[str, Any]) -> ComfyStoryStateRef | None:
     connected = inputs.get("Previous Story")
-    if connected is not None and not isinstance(connected, DuetStoryStateRef):
+    if connected is not None and not isinstance(connected, ComfyStoryStateRef):
         raise ValueError("Previous Story must come from a Comfy Story node")
     recovery_text = str(inputs.get("Story revision", "")).strip()
-    recovery = None if not recovery_text else DuetStoryStateRef.from_json(recovery_text.encode())
+    recovery = None if not recovery_text else ComfyStoryStateRef.from_json(recovery_text.encode())
     if connected is not None and recovery is not None and connected != recovery:
         raise ValueError("Connected Previous Story does not match the recovery revision")
     return connected if connected is not None else recovery
@@ -634,12 +490,6 @@ class PreparedNodeGeneration:
     variation: int
     sampler: StorySampler
     motion_reference: torch.Tensor | None = None
-    reference_compile: PreparedReferenceCompile | None = None
-    telemetry_enabled: bool = False
-    benchmark_phase: str = ""
-    benchmark_workload: str = ""
-    benchmark_method: str = ""
-    benchmark_cell: str = ""
     authored_audio: AuthoredStoryAudio | None = None
     output_duration_ms: int = 0
     ending_frame: torch.Tensor | None = None
@@ -685,7 +535,6 @@ def _generation_assets(configuration: dict[str, Any] | None = None) -> dict[str,
 
 def _bind_execution(
     prepared: PreparedStoryGeneration,
-    compiled: PreparedReferenceCompile | None,
     motion: torch.Tensor | None,
     authored_audio: AuthoredStoryAudio | None = None,
     output_duration_ms: int = 0,
@@ -698,7 +547,7 @@ def _bind_execution(
     if "lora" in configuration:
         assets["lora"] = _generation_asset_digest("loras", str(configuration["lora"]))
     binding = {
-        "format": "duet-story-execution-v1",
+        "format": "comfy-story-execution-v1",
         "generation_configuration": configuration,
         "model_files": assets,
         "project_id": request.project_id,
@@ -710,7 +559,6 @@ def _bind_execution(
         "frames": _FRAME_COUNTS[f"{request.shot_length_seconds} seconds"],
         "variation": request.variation,
         "sampler": request.sampler.value,
-        "memory_checkpoint": request.checkpoint_sha256,
         "memory_configuration": request.model_configuration_sha256,
         "memory_actions": request.memory_commands,
         "reference_policy": request.reference_policy,
@@ -719,23 +567,13 @@ def _bind_execution(
             for role, guide in zip(prepared.visual_roles, prepared.visual_guides, strict=True)
         ],
         "motion": None if motion is None else tensor_sha256(motion),
-        "compiler": None
-        if compiled is None
-        else {
-            "method": compiled.compiler.method.value,
-            "checkpoint": compiled.compiler.checkpoint_sha256,
-            "budget": compiled.budget,
-            "sources": compiled.sources,
-        },
+        "memory_runtime": NATIVE_REFERENCE_RUNTIME_SHA256,
+        "native_capture_policy": NATIVE_RGB_CAPTURE_POLICY_SHA256,
     }
     if prompt_protocol is not None:
         binding["prompt_compiler"] = prompt_protocol
     if request.shot_state_evidence:
         binding["shot_state_evidence"] = request.shot_state_evidence
-    if request.native_reference_archive:
-        del binding["memory_checkpoint"]
-        binding["memory_runtime"] = NATIVE_REFERENCE_RUNTIME_SHA256
-        binding["native_capture_policy"] = NATIVE_RGB_CAPTURE_POLICY_SHA256
     if request.composition != "Continue frame":
         binding["composition"] = request.composition
     if request.render_profile != "Reference shot":
@@ -756,9 +594,9 @@ def _bind_execution(
 
 def recover_node_generation(
     prepared: PreparedNodeGeneration,
-) -> tuple[LoadedStoryRevision | NativeArchiveRevision, Path, torch.Tensor] | None:
+) -> tuple[NativeArchiveRevision, Path, torch.Tensor] | None:
     """Return authenticated completed outputs before building any GPU graph."""
-    if not isinstance(prepared, PreparedNodeGeneration) or prepared.telemetry_enabled:
+    if not isinstance(prepared, PreparedNodeGeneration):
         return None
     request = prepared.prepared.request
     if request.execution_sha256 is None:
@@ -767,14 +605,10 @@ def recover_node_generation(
     state = StoryAttemptIndex(store.root).load(request.execution_sha256)
     if state is None:
         return None
-    loaded: LoadedStoryRevision | NativeArchiveRevision
-    if request.native_reference_archive:
-        loaded = NativeReferenceArchive(store).load(
-            state, model_configuration_sha256=request.model_configuration_sha256
-        )
-    else:
-        contract = DuetXContract.minimax_h3(adapter_fingerprint=_minimax_identity().adapter_sha256)
-        loaded = store.load(state, contract, request.checkpoint_sha256)
+    loaded = NativeReferenceArchive(store).load(
+        state,
+        model_configuration_sha256=request.model_configuration_sha256,
+    )
     if loaded.shot_metadata.get("execution_sha256") != request.execution_sha256:
         raise ValueError("Completed shot does not match this generation request")
     video_digest = str(loaded.shot_metadata["video_sha256"])
@@ -788,138 +622,6 @@ def recover_node_generation(
         store.root / "assets" / "sha256" / video_digest,
         validate_comfy_images(frame, field="completed last frame"),
     )
-
-
-def _native_reference_runtime() -> bool:
-    """Keep configured trained installations explicit; clean installs use RGB archives."""
-    mode = os.environ.get("DUET_STORY_MEMORY_RUNTIME")
-    if mode is None:
-        return "DUET_STORY_MINIMAX_CHECKPOINT" not in os.environ
-    if mode not in ("native-reference", "trained"):
-        raise ValueError("DUET_STORY_MEMORY_RUNTIME must be native-reference or trained")
-    return mode == "native-reference"
-
-
-def _minimax_identity() -> Any:
-    settings = _minimax_runtime_settings()
-    return inspect_minimax_h3_checkpoint(
-        settings.checkpoint,
-        expected_checkpoint_sha256=settings.checkpoint_sha256,
-        expected_foundation_sha256=settings.foundation_sha256,
-        expected_protocol_sha256=settings.protocol_sha256,
-        model_configuration_sha256=MINIMAX_MODEL_CONFIGURATION_SHA256,
-    )
-
-
-def _protected_reference_names(value: object) -> tuple[str, ...]:
-    if value in (None, ""):
-        return ()
-    names: list[str] = []
-    folded: set[str] = set()
-    for item in str(value).split(","):
-        name = item.strip().removeprefix("@").strip()
-        if not name:
-            continue
-        key = name.casefold()
-        if key not in folded:
-            names.append(name)
-            folded.add(key)
-    if len(names) > 2:
-        raise ValueError("Keep this detail supports at most two selected @references")
-    return tuple(names)
-
-
-def _reference_context(value: object) -> str:
-    resolved = str(value or "Native")
-    if resolved not in _REFERENCE_CONTEXTS:
-        raise ValueError("Reference context must be Native or Compiled preview")
-    return resolved
-
-
-def _compiler_method(inputs: dict[str, Any], *, internal_test: bool) -> H3ReferenceMethod:
-    if not internal_test:
-        return H3ReferenceMethod.DUET_X
-    value = str(
-        inputs.get(
-            "Compiler experiment",
-            os.environ.get("DUET_H3_COMPILER_METHOD", H3ReferenceMethod.DUET_X.value),
-        )
-    )
-    try:
-        return _INTERNAL_COMPILER_METHODS[value]
-    except KeyError as error:
-        raise ValueError("DUET_H3_COMPILER_METHOD is unsupported") from error
-
-
-def _story_context_experiment(inputs: dict[str, Any], *, internal_test: bool) -> str:
-    if not internal_test:
-        return "core_plus_recall"
-    value = str(inputs.get("Story context experiment", "core_plus_recall"))
-    if value not in _STORY_CONTEXT_EXPERIMENTS:
-        raise ValueError("Story context experiment is unsupported")
-    return value
-
-
-def _prepare_reference_compile(
-    prepared: PreparedStoryGeneration,
-    motion_reference: torch.Tensor | None,
-    *,
-    method: H3ReferenceMethod,
-) -> PreparedReferenceCompile:
-    sources = prepared.compiler_sources
-    if motion_reference is not None:
-        sources = (
-            *sources,
-            H3SelectedSource(
-                "input:motion-reference",
-                H3ReferenceKind.VIDEO,
-                len(sources),
-                False,
-            ).validate(),
-        )
-    if len(sources) < 2:
-        raise ValueError("Compiled preview requires at least two selected visual sources")
-    row_budget_text = os.environ.get("DUET_H3_COMPILER_MAX_VISUAL_ROWS", "16384")
-    try:
-        row_budget = int(row_budget_text)
-    except ValueError as error:
-        raise ValueError("DUET_H3_COMPILER_MAX_VISUAL_ROWS must be an integer") from error
-    budget = H3ReferenceBudget(row_budget, 2).validate()
-    learned = method in {
-        H3ReferenceMethod.GATED,
-        H3ReferenceMethod.RESAMPLER,
-        H3ReferenceMethod.DUET,
-        H3ReferenceMethod.DUET_X,
-    }
-    if learned:
-        checkpoint_value = os.environ.get("DUET_H3_COMPILER_CHECKPOINT")
-        if checkpoint_value is None:
-            raise ValueError("DUET_H3_COMPILER_CHECKPOINT must name the local compiler checkpoint")
-        checkpoint = Path(checkpoint_value).resolve()
-        checkpoint_sha256 = _required_digest_environment("DUET_H3_COMPILER_CHECKPOINT_SHA256")
-        loaded = load_h3_reference_compiler_checkpoint(
-            checkpoint,
-            expected_sha256=checkpoint_sha256,
-            expected_model_configuration_sha256=MINIMAX_MODEL_CONFIGURATION_SHA256,
-            device=torch.device("cpu"),
-        )
-        compiler = H3ReferenceCompiler(
-            method,
-            budget,
-            checkpoint_sha256=loaded.identity.checkpoint_sha256,
-            compressor=loaded.compressor_for(method),
-        )
-    else:
-        compiler = H3ReferenceCompiler(method, budget)
-    cache_root = Path(
-        os.environ.get("DUET_H3_COMPILER_CACHE", str(_story_root() / "compiled-reference-cache"))
-    ).resolve()
-    return PreparedReferenceCompile(
-        sources,
-        budget,
-        compiler,
-        CompiledReferenceCache(cache_root),
-    ).validate()
 
 
 def _scene_entities(value: object) -> tuple[str, ...] | None:
@@ -936,37 +638,22 @@ def _scene_entities(value: object) -> tuple[str, ...] | None:
     return tuple(names)
 
 
-def prepare_node_generation(
-    inputs: dict[str, Any], *, living_canon: bool = False
-) -> PreparedNodeGeneration:
+def prepare_node_generation(inputs: dict[str, Any]) -> PreparedNodeGeneration:
     """Convert customer widgets to a validated, model-free generation request."""
     store = StoryProjectStore(_story_root())
     state = _state_from_inputs(inputs)
-    internal_test = os.environ.get("DUET_H3_COMPILER_INTERNAL_TEST") == "1"
-    story_context_experiment = _story_context_experiment(inputs, internal_test=internal_test)
-    memory_backend = (
-        StoryMemoryBackend.MINIMAX_H3
-        if living_canon
-        else _memory_backend(inputs.get("Memory backend", "MiniMax H3"))
-    )
     sampler = _story_sampler(inputs.get("Sampler", "Native res_multistep"))
-    reference_context = _reference_context(inputs.get("Reference context", "Native"))
     render_profile = str(inputs.get("Render profile", "Reference shot"))
     render_configuration(render_profile, sampler)
     motion_value = inputs.get("Motion reference")
-    if render_profile == "Animate frame" and (
-        reference_context != "Native" or motion_value is not None
-    ):
+    if render_profile == "Animate frame" and (motion_value is not None):
         raise ValueError("Animate frame requires Native context and no motion reference")
     ending_value = inputs.get("Ending frame")
     ending_frame = (
         None if ending_value is None else validate_comfy_images(ending_value, field="Ending frame")
     )
-    if ending_frame is not None:
-        if not living_canon:
-            raise ValueError("Ending frames require the public Comfy Story generation path")
-        if ending_frame.shape[0] != 1:
-            raise ValueError("Ending frame must contain exactly one image")
+    if ending_frame is not None and ending_frame.shape[0] != 1:
+        raise ValueError("Ending frame must contain exactly one image")
     motion_reference = (
         None
         if motion_value is None
@@ -980,40 +667,7 @@ def prepare_node_generation(
     )
     if starting_image is not None and starting_image.shape[0] != 1:
         raise ValueError("Starting image must contain exactly one image")
-    protected_names = _protected_reference_names(inputs.get("Keep this detail", ""))
-    native_archive = (
-        living_canon
-        and memory_backend is StoryMemoryBackend.MINIMAX_H3
-        and _native_reference_runtime()
-    )
-    contract: DuetXContract | None
-    checkpoint_sha256: str | None
-    if native_archive:
-        if reference_context != "Native" or internal_test:
-            raise ValueError(
-                "Native reference archives require Native context without compiler experiments"
-            )
-        contract = None
-        checkpoint_sha256 = None
-        model_configuration_sha256 = MINIMAX_MODEL_CONFIGURATION_SHA256
-    elif memory_backend is StoryMemoryBackend.MINIMAX_H3:
-        settings = _minimax_runtime_settings()
-        identity = inspect_minimax_h3_checkpoint(
-            settings.checkpoint,
-            expected_checkpoint_sha256=settings.checkpoint_sha256,
-            expected_foundation_sha256=settings.foundation_sha256,
-            expected_protocol_sha256=settings.protocol_sha256,
-            model_configuration_sha256=MINIMAX_MODEL_CONFIGURATION_SHA256,
-        )
-        contract = DuetXContract.minimax_h3(adapter_fingerprint=identity.adapter_sha256).validate()
-        checkpoint_sha256 = identity.checkpoint_sha256
-        model_configuration_sha256 = identity.model_configuration_sha256
-    else:
-        _checkpoint()
-        _ltx_source_identity()
-        contract = _ltx_contract()
-        checkpoint_sha256 = FROZEN_TRAINABLE_CHECKPOINT_SHA256
-        model_configuration_sha256 = MODEL_CONFIGURATION_SHA256
+    model_configuration_sha256 = MINIMAX_MODEL_CONFIGURATION_SHA256
     intent = ShotIntent(str(inputs["Create"]))
     duration = str(inputs["Shot length"])
     if duration not in _FRAME_COUNTS:
@@ -1033,15 +687,10 @@ def prepare_node_generation(
         project_id = _portable_project_id(library.project_name)
         branch_id = "main"
     else:
-        parent: LoadedStoryRevision | NativeArchiveRevision
-        if native_archive:
-            parent = NativeReferenceArchive(store).load(
-                state, model_configuration_sha256=model_configuration_sha256
-            )
-        else:
-            if contract is None:
-                raise ValueError("Trained memory requires a checkpoint contract")
-            parent = store.load(state, contract, checkpoint_sha256)
+        parent = NativeReferenceArchive(store).load(
+            state,
+            model_configuration_sha256=model_configuration_sha256,
+        )
         library = parent.library
         reference_images = _reference_images_from_store(library, store)
         project_id = state.project_id
@@ -1062,40 +711,22 @@ def prepare_node_generation(
         prompt=str(inputs["What happens next?"]),
         shot_length_seconds=int(duration.split()[0]),
         variation=int(inputs["Variation"]),
-        checkpoint_sha256=checkpoint_sha256,
         model_configuration_sha256=model_configuration_sha256,
         reference_policy=str(inputs["Reference policy"]),
-        memory_backend=memory_backend,
         sampler=sampler,
         shot_state_evidence=parse_shot_state_evidence(inputs.get("Shot state evidence", "{}")),
-        memory_commands=(
-            parse_memory_actions(inputs.get("Memory actions", "")) if living_canon else ()
-        ),
-        living_canon=living_canon,
-        native_reference_archive=native_archive,
-        protected_reference_names=protected_names,
-        # An inherited scene image can replay old actions across a cut. Keep
-        # stored memory and selected evidence, but reserve this image guide for
-        # frame continuation or an explicitly enabled internal experiment.
-        include_associative_core=(
-            not native_archive
-            and story_context_experiment == "core_plus_recall"
-            and (internal_test or inputs.get("Composition", "Continue frame") == "Continue frame")
-        ),
+        memory_commands=parse_memory_actions(inputs.get("Memory actions", "")),
         composition=str(inputs.get("Composition", "Continue frame")),
-        separate_evidence_images=reference_context == "Native" and not internal_test,
         scene_entity_names=_scene_entities(inputs.get("Scene entities", "")),
         render_profile=render_profile,
     )
-    prepared = prepare_story_generation(request, store=store, contract=contract)
+    prepared = prepare_story_generation(request, store=store)
     prompt_format = inputs.get("Prompt format", "Current")
     if prompt_format not in PROMPT_FORMATS:
         raise ValueError("Prompt format is unsupported")
     if sampler is StorySampler.FULL_HD_2PASS and prompt_format != H3_PROMPT_FORMAT:
         raise ValueError("Full HD 2-pass requires H3 automatic v1 prompting")
     if prompt_format == H3_PROMPT_FORMAT:
-        if memory_backend is not StoryMemoryBackend.MINIMAX_H3 or reference_context != "Native":
-            raise ValueError("H3 automatic prompting requires native MiniMax H3 references")
         if (
             len(prepared.visual_guides)
             + int(ending_frame is not None)
@@ -1116,53 +747,29 @@ def prepare_node_generation(
             ),
         )
     elif prompt_format != "Current":
-        if memory_backend is not StoryMemoryBackend.MINIMAX_H3:
-            raise ValueError("Structured reference prompts require MiniMax H3")
         prepared = replace(prepared, resolved_prompt=structured_reference_prompt(prepared))
-    if (
-        memory_backend is StoryMemoryBackend.MINIMAX_H3
-        and len(prepared.compiler_sources) + int(motion_reference is not None) > 9
-    ):
+    if len(prepared.visual_guides) + int(motion_reference is not None) > 9:
         raise ValueError("MiniMax H3 Story supports at most nine selected visual sources")
-    if (
-        reference_context == "Compiled preview"
-        and memory_backend is not StoryMemoryBackend.MINIMAX_H3
-    ):
-        raise ValueError("Compiled preview currently requires the MiniMax H3 memory backend")
-    compiler_method = _compiler_method(inputs, internal_test=internal_test)
-    reference_compile = (
-        _prepare_reference_compile(prepared, motion_reference, method=compiler_method)
-        if reference_context == "Compiled preview"
-        else None
-    )
-    if living_canon:
-        prepared = _bind_execution(
-            prepared,
-            reference_compile,
-            motion_reference,
-            authored_audio,
-            output_duration_ms,
-            ending_frame,
-            prompt_protocol=H3_PROMPT_PROTOCOL if prompt_format == H3_PROMPT_FORMAT else None,
-        )
-    return PreparedNodeGeneration(
+    prepared = _bind_execution(
         prepared,
-        prepared.visual_guides,
-        prepared.resolved_prompt,
-        _FRAME_COUNTS[duration],
-        request.variation,
-        request.sampler,
         motion_reference,
-        reference_compile,
-        internal_test,
-        str(inputs.get("Benchmark phase", "")).strip() if internal_test else "",
-        str(inputs.get("Benchmark workload", "")).strip() if internal_test else "",
-        compiler_method.value if internal_test else "",
-        str(inputs.get("Benchmark cell", "")).strip() if internal_test else "",
         authored_audio,
         output_duration_ms,
         ending_frame,
-        render_profile,
+        prompt_protocol=H3_PROMPT_PROTOCOL if prompt_format == H3_PROMPT_FORMAT else None,
+    )
+    return PreparedNodeGeneration(
+        prepared=prepared,
+        visual_guides=prepared.visual_guides,
+        resolved_prompt=prepared.resolved_prompt,
+        frame_count=_FRAME_COUNTS[duration],
+        variation=request.variation,
+        sampler=request.sampler,
+        motion_reference=motion_reference,
+        authored_audio=authored_audio,
+        output_duration_ms=output_duration_ms,
+        ending_frame=ending_frame,
+        render_profile=render_profile,
     )
 
 
@@ -1200,78 +807,31 @@ def commit_node_generation(
     prepared: PreparedStoryGeneration,
     decoded_images: torch.Tensor,
     saved_video: object,
-    filename_prefix: str = "duet_story/shot",
-    memory_vae: object | None = None,
-) -> StoryCommitResult | NativeStoryCommitResult:
-    """Run the GPU memory transaction after MiniMax decoding and saving complete."""
+    filename_prefix: str = "comfy_story/shot",
+) -> NativeStoryCommitResult:
+    """Publish shot evidence after MiniMax decoding and saving complete."""
     video = _read_regular(
         _saved_video_path(saved_video, filename_prefix),
         "saved video",
     )
     digest = hashlib.sha256(video).hexdigest()
-    if prepared.request.native_reference_archive:
-        store = StoryProjectStore(_story_root())
-        store.put_asset(video)
-        native_result = commit_native_story_generation(
-            StoryCommitRequest(
-                prepared, decoded_images, digest, f"duet-evidence://story/sha256/{digest}"
-            ),
-            store=store,
+    store = StoryProjectStore(_story_root())
+    store.put_asset(video)
+    native_result = commit_native_story_generation(
+        StoryCommitRequest(
+            prepared, decoded_images, digest, f"comfy-evidence://story/sha256/{digest}"
+        ),
+        store=store,
+    )
+    if prepared.request.execution_sha256 is not None:
+        StoryAttemptIndex(store.root).publish(
+            prepared.request.execution_sha256, native_result.state
         )
-        if prepared.request.execution_sha256 is not None:
-            StoryAttemptIndex(store.root).publish(
-                prepared.request.execution_sha256, native_result.state
-            )
-        return native_result
-    if prepared.request.memory_backend is StoryMemoryBackend.MINIMAX_H3:
-        settings = _minimax_runtime_settings()
-        if settings.checkpoint_sha256 != prepared.request.checkpoint_sha256:
-            raise ValueError("MiniMax H3 memory checkpoint changed after preparation")
-        if memory_vae is None:
-            raise ValueError("MiniMax H3 memory commit requires the loaded video VAE")
-        runtime = MiniMaxH3StoryRuntime.load_pinned(
-            settings.checkpoint,
-            expected_checkpoint_sha256=settings.checkpoint_sha256,
-            expected_foundation_sha256=settings.foundation_sha256,
-            expected_protocol_sha256=settings.protocol_sha256,
-            model_configuration_sha256=MINIMAX_MODEL_CONFIGURATION_SHA256,
-            vae_sha256=settings.vae_sha256,
-            codec=ComfyMiniMaxH3Codec(memory_vae),
-            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        )
-    else:
-        source_commit, source_archive = _ltx_source_identity()
-        runtime = StoryLTXRuntime.load_pinned(
-            _checkpoint(),
-            source_commit=source_commit,
-            source_archive_sha256=source_archive,
-            contract=_ltx_contract(),
-            model_configuration_sha256=MODEL_CONFIGURATION_SHA256,
-        )
-    try:
-        store = StoryProjectStore(_story_root())
-        store.put_asset(video)
-        result = commit_story_generation(
-            StoryCommitRequest(
-                prepared,
-                decoded_images,
-                digest,
-                f"duet-evidence://story/sha256/{digest}",
-            ),
-            store=store,
-            runtime=runtime,
-        )
-        if prepared.request.execution_sha256 is not None:
-            StoryAttemptIndex(store.root).publish(prepared.request.execution_sha256, result.state)
-        return result
-    finally:
-        runtime.close()
+    return native_result
 
 
 __all__ = (
     "MINIMAX_MODEL_CONFIGURATION_SHA256",
-    "MODEL_CONFIGURATION_SHA256",
-    "ComfyMiniMaxH3Codec",
     "PreparedNodeGeneration",
     "commit_node_generation",
     "parse_memory_actions",

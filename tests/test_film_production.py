@@ -93,7 +93,7 @@ def production(
     def comfy_request(server: str, path: str, payload: Any = None) -> dict[str, Any]:
         if path == "/object_info":
             return {
-                "DuetStory": {
+                "ComfyStory": {
                     "input": {"optional": {"Output duration (ms)": [], "Scene entities": []}}
                 }
             }
@@ -107,7 +107,7 @@ def production(
             revision = hashlib.sha256(canonical_story_json([node, parent])).hexdigest()
             rendered.add(revision)
             outputs[node_id] = {
-                "duet_story": [
+                "comfy_story": [
                     {
                         "owner_node_id": node_id,
                         "revision_sha256": revision,
@@ -795,7 +795,7 @@ def test_missing_scene_entity_input_fails_before_any_gpu_submission(
     def request(server: str, path: str, payload: Any = None) -> dict[str, Any]:
         result = original(server, path, payload)
         if path == "/object_info":
-            del result["DuetStory"]["input"]["optional"]["Scene entities"]
+            del result["ComfyStory"]["input"]["optional"]["Scene entities"]
         return result
 
     monkeypatch.setattr(film_runner, "_json_request", request)
@@ -1284,7 +1284,7 @@ def test_selected_state_binding_is_carried_and_recovered_without_new_sampling(
     def request(server: str, path: str, payload: Any = None) -> dict[str, Any]:
         result = original(server, path, payload)
         if path == "/object_info":
-            result["DuetStory"]["input"]["optional"]["Shot state evidence"] = []
+            result["ComfyStory"]["input"]["optional"]["Shot state evidence"] = []
         return result
 
     seen = []
@@ -1446,7 +1446,7 @@ def test_resolved_staging_input_survives_prefix_replay_and_video_retry(
     def request(server: str, path: str, payload: Any = None) -> dict[str, Any]:
         result = original_request(server, path, payload)
         if path == "/object_info":
-            result["DuetStory"]["input"].setdefault("optional", {})["Render profile"] = []
+            result["ComfyStory"]["input"].setdefault("optional", {})["Render profile"] = []
         return result
 
     monkeypatch.setattr(film_runner, "_json_request", request)

@@ -27,7 +27,9 @@ words, so review the final mix before sharing it.
 
 **Check each shot** is an optional mode for a host configured with a compatible local visual verifier.
 It can stop on failed or uncertain assessments and supports an attempt budget. The verifier does
-not replace creator approval. Staged openings and selected-state recall require this mode.
+not replace creator approval. Staged openings and selected-state recall require this mode. Install the `film-audit` optional
+dependencies listed in `pyproject.toml`, set `COMFY_STORY_VERIFY_MODEL` to the local verifier
+model directory, and restart ComfyUI. `COMFY_STORY_VERIFY_DEVICE` selects the device (default: `cpu`).
 
 **Resume selected run** retains the saved recipe, generation mode, and attempt budget. Changed
 inputs, models, or runtime source require a new run. Conflicting saves fail instead of overwriting a

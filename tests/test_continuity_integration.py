@@ -10,26 +10,14 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import pytest
 import torch
 from PIL import Image
 
-from comfy_story.h3_reference_compressors import H3ReferenceCompiler
-from comfy_story.h3_reference_contracts import (
-    H3CompileReceipt,
-    H3ReferenceBudget,
-    H3ReferenceKind,
-    H3ReferenceMethod,
-    H3SelectedSource,
-)
-from comfy_story.minimax_h3_training import (
-    build_minimax_h3_training_modules,
-    save_minimax_h3_runtime_checkpoint,
-)
-from comfy_story.story_memory_backend import StoryMemoryBackend, StorySampler
+from comfy_story.samplers import StorySampler
 
 _MODULE = "integrations.comfy_story"
 
@@ -190,15 +178,14 @@ def _image(value: float) -> torch.Tensor:
 
 
 def test_public_schema_is_one_chainable_value_node(continuity_integration: ModuleType) -> None:
-    schema = continuity_integration.DuetStory.define_schema()
-    assert schema.node_id == "DuetStory"
+    schema = continuity_integration.ComfyStory.define_schema()
+    assert schema.node_id == "ComfyStory"
     assert schema.display_name == "Comfy Story"
     assert [field.id for field in schema.inputs] == [
         "Previous Story",
         "Previous Frame",
         "Create",
         "Story Library",
-        "Reference context",
         "World / starting frame",
         "Motion reference",
         "What happens next?",
@@ -221,7 +208,7 @@ def test_public_schema_is_one_chainable_value_node(continuity_integration: Modul
     assert [(field.id, field.kind) for field in schema.outputs] == [
         ("video", "VIDEO"),
         ("last_frame", "IMAGE"),
-        ("story_state", "DUET_STORY"),
+        ("story_state", "COMFY_STORY"),
     ]
     world = next(field for field in schema.inputs if field.id == "World / starting frame")
     assert world.options["upload"].value == "image"
@@ -239,9 +226,7 @@ def test_public_schema_is_one_chainable_value_node(continuity_integration: Modul
         "NVFP4 Turbo 4-step",
     ]
     assert sampler.options["default"] == "Native res_multistep"
-    context = next(field for field in schema.inputs if field.id == "Reference context")
-    assert context.options["options"] == ["Native", "Compiled preview"]
-    assert context.options["default"] == "Native"
+    assert all(field.id != "Reference context" for field in schema.inputs)
 
 
 def test_extension_exposes_story_nodes_and_hidden_internal_nodes(
@@ -250,49 +235,23 @@ def test_extension_exposes_story_nodes_and_hidden_internal_nodes(
     extension = asyncio.run(continuity_integration.comfy_entrypoint())
     registered = asyncio.run(extension.get_node_list())
     assert registered == [
-        continuity_integration.DuetStory,
-        continuity_integration.DuetStoryCanon,
-        continuity_integration.DuetStoryCommit,
-        continuity_integration.DuetStoryTrim,
-        continuity_integration.DuetStoryKeyframeTiming,
-        continuity_integration.DuetH3BalancedCache,
-        continuity_integration.DuetH3UltraFast,
-        continuity_integration.DuetH3CompileReferences,
-        continuity_integration.DuetH3TelemetryStart,
-        continuity_integration.DuetH3TelemetryEnd,
-        continuity_integration.DuetH3BenchmarkReceipt,
-        continuity_integration.DuetH3VideoLatent,
-        continuity_integration.DuetH3ReplaceVideoLatent,
-        continuity_integration.DuetH3RefinementSigmas,
+        continuity_integration.ComfyStory,
+        continuity_integration.ComfyStoryCommit,
+        continuity_integration.ComfyStoryTrim,
+        continuity_integration.ComfyStoryKeyframeTiming,
+        continuity_integration.ComfyH3BalancedCache,
+        continuity_integration.ComfyH3UltraFast,
+        continuity_integration.ComfyH3VideoLatent,
+        continuity_integration.ComfyH3ReplaceVideoLatent,
+        continuity_integration.ComfyH3RefinementSigmas,
     ]
     assert registered[0].define_schema().is_deprecated is False
-    assert registered[1].define_schema().is_deprecated is True
-    assert all(node.define_schema().category == "Comfy/Story" for node in registered[:2])
-    assert all(node.define_schema().category == "_Duet/Internal" for node in registered[2:])
+    assert all(not node.define_schema().is_deprecated for node in registered)
+    assert all(node.define_schema().category == "Comfy/Story" for node in registered[:1])
+    assert all(node.define_schema().category == "_Comfy/Internal" for node in registered[1:])
 
 
-def test_living_canon_schema_is_a_deprecated_compatibility_alias(
-    continuity_integration: ModuleType,
-) -> None:
-    schema = continuity_integration.DuetStoryCanon.define_schema()
-    node = continuity_integration.DuetStoryCanon
-    assert node.fingerprint_inputs() != node.fingerprint_inputs()
-
-    assert schema.node_id == "DuetStoryCanon"
-    assert schema.display_name == "Comfy Story (legacy workflow alias)"
-    assert schema.is_deprecated is True
-    assert "Memory backend" not in [field.id for field in schema.inputs]
-    context = next(field for field in schema.inputs if field.id == "Reference context")
-    assert context.options["options"] == ["Native", "Compiled preview"]
-    assert any(field.id == "Motion reference" for field in schema.inputs)
-    actions = next(field for field in schema.inputs if field.id == "Memory actions")
-    assert actions.kind == "STRING"
-    assert actions.options["advanced"] is True
-    assert schema.hidden == [_Hidden.unique_id]
-    assert [field.id for field in schema.outputs] == ["video", "last_frame", "story_state"]
-
-
-@pytest.mark.parametrize("node_name", ["DuetStory", "DuetStoryCanon"])
+@pytest.mark.parametrize("node_name", ["ComfyStory"])
 def test_living_canon_expansion_marks_request_and_routes_commit_to_visible_node(
     continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, node_name: str
 ) -> None:
@@ -307,9 +266,9 @@ def test_living_canon_expansion_marks_request_and_routes_commit_to_visible_node(
     )
     observed: list[bool] = []
 
-    def prepare(inputs: dict[str, object], *, living_canon: bool = False) -> object:
+    def prepare(inputs: dict[str, object]) -> object:
         del inputs
-        observed.append(living_canon)
+        observed.append(True)
         return prepared
 
     monkeypatch.setattr(integration_nodes, "prepare_node_generation", prepare)
@@ -345,61 +304,17 @@ def test_internal_commit_returns_inspector_metadata_for_the_visible_canon_node(
         },
     )
 
-    output = continuity_integration.DuetStoryCommit.execute(
+    output = continuity_integration.ComfyStoryCommit.execute(
         prepared="prepared",
         decoded_images="images",
         saved_video="video",
-        filename_prefix="duet_story/shot",
+        filename_prefix="comfy_story/shot",
         memory_vae="vae",
         owner_node_id="42",
     )
 
     assert output.args == ("state", "frame")
-    assert output.ui == {"duet_story": [{"owner_node_id": "42", "revision": True}]}
-
-
-def test_scientific_method_widget_exists_only_in_internal_test_mode(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    public_fields = {field.id for field in continuity_integration.DuetStory.define_schema().inputs}
-    assert "Compiler experiment" not in public_fields
-    assert "Story context experiment" not in public_fields
-
-    monkeypatch.setenv("DUET_H3_COMPILER_INTERNAL_TEST", "1")
-    for node in (continuity_integration.DuetStory, continuity_integration.DuetStoryCanon):
-        schema = node.define_schema()
-        experiment = next(field for field in schema.inputs if field.id == "Compiler experiment")
-        story_context = next(
-            field for field in schema.inputs if field.id == "Story context experiment"
-        )
-
-        assert experiment.options["advanced"] is True
-        assert experiment.options["default"] == "duet_x"
-        assert experiment.options["options"] == [
-            "native_full",
-            "native_trimmed",
-            "gated",
-            "resampler",
-            "duet",
-            "exceptions_only",
-            "duet_x",
-        ]
-        assert story_context.options["advanced"] is True
-        assert story_context.options["default"] == "core_plus_recall"
-        assert story_context.options["options"] == ["core_plus_recall", "retrieval_only"]
-
-
-def test_public_story_context_ignores_hidden_ablation_input(
-    continuity_integration: ModuleType,
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-
-    assert (
-        adapter._story_context_experiment(
-            {"Story context experiment": "retrieval_only"}, internal_test=False
-        )
-        == "core_plus_recall"
-    )
+    assert output.ui == {"comfy_story": [{"owner_node_id": "42", "revision": True}]}
 
 
 def test_expand_generates_decodes_saves_then_commits(
@@ -417,7 +332,7 @@ def test_expand_generates_decodes_saves_then_commits(
     monkeypatch.setattr(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
-    output = continuity_integration.DuetStory.execute(
+    output = continuity_integration.ComfyStory.execute(
         **{
             "Previous Story": None,
             "Previous Frame": None,
@@ -449,13 +364,13 @@ def test_expand_generates_decodes_saves_then_commits(
         "VAEDecodeAudio",
         "CreateVideo",
         "SaveVideo",
-        "DuetStoryCommit",
+        "ComfyStoryCommit",
     ]
     commit = output.expand["16"]
     assert commit["inputs"]["decoded_images"] == ["12", 0]
     assert commit["inputs"]["saved_video"] == ["15", 0]
-    assert commit["inputs"]["memory_vae"] == ["3", 0]
-    assert commit["inputs"]["filename_prefix"] == "duet_story/shot"
+    assert "memory_vae" not in commit["inputs"]
+    assert commit["inputs"]["filename_prefix"] == "comfy_story/shot"
     assert output.args == (["15", 0], ["16", 1], ["16", 0])
     generator = output.expand["8"]["inputs"]
     assert generator["width"] == 1344
@@ -476,18 +391,16 @@ def test_native_story_graph_bypasses_compiler_exactly(
         variation=123,
         sampler=StorySampler.NATIVE_RES_MULTISTEP,
         motion_reference=None,
-        reference_compile=None,
-        telemetry_enabled=False,
     )
     monkeypatch.setattr(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
 
-    output = continuity_integration.DuetStory.execute()
+    output = continuity_integration.ComfyStory.execute()
 
     assert output.expand is not None
     types = [node["class_type"] for node in output.expand.values()]
-    assert "DuetH3CompileReferences" not in types
+    assert "ComfyH3CompileReferences" not in types
     native_id = next(
         node_id
         for node_id, node in output.expand.items()
@@ -497,297 +410,6 @@ def test_native_story_graph_bypasses_compiler_exactly(
         node for node in output.expand.values() if node["class_type"] == "MiniMaxH3AddGuide"
     )
     assert guide["inputs"]["positive"] == [native_id, 0]
-
-
-def test_compiled_preview_inserts_hidden_compiler_and_motion_reference(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    integration_nodes = importlib.import_module(f"{_MODULE}.nodes")
-    request = object()
-    motion = torch.zeros((12, 8, 12, 3), dtype=torch.float32)
-    prepared = SimpleNamespace(
-        prepared={"opaque": "prepared"},
-        visual_guides=(_image(0.1), _image(0.2)),
-        resolved_prompt="resolved prompt",
-        frame_count=124,
-        variation=123,
-        sampler=StorySampler.NATIVE_RES_MULTISTEP,
-        motion_reference=motion,
-        reference_compile=request,
-        telemetry_enabled=False,
-    )
-    monkeypatch.setattr(
-        integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
-    )
-
-    output = continuity_integration.DuetStory.execute()
-
-    assert output.expand is not None
-    native_id, native = next(
-        (node_id, node)
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "MiniMaxH3ReferenceToVideo"
-    )
-    compiler_id, compiler = next(
-        (node_id, node)
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "DuetH3CompileReferences"
-    )
-    guide = next(
-        node for node in output.expand.values() if node["class_type"] == "MiniMaxH3AddGuide"
-    )
-    assert native["inputs"]["ref_videos.ref_video_0"] is motion
-    assert compiler["inputs"] == {"positive": [native_id, 0], "request": request}
-    assert guide["inputs"]["positive"] == [compiler_id, 0]
-
-
-def test_internal_telemetry_wraps_only_the_denoising_region(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    integration_nodes = importlib.import_module(f"{_MODULE}.nodes")
-    prepared = SimpleNamespace(
-        prepared={"opaque": "prepared"},
-        visual_guides=(_image(0.1), _image(0.2)),
-        resolved_prompt="resolved prompt",
-        frame_count=124,
-        variation=123,
-        sampler=StorySampler.NATIVE_RES_MULTISTEP,
-        motion_reference=None,
-        reference_compile=None,
-        telemetry_enabled=True,
-    )
-    monkeypatch.setattr(
-        integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
-    )
-
-    output = continuity_integration.DuetStory.execute()
-
-    assert output.expand is not None
-    start_id = next(
-        node_id
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "DuetH3TelemetryStart"
-    )
-    sampler_id = next(
-        node_id
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "SamplerCustomAdvanced"
-    )
-    end_id, end = next(
-        (node_id, node)
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "DuetH3TelemetryEnd"
-    )
-    decode = next(node for node in output.expand.values() if node["class_type"] == "VAEDecode")
-    assert end["inputs"]["latent"] == [sampler_id, 0]
-    assert end["inputs"]["telemetry"] == [start_id, 1]
-    assert decode["inputs"]["samples"] == [end_id, 0]
-
-
-def test_internal_benchmark_graph_publishes_compiler_and_denoising_receipt(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    integration_nodes = importlib.import_module(f"{_MODULE}.nodes")
-    request = object()
-    prepared = SimpleNamespace(
-        prepared={"opaque": "prepared"},
-        visual_guides=(_image(0.1), _image(0.2)),
-        resolved_prompt="resolved prompt",
-        frame_count=124,
-        variation=101,
-        sampler=StorySampler.NATIVE_RES_MULTISTEP,
-        motion_reference=None,
-        reference_compile=request,
-        telemetry_enabled=True,
-        benchmark_phase="screening",
-        benchmark_workload="performance_transfer",
-        benchmark_method="duet_x",
-        benchmark_cell="performance_transfer__duet_x__101",
-    )
-    monkeypatch.setattr(
-        integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
-    )
-
-    output = continuity_integration.DuetStory.execute()
-
-    assert output.expand is not None
-    compiler_id, compiler = next(
-        (node_id, node)
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "DuetH3CompileReferences"
-    )
-    telemetry_id = next(
-        node_id
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "DuetH3TelemetryEnd"
-    )
-    receipt_id, receipt = next(
-        (node_id, node)
-        for node_id, node in output.expand.items()
-        if node["class_type"] == "DuetH3BenchmarkReceipt"
-    )
-    assert compiler["inputs"]["request"] is request
-    assert receipt["inputs"]["request"] is request
-    assert receipt["inputs"]["compile_receipt"] == [compiler_id, 1]
-    assert receipt["inputs"]["context_build_ns"] == [compiler_id, 2]
-    assert receipt["inputs"]["denoising"] == [telemetry_id, 1]
-    assert receipt["inputs"]["cell_id"] == "performance_transfer__duet_x__101"
-    assert output.args[2] == [receipt_id, 0]
-
-
-def test_hidden_benchmark_receipt_is_canonical_and_root_scoped(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    hidden = importlib.import_module(f"{_MODULE}.h3_reference_node")
-    monkeypatch.setenv("DUET_H3_BENCHMARK_ROOT", str(tmp_path))
-    compile_receipt = H3CompileReceipt(
-        "duet-x-h3-reference-compile-receipt-v1",
-        H3ReferenceMethod.NATIVE_FULL,
-        2,
-        2,
-        32,
-        32,
-        ("1" * 64, "2" * 64),
-        ("3" * 64, "4" * 64),
-        None,
-        "bypass",
-        0,
-        0,
-    ).validate()
-    denoising = hidden.DenoisingTelemetry(123_000_000, 40, 50)
-    state = object()
-    sources = (
-        H3SelectedSource("story:current", H3ReferenceKind.IMAGE, 0, False),
-        H3SelectedSource("story:evidence-Aya", H3ReferenceKind.IMAGE, 1, True),
-    )
-    request = hidden.PreparedReferenceCompile(
-        sources,
-        H3ReferenceBudget(64, 1),
-        H3ReferenceCompiler(H3ReferenceMethod.NATIVE_FULL, H3ReferenceBudget(64, 1)),
-    )
-
-    result = hidden.DuetH3BenchmarkReceipt.execute(
-        state,
-        request,
-        compile_receipt,
-        12_000_000,
-        denoising,
-        "screening",
-        "performance_transfer",
-        "native_full",
-        101,
-        "performance_transfer__native_full__101",
-    )
-
-    receipt_path = tmp_path / "screening" / "performance_transfer__native_full__101.json"
-    payload = json.loads(receipt_path.read_text())
-    assert result.args == (state,)
-    assert result.ui == {"duet_h3_benchmark": [payload]}
-    assert payload["format"] == "duet-x-h3-runtime-receipt-v1"
-    assert payload["compiler"]["input_visual_rows"] == 32
-    assert payload["selection"] == {
-        "protected_source_ids": ["story:evidence-Aya"],
-        "sources": [
-            {
-                "kind": "image",
-                "ordinal": 0,
-                "protected": False,
-                "source_id": "story:current",
-            },
-            {
-                "kind": "image",
-                "ordinal": 1,
-                "protected": True,
-                "source_id": "story:evidence-Aya",
-            },
-        ],
-    }
-    assert payload["telemetry"] == {
-        "context_build_ns": 12_000_000,
-        "denoising_elapsed_ns": 123_000_000,
-        "max_memory_allocated": 40,
-        "max_memory_reserved": 50,
-    }
-    assert receipt_path.read_bytes().endswith(b"\n")
-
-    monkeypatch.delenv("DUET_H3_BENCHMARK_ROOT")
-    history_only = hidden.DuetH3BenchmarkReceipt.execute(
-        state,
-        request,
-        compile_receipt,
-        12_000_000,
-        denoising,
-        "screening",
-        "performance_transfer",
-        "native_full",
-        202,
-        "performance_transfer__native_full__202",
-    )
-    assert history_only.ui is not None
-    assert history_only.ui["duet_h3_benchmark"][0]["cell"]["seed"] == 202
-    assert not (tmp_path / "screening" / "performance_transfer__native_full__202.json").exists()
-
-    with pytest.raises(ValueError, match="cell id"):
-        hidden.DuetH3BenchmarkReceipt.execute(
-            state,
-            request,
-            compile_receipt,
-            1,
-            denoising,
-            "screening",
-            "performance_transfer",
-            "native_full",
-            101,
-            "../escape",
-        )
-
-
-def test_hidden_compiler_rewrites_only_visual_reference_blocks(
-    continuity_integration: ModuleType,
-) -> None:
-    hidden = importlib.import_module(f"{_MODULE}.h3_reference_node")
-    sources = (
-        H3SelectedSource("world", H3ReferenceKind.IMAGE, 0, False),
-        H3SelectedSource("prop", H3ReferenceKind.IMAGE, 1, False),
-        H3SelectedSource("hero", H3ReferenceKind.IMAGE, 2, True),
-    )
-    positive = [
-        [
-            torch.zeros(1, 4, 8),
-            {
-                "minimax_token_tags": torch.ones(1, dtype=torch.long),
-                "minimax_refs": [
-                    {
-                        "kind": "image",
-                        "latent_h": 4,
-                        "latent_w": 6,
-                        "latent": torch.full((1, 24, 1, 4, 6), float(index)),
-                    }
-                    for index in range(3)
-                ],
-            },
-        ]
-    ]
-    budget = H3ReferenceBudget(12, 1)
-    compiler = H3ReferenceCompiler(
-        H3ReferenceMethod.DUET_X,
-        budget,
-        checkpoint_sha256="a" * 64,
-    )
-    request = hidden.PreparedReferenceCompile(sources, budget, compiler)
-
-    output = hidden.DuetH3CompileReferences.execute(positive, request)
-
-    conditioned, receipt, context_build_ns = output.args
-    original_metadata = cast(dict[str, object], positive[0][1])
-    assert conditioned is not positive
-    assert conditioned[0][0] is positive[0][0]
-    assert len(conditioned[0][1]["minimax_refs"]) == 2
-    assert len(cast(list[object], original_metadata["minimax_refs"])) == 3
-    assert receipt.input_visual_rows == 18
-    assert receipt.output_visual_rows == 12
-    assert type(context_build_ns) is int
-    assert context_build_ns > 0
 
 
 @pytest.mark.parametrize(
@@ -820,7 +442,7 @@ def test_turbo_uses_ref2va_lora_and_coherent_schedule(
     monkeypatch.setattr(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
-    output = continuity_integration.DuetStory.execute()
+    output = continuity_integration.ComfyStory.execute()
     assert output.expand is not None
     nodes = {n["class_type"]: (key, n["inputs"]) for key, n in output.expand.items()}
     lora_id, lora = nodes["LoraLoaderModelOnly"]
@@ -849,7 +471,7 @@ def test_turbo_uses_ref2va_lora_and_coherent_schedule(
     assert conditioning["ref_image_size"] == "match"
     assert "SamplerCustomAdvanced" in nodes
     assert "MiniMaxH3SPEEDSampler" not in nodes
-    assert "DuetStoryCommit" in nodes
+    assert "ComfyStoryCommit" in nodes
 
 
 def test_speed_sampler_replaces_only_native_sampling_nodes(
@@ -893,7 +515,7 @@ def test_speed_sampler_replaces_only_native_sampling_nodes(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
 
-    output = continuity_integration.DuetStory.execute()
+    output = continuity_integration.ComfyStory.execute()
 
     assert output.expand is not None
     class_types = [node["class_type"] for node in output.expand.values()]
@@ -931,7 +553,7 @@ def test_speed_sampler_fails_closed_when_external_node_is_missing(
     )
 
     with pytest.raises(ValueError, match="MiniMaxH3SPEEDSampler is not installed"):
-        continuity_integration.DuetStory.execute()
+        continuity_integration.ComfyStory.execute()
 
 
 def test_speed_sampler_fails_closed_on_external_schema_drift(
@@ -963,379 +585,7 @@ def test_speed_sampler_fails_closed_on_external_schema_drift(
     )
 
     with pytest.raises(ValueError, match="schema is incompatible"):
-        continuity_integration.DuetStory.execute()
-
-
-def test_comfy_minimax_codec_reuses_native_vae_tensor_contract(
-    continuity_integration: ModuleType,
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-
-    class _VAE:
-        def encode(self, images: torch.Tensor) -> torch.Tensor:
-            assert images.shape == (1, 384, 384, 3)
-            assert images.dtype == torch.float32
-            return torch.full((1, 24, 1, 24, 24), 0.25, dtype=torch.float16)
-
-        def decode(self, latent: torch.Tensor) -> torch.Tensor:
-            assert latent.shape == (1, 24, 1, 24, 24)
-            return torch.full((1, 1, 384, 384, 3), 0.5, dtype=torch.float32)
-
-    codec = adapter.ComfyMiniMaxH3Codec(_VAE())
-    frame = np.zeros((384, 384, 3), dtype=np.uint8)
-
-    latent = codec.encode_frame(frame)
-    decoded = codec.decode_frame(latent)
-
-    assert latent.shape == (1, 24, 1, 24, 24)
-    assert latent.dtype == torch.float16
-    assert decoded.shape == (384, 384, 3)
-    assert decoded.dtype == np.uint8
-    assert np.all(decoded == 128)
-
-
-@pytest.mark.parametrize("living_canon", [False, True])
-def test_prepare_defaults_to_authenticated_minimax_memory(
-    continuity_integration: ModuleType,
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    living_canon: bool,
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    reference = tmp_path / "maya.png"
-    Image.fromarray(np.full((16, 16, 3), 127, dtype=np.uint8)).save(reference)
-    checkpoint = tmp_path / "minimax-memory.pt"
-    foundation_sha256 = "1" * 64
-    vae_sha256 = "3" * 64
-    save_minimax_h3_runtime_checkpoint(
-        checkpoint,
-        build_minimax_h3_training_modules(),
-        foundation_sha256=foundation_sha256,
-        model_configuration_sha256=adapter.MINIMAX_MODEL_CONFIGURATION_SHA256,
-        optimizer_steps=2_000,
-        training_trace=({"loss": 0.25, "optimizer_step": 2_000},),
-    )
-    checkpoint_sha256 = hashlib.sha256(checkpoint.read_bytes()).hexdigest()
-    monkeypatch.setenv("DUET_STORY_ROOT", str(tmp_path / "stories"))
-    monkeypatch.setenv("DUET_STORY_MINIMAX_CHECKPOINT", str(checkpoint))
-    monkeypatch.setenv("DUET_STORY_MINIMAX_CHECKPOINT_SHA256", checkpoint_sha256)
-    monkeypatch.setenv("DUET_STORY_MINIMAX_FOUNDATION_SHA256", foundation_sha256)
-    monkeypatch.setenv("DUET_STORY_MINIMAX_VAE_SHA256", vae_sha256)
-
-    inputs = {
-        "Previous Story": None,
-        "Previous Frame": None,
-        "Create": "Start Story",
-        "Story Library": json.dumps(
-            {
-                "project_name": "MiniMax Story",
-                "references": [
-                    {
-                        "file": reference.name,
-                        "name": "Maya",
-                        "note": "lead",
-                        "role": "Character",
-                    }
-                ],
-            }
-        ),
-        "World / starting frame": _image(0.1),
-        "What happens next?": "@Maya enters.",
-        "Shot length": "5 seconds",
-        "Variation": 123,
-        "Story revision": "",
-        "Reference policy": "Automatic",
-    }
-    result = adapter.prepare_node_generation(inputs, living_canon=living_canon)
-
-    request = result.prepared.request
-    assert request.memory_backend is StoryMemoryBackend.MINIMAX_H3
-    assert request.include_associative_core is True
-    assert request.separate_evidence_images is True
-    assert request.sampler is StorySampler.NATIVE_RES_MULTISTEP
-    assert request.checkpoint_sha256 == checkpoint_sha256
-    assert request.model_configuration_sha256 == adapter.MINIMAX_MODEL_CONFIGURATION_SHA256
-    if living_canon:
-        animated = adapter.prepare_node_generation(
-            {**inputs, "Render profile": "Animate frame"}, living_canon=True
-        )
-        assert animated.render_profile == "Animate frame"
-        assert animated.prepared.active_reference_names == ()
-        assert animated.prepared.visual_roles == ("current",)
-        assert animated.prepared.request.execution_sha256 != request.execution_sha256
-        folder_paths = importlib.import_module("folder_paths")
-        original_path = folder_paths.get_full_path
-        with monkeypatch.context() as patch:
-            patch.setattr(
-                folder_paths,
-                "get_full_path",
-                lambda folder, name: None if "h3_fl2va" in name else original_path(folder, name),
-            )
-            with pytest.raises(ValueError, match="requires the installed MiniMax H3 model"):
-                adapter.prepare_node_generation(
-                    {**inputs, "Render profile": "Animate frame"}, living_canon=True
-                )
-        for unsupported in (
-            {"Composition": "New composition"},
-            {"Sampler": "SPEED Euler 2-stage"},
-            {"Reference context": "Compiled preview"},
-            {"Motion reference": _image(0.5)},
-        ):
-            with pytest.raises(ValueError, match="Animate frame"):
-                adapter.prepare_node_generation(
-                    {**inputs, "Render profile": "Animate frame", **unsupported}, living_canon=True
-                )
-        eight_inputs = {**inputs, "Render profile": "Animate frame", "Sampler": "Turbo 8-step"}
-        eight = adapter.prepare_node_generation(eight_inputs, living_canon=True)
-        assert eight.prepared.request.sampler is StorySampler.TURBO_8STEP
-        reference_eight = adapter.prepare_node_generation(
-            {**inputs, "Sampler": "Turbo 8-step"}, living_canon=True
-        )
-        assert reference_eight.render_profile == "Reference shot"
-        assert reference_eight.prepared.request.sampler is StorySampler.TURBO_8STEP
-        assert reference_eight.prepared.request.execution_sha256 not in {
-            request.execution_sha256,
-            eight.prepared.request.execution_sha256,
-        }
-        with monkeypatch.context() as eight_assets:
-            original_eight_path = adapter.folder_paths.get_full_path
-            eight_file = tmp_path / "eight-step-lora.bin"
-            eight_file.write_bytes(b"changed eight-step weights")
-            eight_assets.setattr(
-                adapter.folder_paths,
-                "get_full_path",
-                lambda folder, name: (
-                    str(eight_file) if folder == "loras" else original_eight_path(folder, name)
-                ),
-            )
-            changed_eight = adapter.prepare_node_generation(eight_inputs, living_canon=True)
-            assert (
-                changed_eight.prepared.request.execution_sha256
-                != eight.prepared.request.execution_sha256
-            )
-            eight_assets.setattr(
-                adapter.folder_paths,
-                "get_full_path",
-                lambda folder, name: (
-                    None if folder == "loras" else original_eight_path(folder, name)
-                ),
-            )
-            with pytest.raises(ValueError, match="requires the installed MiniMax H3 model"):
-                adapter.prepare_node_generation(eight_inputs, living_canon=True)
-            with pytest.raises(ValueError, match="requires the installed MiniMax H3 model"):
-                adapter.prepare_node_generation(
-                    {**inputs, "Sampler": "Turbo 8-step"}, living_canon=True
-                )
-        declared = adapter.prepare_node_generation(
-            {**inputs, "Scene entities": '["Maya"]'}, living_canon=True
-        )
-        assert declared.prepared.request.scene_entity_names == ("Maya",)
-        assert (
-            declared.prepared.request.execution_sha256 != result.prepared.request.execution_sha256
-        )
-        empty_cast = adapter.prepare_node_generation(
-            {**inputs, "Scene entities": "[]"}, living_canon=True
-        )
-        assert (
-            empty_cast.prepared.request.execution_sha256
-            != declared.prepared.request.execution_sha256
-        )
-        for malformed in ("{}", "[1]", "bad json", '[""]'):
-            with pytest.raises(ValueError, match="Scene entities"):
-                adapter.prepare_node_generation(
-                    {**inputs, "Scene entities": malformed}, living_canon=True
-                )
-        exact = adapter.prepare_node_generation(
-            {**inputs, "Output duration (ms)": 5000}, living_canon=True
-        )
-        assert exact.output_duration_ms == 5000
-        assert exact.prepared.request.execution_sha256 != result.prepared.request.execution_sha256
-        native = adapter.prepare_node_generation(
-            {**inputs, "Output duration (ms)": 0}, living_canon=True
-        )
-        assert native.prepared.request.execution_sha256 == result.prepared.request.execution_sha256
-        ending = adapter.prepare_node_generation(
-            {**inputs, "Ending frame": _image(0.5)}, living_canon=True
-        )
-        assert ending.prepared.request.execution_sha256 != result.prepared.request.execution_sha256
-        changed_ending = adapter.prepare_node_generation(
-            {**inputs, "Ending frame": _image(0.6)}, living_canon=True
-        )
-        assert (
-            changed_ending.prepared.request.execution_sha256
-            != ending.prepared.request.execution_sha256
-        )
-        with pytest.raises(ValueError, match="exactly one image"):
-            adapter.prepare_node_generation(
-                {**inputs, "Ending frame": _image(0.5).repeat(2, 1, 1, 1)}, living_canon=True
-            )
-        for invalid_duration in (True, -1, 5001, 6000):
-            with pytest.raises(ValueError, match="Output duration"):
-                adapter.prepare_node_generation(
-                    {**inputs, "Output duration (ms)": invalid_duration}, living_canon=True
-                )
-
-        structured = adapter.prepare_node_generation(
-            {**inputs, "Prompt format": "Structured reference (experimental)"}, living_canon=True
-        )
-        assert structured.resolved_prompt.startswith("subject_definitions:")
-        assert "<Subject 1> enters." in structured.resolved_prompt
-        assert structured.prepared.request.execution_sha256 != request.execution_sha256
-        explicit_current = adapter.prepare_node_generation(
-            {**inputs, "Prompt format": "Current"}, living_canon=True
-        )
-        assert explicit_current.prepared.request.execution_sha256 == request.execution_sha256
-        assert len(structured.visual_guides) == len(result.visual_guides)
-        assert all(
-            torch.equal(a, b)
-            for a, b in zip(structured.visual_guides, result.visual_guides, strict=True)
-        )
-        turbo_inputs = {**inputs, "Sampler": "Turbo 4-step"}
-        turbo = adapter.prepare_node_generation(turbo_inputs, living_canon=living_canon)
-        assert turbo.prepared.request.sampler is StorySampler.TURBO_4STEP
-        assert (
-            turbo.prepared.request.model_configuration_sha256 == request.model_configuration_sha256
-        )
-        assert turbo.prepared.request.execution_sha256 != request.execution_sha256
-        for mode in ("NVFP4 Exact", "NVFP4 Balanced", "NVFP4 Ultra Fast", "NVFP4 Turbo 4-step"):
-            accelerated = adapter.prepare_node_generation(
-                {**inputs, "Sampler": mode}, living_canon=True
-            )
-            assert (
-                accelerated.prepared.request.model_configuration_sha256
-                == request.model_configuration_sha256
-            )
-            assert accelerated.prepared.request.checkpoint_sha256 == request.checkpoint_sha256
-            assert accelerated.prepared.request.execution_sha256 != request.execution_sha256
-            assert (
-                accelerated.prepared.request.execution_sha256
-                != turbo.prepared.request.execution_sha256
-            )
-
-        with monkeypatch.context() as assets:
-            original_path = adapter.folder_paths.get_full_path
-            lora_file = tmp_path / "turbo-lora.bin"
-            lora_file.write_bytes(b"alternate turbo weights")
-            assets.setattr(
-                adapter.folder_paths,
-                "get_full_path",
-                lambda folder, name: (
-                    str(lora_file) if folder == "loras" else original_path(folder, name)
-                ),
-            )
-            changed_lora = adapter.prepare_node_generation(turbo_inputs, living_canon=living_canon)
-            assert (
-                changed_lora.prepared.request.execution_sha256
-                != turbo.prepared.request.execution_sha256
-            )
-            unchanged_native = adapter.prepare_node_generation(inputs, living_canon=living_canon)
-            assert unchanged_native.prepared.request.execution_sha256 == request.execution_sha256
-            assets.setattr(
-                adapter.folder_paths,
-                "get_full_path",
-                lambda folder, name: None if folder == "loras" else original_path(folder, name),
-            )
-            with pytest.raises(ValueError, match=r"requires the installed MiniMax H3 model.*turbo"):
-                adapter.prepare_node_generation(turbo_inputs, living_canon=living_canon)
-    assert result.prepared.visual_roles == (
-        ("current", "evidence-maya")
-        if living_canon
-        else ("current-or-starting-frame", "exact-reference:Maya")
-    )
-    if living_canon:
-
-        class MemoryVAE:
-            def encode(self, images: torch.Tensor) -> torch.Tensor:
-                return torch.full((1, 24, 1, 24, 24), float(images.mean()))
-
-            def decode(self, latent: torch.Tensor) -> torch.Tensor:
-                return torch.full((1, 1, 384, 384, 3), 0.5)
-
-        video = tmp_path / "shot.mp4"
-        video.write_bytes(b"fixture video; real container checked on Forge1")
-        images = torch.full((2, 8, 12, 3), 0.314159)
-        committed = adapter.commit_node_generation(
-            prepared=result.prepared,
-            decoded_images=images,
-            saved_video=video,
-            memory_vae=MemoryVAE(),
-        )
-        restarted = adapter.prepare_node_generation(inputs, living_canon=True)
-        recovered = adapter.recover_node_generation(restarted)
-        assert recovered is not None
-        loaded, saved, last = recovered
-        assert loaded.state == committed.state
-        summary = adapter.story_inspector_summary(loaded, owner_node_id="10")
-        assert summary["parent_revision_sha256"] == loaded.state.parent_revision_sha256
-        assert summary["revision_sha256"] == loaded.state.revision_sha256
-        assert saved.read_bytes() == video.read_bytes()
-        torch.testing.assert_close(last, committed.last_frame, rtol=0, atol=0)
-        assert (
-            loaded.shot_metadata["execution_sha256"] == restarted.prepared.request.execution_sha256
-        )
-        changed = adapter.prepare_node_generation({**inputs, "Variation": 124}, living_canon=True)
-        assert adapter.recover_node_generation(changed) is None
-        cut = adapter.prepare_node_generation(
-            {**inputs, "Composition": "New composition"}, living_canon=True
-        )
-        assert cut.prepared.request.execution_sha256 != result.prepared.request.execution_sha256
-        assert adapter.recover_node_generation(cut) is None
-        with_audio = adapter.prepare_node_generation(
-            {
-                **inputs,
-                "Authored audio": {"waveform": torch.zeros(1, 1, 8_000), "sample_rate": 8_000},
-            },
-            living_canon=True,
-        )
-        assert with_audio.authored_audio is not None
-        assert (
-            with_audio.prepared.request.execution_sha256 != result.prepared.request.execution_sha256
-        )
-        assert adapter.recover_node_generation(with_audio) is None
-        next_inputs = {
-            **inputs,
-            "Create": "New Scene",
-            "Previous Story": committed.state,
-            "Composition": "New composition",
-        }
-        new_scene = adapter.prepare_node_generation(next_inputs, living_canon=True)
-        assert new_scene.prepared.request.include_associative_core is False
-        assert new_scene.prepared.request.previous_story == committed.state
-        assert "inclusive-core" not in new_scene.prepared.visual_roles
-        assert "evidence-maya" in new_scene.prepared.visual_roles
-        continued = adapter.prepare_node_generation(
-            {**next_inputs, "Composition": "Continue frame"}, living_canon=True
-        )
-        assert "inclusive-core" in continued.prepared.visual_roles
-        with monkeypatch.context() as experiment:
-            experiment.setenv("DUET_H3_COMPILER_INTERNAL_TEST", "1")
-            experimental = adapter.prepare_node_generation(next_inputs, living_canon=True)
-            assert "inclusive-core" in experimental.prepared.visual_roles
-            assert experimental.prepared.request.separate_evidence_images is False
-        assert (
-            new_scene.prepared.request.execution_sha256
-            != continued.prepared.request.execution_sha256
-        )
-        monkeypatch.setattr(
-            importlib.import_module(f"{_MODULE}.nodes"),
-            "GraphBuilder",
-            lambda: pytest.fail("replay must not construct a GPU graph"),
-        )
-        latest = sys.modules["comfy_api.latest"]
-        monkeypatch.setattr(
-            latest, "InputImpl", SimpleNamespace(VideoFromFile=lambda path: path), raising=False
-        )
-        node = continuity_integration.DuetStory
-        # Comfy must enter the durable gateway again even for an identical queued graph.
-        assert node.fingerprint_inputs(**inputs) != node.fingerprint_inputs(**inputs)
-        json.dumps(node.fingerprint_inputs(**inputs), allow_nan=False)
-        for owner in ("10", "20"):
-            replay = node.execute(**inputs, __owner_node_id=owner)
-            assert replay.expand is None
-            assert replay.args[2] == committed.state
-            torch.testing.assert_close(replay.args[1], committed.last_frame, rtol=0, atol=0)
-            assert replay.ui["duet_story"][0]["owner_node_id"] == owner
-            assert replay.ui["duet_story"][0]["revision_sha256"] == committed.state.revision_sha256
+        continuity_integration.ComfyStory.execute()
 
 
 def test_memory_actions_are_canonical_bounded_and_stale_safe_at_service_boundary(
@@ -1374,14 +624,14 @@ def test_invalid_input_fails_before_generation_graph(
         lambda inputs, **kwargs: (_ for _ in ()).throw(ValueError("too many exact references")),
     )
     with pytest.raises(ValueError, match="too many exact references"):
-        continuity_integration.DuetStory.execute()
+        continuity_integration.ComfyStory.execute()
 
 
 def test_saved_video_path_recovers_native_savevideo_destination(
     continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    output = tmp_path / "output" / "duet_story"
+    output = tmp_path / "output" / "comfy_story"
     output.mkdir(parents=True)
     saved = output / "shot_00003_.mp4"
     saved.write_bytes(b"finished-video")
@@ -1392,14 +642,14 @@ def test_saved_video_path_recovers_native_savevideo_destination(
             str(output),
             "shot",
             4,
-            "duet_story",
+            "comfy_story",
             prefix,
         ),
         raising=False,
     )
     video = SimpleNamespace(get_dimensions=lambda: (1344, 768))
 
-    assert adapter._saved_video_path(video, "duet_story/shot") == saved
+    assert adapter._saved_video_path(video, "comfy_story/shot") == saved
 
 
 def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
@@ -1418,15 +668,15 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
     from comfy_story.story_store import StoryProjectStore
 
     adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.delenv("DUET_STORY_MEMORY_RUNTIME", raising=False)
-    monkeypatch.delenv("DUET_STORY_MINIMAX_CHECKPOINT", raising=False)
-    monkeypatch.delenv("DUET_H3_COMPILER_INTERNAL_TEST", raising=False)
-    monkeypatch.setenv("DUET_STORY_ROOT", str(tmp_path / "stories"))
+    monkeypatch.delenv("COMFY_STORY_MEMORY_RUNTIME", raising=False)
+    monkeypatch.delenv("COMFY_STORY_MINIMAX_CHECKPOINT", raising=False)
+    monkeypatch.delenv("COMFY_H3_COMPILER_INTERNAL_TEST", raising=False)
+    monkeypatch.setenv("COMFY_STORY_ROOT", str(tmp_path / "stories"))
 
     def forbidden_checkpoint() -> None:
         pytest.fail("Public native archive must not inspect or load a trained checkpoint")
 
-    monkeypatch.setattr(adapter, "_minimax_runtime_settings", forbidden_checkpoint)
+    monkeypatch.setattr(torch, "load", lambda *args, **kwargs: forbidden_checkpoint())
     reference = tmp_path / "acorn.png"
     Image.fromarray(np.full((16, 16, 3), 127, dtype=np.uint8)).save(reference)
     inputs = {
@@ -1445,45 +695,36 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
         "Variation": 321,
         "Reference policy": "Automatic",
     }
-    prepared = adapter.prepare_node_generation(inputs, living_canon=True)
-    assert prepared.prepared.request.checkpoint_sha256 is None
-    assert prepared.prepared.request.native_reference_archive
-    assert not prepared.prepared.request.include_associative_core
+    prepared = adapter.prepare_node_generation(inputs)
+    assert not hasattr(prepared.prepared.request, "checkpoint_sha256")
     connected = adapter.prepare_node_generation(
         {**inputs, "World / starting frame": "missing-unused.png", "Starting image": _image(0.1)},
-        living_canon=True,
     )
     # An upstream image takes precedence over an unused filename and binds the
     # same execution as the identical historical starting pixels.
     torch.testing.assert_close(connected.visual_guides[0], _image(0.1), rtol=0, atol=0)
     assert connected.prepared.request.execution_sha256 == prepared.prepared.request.execution_sha256
-    changed_start = adapter.prepare_node_generation(
-        {**inputs, "Starting image": _image(0.2)}, living_canon=True
-    )
+    changed_start = adapter.prepare_node_generation({**inputs, "Starting image": _image(0.2)})
     assert (
         changed_start.prepared.request.execution_sha256
         != prepared.prepared.request.execution_sha256
     )
     with pytest.raises(ValueError, match="Starting image must contain exactly one image"):
-        adapter.prepare_node_generation(
-            {**inputs, "Starting image": torch.ones((2, 16, 16, 3))}, living_canon=True
-        )
+        adapter.prepare_node_generation({**inputs, "Starting image": torch.ones((2, 16, 16, 3))})
     store = StoryProjectStore(tmp_path / "stories")
     binding = json.loads(store.load_asset(prepared.prepared.request.execution_sha256))
     assert "memory_runtime" in binding
     assert "memory_checkpoint" not in binding
     assert binding["native_capture_policy"] == adapter.NATIVE_RGB_CAPTURE_POLICY_SHA256
-    automatic = adapter.prepare_node_generation(
-        {**inputs, "Prompt format": "H3 automatic v1"}, living_canon=True
-    )
+    automatic = adapter.prepare_node_generation({**inputs, "Prompt format": "H3 automatic v1"})
     new_binding = json.loads(store.load_asset(automatic.prepared.request.execution_sha256))
-    assert new_binding["prompt_compiler"] == "duet-h3-mode-aware-v1"
+    assert new_binding["prompt_compiler"] == "comfy-h3-mode-aware-v1"
     assert "prompt_compiler" not in binding
     assert new_binding["variation"] == binding["variation"]
     assert new_binding["guides"] == binding["guides"]
     assert "subject_definitions:" in new_binding["prompt"]
     assert automatic.prepared.request.execution_sha256 != prepared.prepared.request.execution_sha256
-    legacy_again = adapter.prepare_node_generation(inputs, living_canon=True)
+    legacy_again = adapter.prepare_node_generation(inputs)
     assert (
         legacy_again.prepared.request.execution_sha256 == prepared.prepared.request.execution_sha256
     )
@@ -1496,7 +737,7 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
         prepared=prepared.prepared, decoded_images=frames, saved_video=video
     )
     assert isinstance(committed.loaded_revision, NativeArchiveRevision)
-    restarted = adapter.prepare_node_generation(inputs, living_canon=True)
+    restarted = adapter.prepare_node_generation(inputs)
     recovered = adapter.recover_node_generation(restarted)
     assert recovered is not None
     loaded, saved, last = recovered
@@ -1513,15 +754,14 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
                 "Previous Frame": last,
                 "Starting image": _image(0.6),
             },
-            living_canon=True,
         )
         torch.testing.assert_close(staged.visual_guides[0], expected_frame, rtol=0, atol=0)
         assert staged.prepared.request.previous_story == loaded.state
     with monkeypatch.context() as policy:
         policy.setattr(adapter, "NATIVE_RGB_CAPTURE_POLICY_SHA256", "0" * 64)
-        old_capture = adapter.prepare_node_generation(inputs, living_canon=True)
+        old_capture = adapter.prepare_node_generation(inputs)
         assert adapter.recover_node_generation(old_capture) is None
-    changed = adapter.prepare_node_generation({**inputs, "Variation": 322}, living_canon=True)
+    changed = adapter.prepare_node_generation({**inputs, "Variation": 322})
     assert adapter.recover_node_generation(changed) is None
     product = loaded.require_product_state()
     closing = next(e for e in product.evidence_records if e.kind is ObservationKind.CLOSING)
@@ -1552,7 +792,7 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
         "Memory actions": "[]",
         "Shot state evidence": canonical_story_json({"acorn": closing.evidence_id}).decode(),
     }
-    one_shot = adapter.prepare_node_generation(one_shot_inputs, living_canon=True)
+    one_shot = adapter.prepare_node_generation(one_shot_inputs)
     assert one_shot.prepared.product_state.canon == product.canon
     assert one_shot.prepared.visual_roles == ("evidence-acorn",)
     assert one_shot.prepared.visual_guides[0].shape == (1, 8, 12, 3)
@@ -1581,19 +821,15 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
     assert next_canon.confirmed_revision_sha256 is prior_canon.confirmed_revision_sha256 is None
     assert next_canon.state_note == prior_canon.state_note
     assert len(next_canon.pending) == len(prior_canon.pending) + 1
-    one_recovery = adapter.recover_node_generation(
-        adapter.prepare_node_generation(one_shot_inputs, living_canon=True)
-    )
+    one_recovery = adapter.recover_node_generation(adapter.prepare_node_generation(one_shot_inputs))
     assert one_recovery is not None
     assert one_recovery[0].state == one_commit.state
-    no_evidence = adapter.prepare_node_generation(
-        {**one_shot_inputs, "Shot state evidence": "{}"}, living_canon=True
-    )
+    no_evidence = adapter.prepare_node_generation({**one_shot_inputs, "Shot state evidence": "{}"})
     assert (
         no_evidence.prepared.request.execution_sha256 != one_shot.prepared.request.execution_sha256
     )
     assert adapter.recover_node_generation(no_evidence) is None
-    next_shot = adapter.prepare_node_generation(continuation, living_canon=True)
+    next_shot = adapter.prepare_node_generation(continuation)
     assert "current" not in next_shot.prepared.visual_roles
     assert "inclusive-core" not in next_shot.prepared.visual_roles
     assert next_shot.prepared.recall_decision.selected_evidence_ids == (closing.evidence_id,)
@@ -1613,20 +849,6 @@ def test_public_native_archive_commit_recall_and_recovery_without_checkpoint(
         adapter.recover_node_generation(restarted)
 
 
-def test_native_runtime_selection_is_explicit_and_preserves_trained_installations(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.delenv("DUET_STORY_MEMORY_RUNTIME", raising=False)
-    monkeypatch.setenv("DUET_STORY_MINIMAX_CHECKPOINT", "/configured/checkpoint")
-    assert not adapter._native_reference_runtime()
-    monkeypatch.setenv("DUET_STORY_MEMORY_RUNTIME", "native-reference")
-    assert adapter._native_reference_runtime()
-    monkeypatch.setenv("DUET_STORY_MEMORY_RUNTIME", "unknown")
-    with pytest.raises(ValueError, match="DUET_STORY_MEMORY_RUNTIME"):
-        adapter._native_reference_runtime()
-
-
 def test_story_media_routes_reject_wrong_assets_and_expose_range_video(
     continuity_integration: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
@@ -1639,7 +861,7 @@ def test_story_media_routes_reject_wrong_assets_and_expose_range_video(
     from comfy_story.story_store import StoryProjectStore
 
     routes = importlib.import_module(f"{_MODULE}.routes")
-    monkeypatch.setenv("DUET_STORY_ROOT", str(tmp_path / "story"))
+    monkeypatch.setenv("COMFY_STORY_ROOT", str(tmp_path / "story"))
     store = StoryProjectStore(tmp_path / "story")
     clip = store.put_asset(b"\x00\x00\x00\x18ftypmp42" + b"test clip")
 
@@ -1691,7 +913,7 @@ def test_editorial_cut_keeps_identity_references_without_frame_zero_constraint(
     monkeypatch.setattr(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
-    result = continuity_integration.DuetStory.execute(Composition="New composition")
+    result = continuity_integration.ComfyStory.execute(Composition="New composition")
     graph = result.expand
     assert graph is not None
     assert "MiniMaxH3AddGuide" not in {node["class_type"] for node in graph.values()}
@@ -1700,7 +922,7 @@ def test_editorial_cut_keeps_identity_references_without_frame_zero_constraint(
     )
     assert "ref_images.ref_image_0" in generator["inputs"]
     assert "ref_images.ref_image_1" in generator["inputs"]
-    assert any(node["class_type"] == "DuetStoryCommit" for node in graph.values())
+    assert any(node["class_type"] == "ComfyStoryCommit" for node in graph.values())
     classes = {node["class_type"] for node in graph.values()}
     assert ("VAEDecodeAudio" in classes) is not authored
     if authored:
@@ -1714,10 +936,10 @@ def test_story_storage_defaults_to_this_comfy_installation(
     continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.delenv("DUET_STORY_ROOT", raising=False)
-    assert adapter._story_root() == tmp_path / "user" / "duet_story"
+    monkeypatch.delenv("COMFY_STORY_ROOT", raising=False)
+    assert adapter._story_root() == tmp_path / "user" / "comfy_story"
     assert not (tmp_path / "user").exists(), "Resolving configuration must not create storage"
-    monkeypatch.setenv("DUET_STORY_ROOT", str(tmp_path / "custom"))
+    monkeypatch.setenv("COMFY_STORY_ROOT", str(tmp_path / "custom"))
     assert adapter._story_root() == tmp_path / "custom"
 
 
@@ -1726,61 +948,9 @@ def test_invalid_explicit_storage_does_not_fall_back_to_another_project(
     continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:
     adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.setenv("DUET_STORY_ROOT", value)
-    with pytest.raises(ValueError, match="DUET_STORY_ROOT"):
+    monkeypatch.setenv("COMFY_STORY_ROOT", value)
+    with pytest.raises(ValueError, match="COMFY_STORY_ROOT"):
         adapter._story_root()
-
-
-def test_legacy_checkpoint_has_no_developer_machine_fallback(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.delenv("DUET_STORY_CHECKPOINT", raising=False)
-    with pytest.raises(ValueError, match="DUET_STORY_CHECKPOINT"):
-        adapter._checkpoint()
-    checkpoint = tmp_path / "configured.pt"
-    monkeypatch.setenv("DUET_STORY_CHECKPOINT", str(checkpoint))
-    with pytest.raises(ValueError, match="existing local checkpoint"):
-        adapter._checkpoint()
-    checkpoint.write_bytes(b"fixture; content authentication occurs in the pinned loader")
-    assert adapter._checkpoint() == checkpoint
-
-
-@pytest.mark.parametrize("commit", [None, "", "0" * 40, "not-a-commit"])
-def test_legacy_source_provenance_cannot_use_a_placeholder(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, commit: str | None
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.delenv("DUET_STORY_SOURCE_COMMIT", raising=False)
-    if commit is not None:
-        monkeypatch.setenv("DUET_STORY_SOURCE_COMMIT", commit)
-    with pytest.raises(ValueError, match="actual deployed source revision"):
-        adapter._ltx_source_identity()
-
-
-def test_legacy_source_archive_requires_an_explicit_nonzero_identity(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.setenv("DUET_STORY_SOURCE_COMMIT", "a" * 40)
-    monkeypatch.delenv("DUET_STORY_SOURCE_ARCHIVE_SHA256", raising=False)
-    with pytest.raises(ValueError, match="DUET_STORY_SOURCE_ARCHIVE_SHA256"):
-        adapter._ltx_source_identity()
-    monkeypatch.setenv("DUET_STORY_SOURCE_ARCHIVE_SHA256", "0" * 64)
-    with pytest.raises(ValueError, match="actual source archive"):
-        adapter._ltx_source_identity()
-    monkeypatch.setenv("DUET_STORY_SOURCE_ARCHIVE_SHA256", "b" * 64)
-    assert adapter._ltx_source_identity() == ("a" * 40, "b" * 64)
-
-
-def test_legacy_configuration_fails_before_any_reference_or_gpu_work(
-    continuity_integration: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.setenv("DUET_STORY_ROOT", str(tmp_path / "stories"))
-    monkeypatch.delenv("DUET_STORY_CHECKPOINT", raising=False)
-    with pytest.raises(ValueError, match="DUET_STORY_CHECKPOINT"):
-        adapter.prepare_node_generation({"Memory backend": "LTX"})
 
 
 @pytest.mark.parametrize("duration", [2375, 5000])
@@ -1800,14 +970,14 @@ def test_exact_interval_feeds_both_saved_video_and_committed_last_frame(
     monkeypatch.setattr(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
-    output = continuity_integration.DuetStory.execute()
+    output = continuity_integration.ComfyStory.execute()
     graph = output.expand
     trim_id, trim = next(
-        (key, node) for key, node in graph.items() if node["class_type"] == "DuetStoryTrim"
+        (key, node) for key, node in graph.items() if node["class_type"] == "ComfyStoryTrim"
     )
     assert trim["inputs"]["duration_ms"] == duration
     video = next(node for node in graph.values() if node["class_type"] == "CreateVideo")
-    commit = next(node for node in graph.values() if node["class_type"] == "DuetStoryCommit")
+    commit = next(node for node in graph.values() if node["class_type"] == "ComfyStoryCommit")
     assert video["inputs"]["images"] == commit["inputs"]["decoded_images"] == [trim_id, 0]
     assert video["inputs"]["audio"] == [trim_id, 1]
 
@@ -1816,7 +986,7 @@ def test_starting_image_choices_include_portable_subfolders_and_exclude_symlinks
     continuity_integration: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = tmp_path / "input"
-    nested = root / "duet_story_inputs"
+    nested = root / "comfy_story_inputs"
     nested.mkdir(parents=True)
     (nested / "scene.png").write_bytes(b"image")
     (root / "root.jpg").write_bytes(b"image")
@@ -1826,9 +996,9 @@ def test_starting_image_choices_include_portable_subfolders_and_exclude_symlinks
     (root / "linked.png").symlink_to(outside)
     folder_paths = importlib.import_module("folder_paths")
     monkeypatch.setattr(folder_paths, "get_input_directory", lambda: str(root))
-    schema = continuity_integration.DuetStory.define_schema()
+    schema = continuity_integration.ComfyStory.define_schema()
     world = next(field for field in schema.inputs if field.id == "World / starting frame")
-    assert world.options["options"] == ["None", "duet_story_inputs/scene.png", "root.jpg"]
+    assert world.options["options"] == ["None", "comfy_story_inputs/scene.png", "root.jpg"]
 
 
 @pytest.mark.parametrize(("duration", "expected"), [(0, 123), (2375, 56), (5000, 119)])
@@ -1852,7 +1022,7 @@ def test_ending_guide_anchors_the_final_saved_frame(
     monkeypatch.setattr(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
-    graph = continuity_integration.DuetStory.execute().expand
+    graph = continuity_integration.ComfyStory.execute().expand
     guides = [
         (key, node) for key, node in graph.items() if node["class_type"] == "MiniMaxH3AddGuide"
     ]
@@ -1882,7 +1052,7 @@ def test_animate_frame_uses_its_own_checkpoint_and_exact_ending_guide(
         ending_frame=_image(0.8),
     )
     monkeypatch.setattr(integration_nodes, "prepare_node_generation", lambda inputs, **kw: prepared)
-    graph = continuity_integration.DuetStory.execute().expand
+    graph = continuity_integration.ComfyStory.execute().expand
     nodes = {n["class_type"]: (key, n["inputs"]) for key, n in graph.items()}
     assert nodes["UNETLoader"][1]["unet_name"] == "minimax_h3_fl2va_pruned_int8_convrot.safetensors"
     assert "MiniMaxH3ReferenceToVideo" not in nodes
@@ -1930,8 +1100,8 @@ def test_reference_only_public_start_recovers_and_changes_scene_without_world(
     tmp_path: Path,
 ) -> None:
     adapter = importlib.import_module(f"{_MODULE}.comfy_adapter")
-    monkeypatch.setenv("DUET_STORY_MEMORY_RUNTIME", "native-reference")
-    monkeypatch.setenv("DUET_STORY_ROOT", str(tmp_path / "stories"))
+    monkeypatch.setenv("COMFY_STORY_MEMORY_RUNTIME", "native-reference")
+    monkeypatch.setenv("COMFY_STORY_ROOT", str(tmp_path / "stories"))
     reference = tmp_path / "acorn.png"
     Image.fromarray(np.full((16, 16, 3), 127, dtype=np.uint8)).save(reference)
     inputs = {
@@ -1951,7 +1121,7 @@ def test_reference_only_public_start_recovers_and_changes_scene_without_world(
         "Variation": 321,
         "Reference policy": "Prompt mentions only",
     }
-    prepared = adapter.prepare_node_generation(inputs, living_canon=True)
+    prepared = adapter.prepare_node_generation(inputs)
     assert prepared.prepared.visual_roles == ("evidence-acorn",)
     assert "<Picture 2>" not in prepared.resolved_prompt
     assert "prior visual context" not in prepared.resolved_prompt
@@ -1962,9 +1132,7 @@ def test_reference_only_public_start_recovers_and_changes_scene_without_world(
     committed = adapter.commit_node_generation(
         prepared=prepared.prepared, decoded_images=frames, saved_video=video
     )
-    recovered = adapter.recover_node_generation(
-        adapter.prepare_node_generation(inputs, living_canon=True)
-    )
+    recovered = adapter.recover_node_generation(adapter.prepare_node_generation(inputs))
     assert recovered is not None
     assert recovered[0].state == committed.loaded_revision.state
     new_scene = adapter.prepare_node_generation(
@@ -1975,15 +1143,12 @@ def test_reference_only_public_start_recovers_and_changes_scene_without_world(
             "What happens next?": "@Acorn rests on a stone.",
             "Variation": 322,
         },
-        living_canon=True,
     )
     assert "current" not in new_scene.prepared.visual_roles
     assert new_scene.prepared.request.execution_sha256 != prepared.prepared.request.execution_sha256
     assert new_scene.prepared.parent.state == recovered[0].state
     with pytest.raises(ValueError, match="requires World / starting frame"):
-        adapter.prepare_node_generation(
-            {**inputs, "Composition": "Continue frame"}, living_canon=True
-        )
+        adapter.prepare_node_generation({**inputs, "Composition": "Continue frame"})
 
 
 @pytest.mark.parametrize(
@@ -2008,7 +1173,7 @@ def test_nvfp4_keeps_native_references_and_frame_guide(
         sampler=sampler,
     )
     monkeypatch.setattr(integration_nodes, "prepare_node_generation", lambda inputs, **kw: prepared)
-    output = continuity_integration.DuetStory.execute()
+    output = continuity_integration.ComfyStory.execute()
     assert output.expand is not None
     nodes = {n["class_type"]: (key, n["inputs"]) for key, n in output.expand.items()}
     assert nodes["UNETLoader"][1]["unet_name"] == "minimax_h3_ref2va_pruned_nvfp4.safetensors"
@@ -2016,13 +1181,13 @@ def test_nvfp4_keeps_native_references_and_frame_guide(
     assert nodes["BasicScheduler"][1]["scheduler"] == "simple"
     assert nodes["KSamplerSelect"][1]["sampler_name"] == "euler"
     assert ("LoraLoaderModelOnly" in nodes) == (sampler is StorySampler.NVFP4_TURBO)
-    assert ("DuetH3UltraFast" in nodes) == (sampler is StorySampler.NVFP4_ULTRA_FAST)
-    assert ("DuetH3BalancedCache" in nodes) == (sampler is StorySampler.NVFP4_BALANCED)
+    assert ("ComfyH3UltraFast" in nodes) == (sampler is StorySampler.NVFP4_ULTRA_FAST)
+    assert ("ComfyH3BalancedCache" in nodes) == (sampler is StorySampler.NVFP4_BALANCED)
     assert nodes["MiniMaxH3AddGuide"][1]["frame_idx"] == 0
     refs = nodes["MiniMaxH3ReferenceToVideo"][1]
     assert refs["ref_images.ref_image_0"] is prepared.visual_guides[0]
     assert refs["ref_images.ref_image_1"] is prepared.visual_guides[1]
-    assert "DuetStoryCommit" in nodes
+    assert "ComfyStoryCommit" in nodes
 
 
 def test_balanced_rejects_allocator_compiler_before_sampling(
@@ -2032,7 +1197,7 @@ def test_balanced_rejects_allocator_compiler_before_sampling(
     cli.args = SimpleNamespace(disable_comfy_compiler=False)  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "comfy.cli_args", cli)
     with pytest.raises(ValueError, match="--disable-comfy-compiler"):
-        continuity_integration.DuetH3BalancedCache.execute(object())
+        continuity_integration.ComfyH3BalancedCache.execute(object())
 
 
 @pytest.mark.parametrize(
@@ -2070,11 +1235,11 @@ def test_automatic_h3_encoder_receives_ending_image(
         ending_frame=ending,
     )
     monkeypatch.setattr(integration_nodes, "prepare_node_generation", lambda *a, **kw: prepared)
-    graph = continuity_integration.DuetStory.execute(**{"Prompt format": "H3 automatic v1"}).expand
+    graph = continuity_integration.ComfyStory.execute(**{"Prompt format": "H3 automatic v1"}).expand
     nodes = {n["class_type"]: n["inputs"] for n in graph.values()}
     if profile == "Animate frame":
         assert nodes["MiniMaxH3ImageToVideo"]["last_frame"] is ending
-        assert nodes["DuetStoryKeyframeTiming"]["last_index"] == 119
+        assert nodes["ComfyStoryKeyframeTiming"]["last_index"] == 119
         assert "MiniMaxH3AddGuide" not in nodes
     else:
         assert nodes["MiniMaxH3ReferenceToVideo"]["ref_images.ref_image_1"] is ending
@@ -2098,13 +1263,13 @@ def test_h3_keyframe_timing_preserves_cached_conditioning(
             },
         ]
     ]
-    result = continuity_integration.DuetStoryKeyframeTiming.execute(original, 119).args[0]
+    result = continuity_integration.ComfyStoryKeyframeTiming.execute(original, 119).args[0]
     assert original[0][1]["minimax_keyframes"][1]["resolved_frame_index"] == 123
     assert result[0][1]["minimax_keyframes"][1]["resolved_frame_index"] == 119
     assert result[0][1]["minimax_keyframes"][1]["latent"] is latent
     assert result[0][1]["other"] == 7
     with pytest.raises(ValueError, match="first/last"):
-        continuity_integration.DuetStoryKeyframeTiming.execute(original, 124)
+        continuity_integration.ComfyStoryKeyframeTiming.execute(original, 124)
 
 
 def test_full_hd_rebuilds_conditioning_and_preserves_audio_path(
@@ -2128,7 +1293,7 @@ def test_full_hd_rebuilds_conditioning_and_preserves_audio_path(
     monkeypatch.setattr(
         integration_nodes, "prepare_node_generation", lambda inputs, **kwargs: prepared
     )
-    output = continuity_integration.DuetStory.execute()
+    output = continuity_integration.ComfyStory.execute()
     assert output.expand is not None
     rows = list(output.expand.items())
     samples = [
@@ -2141,9 +1306,9 @@ def test_full_hd_rebuilds_conditioning_and_preserves_audio_path(
     assert [(row["width"], row["height"]) for row in conditioning] == [(960, 544), (1920, 1088)]
     assert conditioning[1]["ref_images.ref_image_2"] is prepared.ending_frame
     by_type = {row["class_type"]: (key, row["inputs"]) for key, row in rows}
-    assert by_type["DuetH3VideoLatent"][1]["latent"] == [samples[0][0], 0]
-    assert by_type["DuetH3ReplaceVideoLatent"][1]["original"] == [samples[0][0], 0]
-    assert samples[1][1]["latent_image"] == [by_type["DuetH3ReplaceVideoLatent"][0], 0]
+    assert by_type["ComfyH3VideoLatent"][1]["latent"] == [samples[0][0], 0]
+    assert by_type["ComfyH3ReplaceVideoLatent"][1]["original"] == [samples[0][0], 0]
+    assert samples[1][1]["latent_image"] == [by_type["ComfyH3ReplaceVideoLatent"][0], 0]
     assert by_type["RandomNoise"][1]["noise_seed"] == 10123
     assert by_type["VAEDecodeTiled"][1]["tile_size"] == 256
     assert by_type["VAEDecodeTiled"][1]["overlap"] == 32
@@ -2166,17 +1331,17 @@ def test_full_hd_latent_replacement_keeps_original_audio_and_time(
     video = torch.zeros(1, 24, 2, 34, 60)
     audio = torch.randn(1, 32, 12, 16)
     original = {"samples": Nested((video, audio)), "identity": "preserved"}
-    assert quality.DuetH3VideoLatent.execute(original).args[0]["samples"] is video
+    assert quality.ComfyH3VideoLatent.execute(original).args[0]["samples"] is video
     enlarged = torch.zeros(1, 24, 2, 68, 120)
-    result = quality.DuetH3ReplaceVideoLatent.execute(original, {"samples": enlarged}).args[0]
+    result = quality.ComfyH3ReplaceVideoLatent.execute(original, {"samples": enlarged}).args[0]
     assert result["samples"].tensors[1] is audio
     assert result["identity"] == "preserved"
     with pytest.raises(ValueError, match="temporal contract"):
-        quality.DuetH3ReplaceVideoLatent.execute(original, {"samples": enlarged[:, :, :1]})
+        quality.ComfyH3ReplaceVideoLatent.execute(original, {"samples": enlarged[:, :, :1]})
     with pytest.raises(ValueError, match="requires"):
         quality.require_upscaler({})
     with pytest.raises(ValueError, match="pinned"):
-        quality.require_upscaler({"MinimaxH3LatentUpscaler3D": quality.DuetH3VideoLatent})
+        quality.require_upscaler({"MinimaxH3LatentUpscaler3D": quality.ComfyH3VideoLatent})
 
 
 def test_full_hd_identity_binds_upscaler_weights(

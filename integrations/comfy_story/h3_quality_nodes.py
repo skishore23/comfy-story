@@ -40,7 +40,7 @@ def build_refinement(
 ) -> Any:
     """Rebuild spatial conditioning; reference images never inherit low-res guide latents."""
     width, height = configuration["output_width"], configuration["output_height"]
-    video = graph.node("DuetH3VideoLatent", latent=latent)
+    video = graph.node("ComfyH3VideoLatent", latent=latent)
     upscale = graph.node(
         "MinimaxH3LatentUpscaler3D",
         latent=video.out(0),
@@ -53,7 +53,7 @@ def build_refinement(
         device="cuda",
         precision="fp16",
     )
-    joined = graph.node("DuetH3ReplaceVideoLatent", original=latent, video=upscale.out(0))
+    joined = graph.node("ComfyH3ReplaceVideoLatent", original=latent, video=upscale.out(0))
     ending = getattr(prepared, "ending_frame", None)
     profile = getattr(prepared, "render_profile", "Reference shot")
     common = {
@@ -113,7 +113,7 @@ def build_refinement(
         last_index = duration * 24 // 1000 - 1 if duration else prepared.frame_count - 1
         if profile == "Animate frame":
             positive = graph.node(
-                "DuetStoryKeyframeTiming", positive=positive, last_index=last_index
+                "ComfyStoryKeyframeTiming", positive=positive, last_index=last_index
             ).out(0)
         else:
             positive = graph.node(
@@ -126,7 +126,7 @@ def build_refinement(
             ).out(0)
     guider = graph.node("BasicGuider", model=model, conditioning=positive)
     noise = graph.node("RandomNoise", noise_seed=(prepared.variation + 10000) % (2**64))
-    sigmas = graph.node("DuetH3RefinementSigmas")
+    sigmas = graph.node("ComfyH3RefinementSigmas")
     sampler = graph.node("KSamplerSelect", sampler_name="euler")
     return graph.node(
         "SamplerCustomAdvanced",
@@ -148,13 +148,13 @@ def _streams(latent: Any) -> tuple[Any, Any]:
     return video, audio
 
 
-class DuetH3VideoLatent(io.ComfyNode):
+class ComfyH3VideoLatent(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetH3VideoLatent",
+            node_id="ComfyH3VideoLatent",
             display_name="H3 video latent",
-            category="_Duet/Internal",
+            category="_Comfy/Internal",
             inputs=[io.Latent.Input("latent")],
             outputs=[io.Latent.Output()],
         )
@@ -165,13 +165,13 @@ class DuetH3VideoLatent(io.ComfyNode):
         return io.NodeOutput({"samples": video})
 
 
-class DuetH3ReplaceVideoLatent(io.ComfyNode):
+class ComfyH3ReplaceVideoLatent(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetH3ReplaceVideoLatent",
+            node_id="ComfyH3ReplaceVideoLatent",
             display_name="H3 replace video latent",
-            category="_Duet/Internal",
+            category="_Comfy/Internal",
             inputs=[io.Latent.Input("original"), io.Latent.Input("video")],
             outputs=[io.Latent.Output()],
         )
@@ -187,13 +187,13 @@ class DuetH3ReplaceVideoLatent(io.ComfyNode):
         return io.NodeOutput({**original, "samples": NestedTensor((new, audio))})
 
 
-class DuetH3RefinementSigmas(io.ComfyNode):
+class ComfyH3RefinementSigmas(io.ComfyNode):
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetH3RefinementSigmas",
+            node_id="ComfyH3RefinementSigmas",
             display_name="H3 refinement sigmas",
-            category="_Duet/Internal",
+            category="_Comfy/Internal",
             inputs=[],
             outputs=[io.Sigmas.Output()],
         )

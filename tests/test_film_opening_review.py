@@ -22,7 +22,7 @@ def _fixture(
     for name, data in files.items():
         (inputs / name).write_bytes(data)
     request = json.dumps(
-        {"format": f"duet-film-opening-stage-v{1 if legacy else version}"}
+        {"format": f"comfy-film-opening-stage-v{1 if legacy else version}"}
     ).encode()
     history = b'{"status":"success"}'
     (stage / "request.json").write_bytes(request)
@@ -116,7 +116,7 @@ def _starting_fixture(root: Path) -> tuple[Path, Path, dict[str, Any]]:
     image.write_bytes(b"the assessed crop")
     request = canonical_story_json(
         {
-            "format": "duet-film-starting-state-v2",
+            "format": "comfy-film-starting-state-v2",
             "content": [
                 {"type": "text", "text": "CURRENT STARTING FRAME"},
                 {"type": "image", "image": str(image)},
@@ -126,7 +126,7 @@ def _starting_fixture(root: Path) -> tuple[Path, Path, dict[str, Any]]:
     )
     response = b"original observation"
     report = {
-        "format": "duet-film-starting-state-v2",
+        "format": "comfy-film-starting-state-v2",
         "status": "needs_review",
         "conditions": {
             "Parcel.state": {

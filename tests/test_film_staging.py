@@ -455,7 +455,7 @@ def test_staging_node_preflight_rejects_missing_capability_before_queue(
     def request(server: str, path: str) -> dict[str, Any]:
         calls.append(path)
         assert path == "/object_info"
-        return {"DuetStory": {}}
+        return {"ComfyStory": {}}
 
     monkeypatch.setattr(film_staging, "_json_request", request)
     with pytest.raises(ValueError, match="missing opening staging nodes"):

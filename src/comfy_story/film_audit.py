@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 
 from comfy_story.film_plan import FilmShot
 
-VISUAL_AUDIT_PROTOCOL = "duet-film-visual-audit-v16"
+VISUAL_AUDIT_PROTOCOL = "comfy-film-visual-audit-v16"
 
 VISUAL_CHECKS = (
     "identity",

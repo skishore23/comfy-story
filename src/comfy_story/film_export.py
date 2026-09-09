@@ -1,4 +1,4 @@
-"""Conform accepted Duet takes and authored sound/text to an exact film timeline."""
+"""Conform accepted Comfy takes and authored sound/text to an exact film timeline."""
 
 from __future__ import annotations
 

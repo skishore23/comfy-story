@@ -137,7 +137,7 @@ def test_one_customer_command_submits_once_exports_unreviewed_and_resumes(
         assert server == "http://localhost:8188"
         if path == "/object_info":
             return {
-                "DuetStory": {
+                "ComfyStory": {
                     "input": {
                         "optional": {"Output duration (ms)": [], "Scene entities": []}
                         if supports_duration
@@ -154,7 +154,7 @@ def test_one_customer_command_submits_once_exports_unreviewed_and_resumes(
                 "status": {"status_str": "success"},
                 "outputs": {
                     str(i * 10): {
-                        "duet_story": [
+                        "comfy_story": [
                             {
                                 "owner_node_id": str(i * 10),
                                 "revision_sha256": character * 64,

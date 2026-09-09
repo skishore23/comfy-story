@@ -8,7 +8,6 @@ const PRESENCE = new Set(['present', 'off_screen', 'unknown'])
 export const CURRENT_WIDGET_ORDER = Object.freeze([
   'Create',
   'Story Library',
-  'Reference context',
   'World / starting frame',
   'What happens next?',
   'Shot length',
@@ -36,47 +35,17 @@ export function fieldMapFromWidgets(widgets) {
   )
 }
 
-export function migrateSerializedStoryWidgets(nodeType, values) {
+export function restoreSerializedStoryWidgets(values) {
   if (!Array.isArray(values)) return values
-  // Older Comfy image-upload widgets serialized after the ordinary controls.
-  // The original DOM editor also appended its non-data marker. These layouts
-  // are identified by their duration/variation positions, not array length alone.
-  const deferredWorld = ['5 seconds', '10 seconds', '15 seconds'].includes(values[3]) && Number.isSafeInteger(values[4])
-  if (nodeType === 'DuetStory' && deferredWorld && (values.length === 8 || (values.length === 9 && values[8] === 'duet-story'))) {
-    const [create, library, prompt, length, variation, revision, policy, world] = values
-    return [create, library, 'Native', world, prompt, length, variation, revision, policy, 'Native res_multistep', '[]']
-  }
-  if (nodeType === 'DuetStoryCanon' && deferredWorld && values.length === 10) {
-    const [create, library, prompt, length, variation, revision, policy, sampler, memory, world] = values
-    return [create, library, 'Native', world, prompt, length, variation, revision, policy, sampler, memory]
-  }
-  // The optional composition widget follows the stable eleven-field layout.
-  // Historical twelve-field workflows instead ended with a sampler value.
-  if (values.length === 12 && ['Continue frame', 'New composition'].includes(values[11])) return [...values]
-  if (values.length === CURRENT_WIDGET_ORDER.length) return [...values]
-
-  if (nodeType === 'DuetStoryCanon' && values.length === 10) {
-    const [create, library, world, prompt, length, variation, revision, policy, sampler, memory] = values
-    return [create, library, 'Native', world, prompt, length, variation, revision, policy, sampler, memory]
-  }
-
-  if (nodeType !== 'DuetStory') return [...values]
-  if (values.length === 8) {
-    const [create, library, world, prompt, length, variation, revision, policy] = values
-    return [create, library, 'Native', world, prompt, length, variation, revision, policy, 'Native res_multistep', '[]']
-  }
-  if (values.length === 10) {
-    const [create, library, world, prompt, length, variation, revision, policy, , sampler] = values
-    return [create, library, 'Native', world, prompt, length, variation, revision, policy, sampler, '[]']
-  }
-  if (values.length === 12) {
-    const [create, library, context, world, prompt, , length, variation, revision, policy, , sampler] = values
-    return [create, library, context, world, prompt, length, variation, revision, policy, sampler, '[]']
+  if (values.length < CURRENT_WIDGET_ORDER.length || values.length > CURRENT_WIDGET_ORDER.length + 4
+      || !['5 seconds', '10 seconds', '15 seconds'].includes(values[4])
+      || !Number.isSafeInteger(values[5]) || values[5] < 0) {
+    throw new Error('Unsupported Comfy Story widget layout')
   }
   return [...values]
 }
 
-export function isDuetStoryNode(node) {
+export function isComfyStoryNode(node) {
   const identities = [
     node?.comfyClass,
     node?.type,
@@ -86,7 +55,7 @@ export function isDuetStoryNode(node) {
     node?.constructor?.nodeData?.name,
     node?.constructor?.nodeData?.display_name,
   ]
-  return identities.some((identity) => ['DuetStory', 'Comfy Story', 'Duet Story', 'DuetStoryCanon', 'Comfy Story (legacy workflow alias)', 'Duet Story (legacy workflow alias)', 'Duet Story — Living Canon'].includes(identity))
+  return identities.some((identity) => ['ComfyStory', 'Comfy Story'].includes(identity))
 }
 
 function exactObject(value, fields, label) {
@@ -231,15 +200,15 @@ export function encodeMemoryCommands(commands) {
 }
 
 export function pendingMemoryCommands(node) {
-  return JSON.parse(encodeMemoryCommands(node.properties?.duet_pending_memory ?? []))
+  return JSON.parse(encodeMemoryCommands(node.properties?.comfy_pending_memory ?? []))
 }
 
 export function setPendingMemoryCommands(node, commands) {
   const normalized = JSON.parse(encodeMemoryCommands(commands))
-  const revision = node.__duetInspector?.revision_sha256
+  const revision = node.__comfyInspector?.revision_sha256
   if (!revision || normalized.some((item) => item.parent_revision_sha256 !== revision)) throw new Error('Pending changes must target the displayed completed shot')
   node.properties ??= {}
-  node.properties.duet_pending_memory = normalized
+  node.properties.comfy_pending_memory = normalized
   node.graph?.setDirtyCanvas?.(true, true)
 }
 
@@ -247,9 +216,9 @@ export function recordCompletedStory(node, value) {
   const summary = normalizeInspectorSummary(value)
   node.properties ??= {}
   const pending = pendingMemoryCommands(node).filter((item) => item.parent_revision_sha256 === summary.revision_sha256)
-  node.properties.duet_pending_memory = pending
-  node.properties.duet_story_inspector = summary
-  node.__duetInspector = summary
+  node.properties.comfy_pending_memory = pending
+  node.properties.comfy_story_inspector = summary
+  node.__comfyInspector = summary
   // Generating widgets are immutable inputs to this completed take. Keeping
   // them unchanged lets its request identity recover the same output on restart.
   return summary
@@ -336,13 +305,15 @@ export function normalizeProtectedNames(value, availableNames, selectedNames = a
 }
 
 export function deriveStoryView(values, connected = {}, options = {}) {
+  if (Object.hasOwn(values, 'Reference context') && values['Reference context'] !== 'Native') {
+    throw new Error('Unsupported reference context; Comfy Story uses native H3 references')
+  }
   const library = normalizeLibrary(values['Story Library'])
   const names = library.references.map((reference) => reference.name)
   const lookup = new Map(names.map((name) => [name.toLocaleLowerCase(), name]))
   const mentions = extractMentions(values['What happens next?'])
   const unknown = mentions.filter((name) => !lookup.has(name.toLocaleLowerCase()))
   const known = [...new Set(mentions.map((name) => lookup.get(name.toLocaleLowerCase())).filter(Boolean))]
-  const referenceContext = String(values['Reference context'] ?? 'Native')
   const motion = Boolean(connected.motion)
   const allowNoMentions = Boolean(options.allowNoMentions)
   // A two-packet recall budget is not a two-name cast limit. The server
@@ -357,28 +328,16 @@ export function deriveStoryView(values, connected = {}, options = {}) {
   }
   let message = `${known.length} active reference${known.length === 1 ? '' : 's'}`
   if (library.error) message = library.error
-  else if (
-    referenceContext === 'Compiled preview'
-    && known.length + 1 + Number(motion) + Number(allowNoMentions && connected.story) < 2
-  ) {
-    message = 'Compiled preview requires at least two visual references'
-  } else if (mentions.length === 0 && !allowNoMentions) message = 'Mention a reference, like @Maya'
+  else if (mentions.length === 0 && !allowNoMentions) message = 'Mention a reference, like @Maya'
   else if (mentions.length === 0) message = 'No named references selected for this shot'
   else if (unknown.length) message = `Unknown: ${unknown.map((name) => `@${name}`).join(', ')}`
   else if (known.length > maxNamedReferences) message = `Use at most ${maxNamedReferences} named references in this shot`
   else if (protectionError) message = protectionError
-  else if (referenceContext === 'Compiled preview') {
-    message = `${known.length + 1 + Number(motion)} visual sources · compiled preview`
-  }
   const ready = !library.error
     && (allowNoMentions || mentions.length > 0)
     && unknown.length === 0
     && known.length <= maxNamedReferences
     && !protectionError
-    && (
-      referenceContext !== 'Compiled preview'
-      || known.length + 1 + Number(motion) + Number(allowNoMentions && connected.story) >= 2
-    )
   const inherited = Boolean(connected.story)
   const frameReady = Boolean(connected.frame)
   const intent = String(values.Create ?? 'Start Story')
@@ -387,7 +346,6 @@ export function deriveStoryView(values, connected = {}, options = {}) {
     active: known.map((name) => `@${name}`),
     allReferences: names.map((name) => `@${name}`),
     protected: protectedNames.map((name) => `@${name}`),
-    referenceContext,
     motion,
     intent,
     library,
@@ -402,7 +360,7 @@ export function nextShotWiring(source, target) {
   source.connect(2, target, 0)
   source.connect(1, target, 1)
   return [
-    { from: 2, to: 0, type: 'DUET_STORY' },
+    { from: 2, to: 0, type: 'COMFY_STORY' },
     { from: 1, to: 1, type: 'IMAGE' },
   ]
 }

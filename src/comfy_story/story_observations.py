@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import torch
+from PIL import Image
 
 from comfy_story.story_product_contracts import ObservationKind, StoryObservationPacket
 
@@ -35,7 +36,7 @@ def timeline_start_ns(parent_packets: tuple[StoryObservationPacket, ...]) -> int
 
 def _normalized_frames(images: torch.Tensor) -> tuple[np.ndarray[Any, Any], ...]:
     # Kept local to avoid making the service's public image boundary depend on this module.
-    from comfy_story.story_service import normalize_story_frame, validate_comfy_images
+    from comfy_story.story_service import validate_comfy_images
 
     validated = validate_comfy_images(images)
     return tuple(
@@ -98,3 +99,21 @@ __all__ = (
     "extract_story_observation_frames",
     "timeline_start_ns",
 )
+
+
+def normalize_story_frame(images: torch.Tensor) -> np.ndarray[Any, Any]:
+    """Normalize a decoded frame for bounded visual-change measurement."""
+    from comfy_story.story_service import validate_comfy_images
+
+    final = validate_comfy_images(images)[-1]
+    array = (
+        final.detach()
+        .to(device="cpu", dtype=torch.float32)
+        .mul(255)
+        .round()
+        .to(torch.uint8)
+        .numpy()
+    )
+    image = Image.fromarray(np.ascontiguousarray(array), mode="RGB")
+    resized = image.resize((384, 384), resample=Image.Resampling.LANCZOS)
+    return np.ascontiguousarray(np.asarray(resized, dtype=np.uint8))

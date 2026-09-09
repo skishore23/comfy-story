@@ -15,14 +15,14 @@ from typing import NoReturn, cast
 
 import pytest
 
-from scripts.build_release import build_internal_bundle
+from scripts.build_release import build_release_bundle
 
 REPOSITORY_ROOT = Path(__file__).parents[1]
 
 
-def test_internal_bundle_is_deterministic_and_contains_no_secrets(tmp_path: Path) -> None:
-    first = build_internal_bundle(REPOSITORY_ROOT, tmp_path / "one")
-    second = build_internal_bundle(REPOSITORY_ROOT, tmp_path / "two")
+def test_release_bundle_is_deterministic_and_contains_no_secrets(tmp_path: Path) -> None:
+    first = build_release_bundle(REPOSITORY_ROOT, tmp_path / "one")
+    second = build_release_bundle(REPOSITORY_ROOT, tmp_path / "two")
     assert first.read_bytes() == second.read_bytes()
     assert (
         first.with_suffix(first.suffix + ".sha256").read_text().split()[0]
@@ -34,7 +34,7 @@ def test_internal_bundle_is_deterministic_and_contains_no_secrets(tmp_path: Path
         assert "docs/getting-started.md" in names
         assert "install.py" in names
         assert "manifest.json" in names
-        assert "custom_nodes/duet_story/__init__.py" in names
+        assert "custom_nodes/comfy_story/__init__.py" in names
         assert any(
             name.startswith("wheels/comfy_story-") and name.endswith(".whl") for name in names
         )
@@ -46,18 +46,19 @@ def test_internal_bundle_is_deterministic_and_contains_no_secrets(tmp_path: Path
         installer = archive.read("install.py").decode()
         assert "docs/getting-started.md" in install
         assert "--check-only" in install
-        assert "import OpenImageIO" in installer
+        assert "--with-ltx" not in installer
+        assert "OpenImageIO" not in installer
 
 
-def test_internal_bundle_contains_living_canon_panel_and_minimax_install_contract(
+def test_release_bundle_contains_living_canon_panel_and_minimax_install_contract(
     tmp_path: Path,
 ) -> None:
-    bundle = build_internal_bundle(REPOSITORY_ROOT, tmp_path)
+    bundle = build_release_bundle(REPOSITORY_ROOT, tmp_path)
     with zipfile.ZipFile(bundle) as archive:
         names = frozenset(archive.namelist())
-        assert "custom_nodes/duet_story/web/story_panel.js" in names
-        assert "custom_nodes/duet_story/web/story_state.mjs" in names
-        assert "custom_nodes/duet_story/example_workflows/two-shot-with-memory.json" in names
+        assert "custom_nodes/comfy_story/web/story_panel.js" in names
+        assert "custom_nodes/comfy_story/web/story_state.mjs" in names
+        assert "custom_nodes/comfy_story/example_workflows/two-shot-with-memory.json" in names
         install = archive.read("INSTALL.md").decode()
         assert "Add **Comfy Story**" in install
         assert "--no-deps" in install
@@ -66,12 +67,13 @@ def test_internal_bundle_contains_living_canon_panel_and_minimax_install_contrac
 def test_example_workflow_has_two_visible_nodes_and_dual_story_links() -> None:
     path = REPOSITORY_ROOT / "integrations/comfy_story/example_workflows/two-shot.json"
     workflow = json.loads(path.read_text())
-    assert [node["type"] for node in workflow["nodes"]] == ["DuetStory", "DuetStory"]
+    assert [node["type"] for node in workflow["nodes"]] == ["ComfyStory", "ComfyStory"]
     assert workflow["links"] == [
         [1, 10, 1, 20, 1, "IMAGE"],
-        [2, 10, 2, 20, 0, "DUET_STORY"],
+        [2, 10, 2, 20, 0, "COMFY_STORY"],
     ]
-    assert all(node["widgets_values"][2] == "Native" for node in workflow["nodes"])
+    assert all(len(node["widgets_values"]) == 10 for node in workflow["nodes"])
+    assert workflow["nodes"][0]["widgets_values"][2].endswith(".png")
     assert all(
         node["widgets_values"][-2:] == ["Native res_multistep", "[]"] for node in workflow["nodes"]
     )
@@ -84,23 +86,24 @@ def test_living_canon_example_uses_the_single_current_story_node() -> None:
     workflow = json.loads(path.read_text())
 
     assert [node["type"] for node in workflow["nodes"]] == [
-        "DuetStory",
-        "DuetStory",
+        "ComfyStory",
+        "ComfyStory",
     ]
     assert workflow["links"] == [
         [1, 10, 1, 20, 1, "IMAGE"],
-        [2, 10, 2, 20, 0, "DUET_STORY"],
+        [2, 10, 2, 20, 0, "COMFY_STORY"],
     ]
     assert all(node["widgets_values"][-1] == "[]" for node in workflow["nodes"])
-    assert all(node["widgets_values"][2] == "Native" for node in workflow["nodes"])
+    assert all(len(node["widgets_values"]) == 10 for node in workflow["nodes"])
+    assert workflow["nodes"][0]["widgets_values"][2].endswith(".png")
 
 
-def test_internal_package_contains_compiler_source_but_no_artifacts(tmp_path: Path) -> None:
-    archive_path = build_internal_bundle(REPOSITORY_ROOT, tmp_path)
+def test_release_contains_native_runtime_but_no_artifacts(tmp_path: Path) -> None:
+    archive_path = build_release_bundle(REPOSITORY_ROOT, tmp_path)
 
     with zipfile.ZipFile(archive_path) as bundle:
         names = set(bundle.namelist())
-        assert "custom_nodes/duet_story/h3_reference_node.py" in names
+        assert "custom_nodes/comfy_story/h3_reference_node.py" not in names
         wheel_name = next(name for name in names if name.startswith("wheels/comfy_story-"))
         with zipfile.ZipFile(io.BytesIO(bundle.read(wheel_name))) as wheel:
             wheel_names = set(wheel.namelist())
@@ -123,32 +126,35 @@ def test_internal_package_contains_compiler_source_but_no_artifacts(tmp_path: Pa
             assert "cryptography>=43,<50" in requirements
             assert "Pillow>=10,<13" in requirements
             assert any(name.endswith("/licenses/LICENSE") for name in wheel_names)
-            assert "comfy_story/h3_reference_compressors.py" in wheel_names
-            assert "comfy_story/h3_reference_checkpoint.py" in wheel_names
+            assert "comfy_story/h3_reference_compressors.py" not in wheel_names
+            assert "comfy_story/h3_reference_checkpoint.py" not in wheel_names
             assert "comfy_story/h3_reference_benchmark.py" not in wheel_names
             assert "comfy_story/story_native_archive.py" in wheel_names
             assert "comfy_story/story_native_service.py" in wheel_names
-            assert not any(
-                name.startswith(
-                    ("duet/assembly101/", "duet/eurosat/", "duet/hotc/", "duet/salinas/")
-                )
-                for name in wheel_names
+            assert not any(name.startswith("comfy_story/ltx_") for name in wheel_names)
+            assert (
+                not {"comfy_story/training.py", "comfy_story/teacher.py", "comfy_story/losses.py"}
+                & wheel_names
             )
-            # Retained modules must not import a package omitted from the runtime wheel.
+            # Every local import must resolve within the installable wheel.
             import ast
 
-            excluded = ("duet.assembly101", "duet.eurosat", "duet.hotc", "duet.salinas")
             for name in sorted(wheel_names):
                 if not name.endswith(".py"):
                     continue
                 for item in ast.walk(ast.parse(wheel.read(name))):
-                    imports = []
+                    modules = []
                     if isinstance(item, ast.Import):
-                        imports = [alias.name for alias in item.names]
-                    elif isinstance(item, ast.ImportFrom):
-                        module = item.module or ""
-                        imports = [module, *(module + "." + alias.name for alias in item.names)]
-                    assert not any(value.startswith(excluded) for value in imports), name
+                        modules = [alias.name for alias in item.names]
+                    elif isinstance(item, ast.ImportFrom) and item.module:
+                        modules = [item.module]
+                    for module in modules:
+                        if module == "comfy_story" or module.startswith("comfy_story."):
+                            path = module.replace(".", "/")
+                            assert {path + ".py", path + "/__init__.py"} & wheel_names, (
+                                name,
+                                module,
+                            )
             entry_points = wheel.read(metadata_name.replace("METADATA", "entry_points.txt"))
             assert b"comfy-story-film = comfy_story.film_runner:main" in entry_points
             assert b"comfy-story-audit = comfy_story.film_audit_cli:main" in entry_points
@@ -158,8 +164,8 @@ def test_internal_package_contains_compiler_source_but_no_artifacts(tmp_path: Pa
         assert "docs/getting-started.md" in install
 
 
-def test_internal_bundle_ships_product_guides_and_license(tmp_path: Path) -> None:
-    bundle = build_internal_bundle(REPOSITORY_ROOT, tmp_path)
+def test_release_bundle_ships_product_guides_and_license(tmp_path: Path) -> None:
+    bundle = build_release_bundle(REPOSITORY_ROOT, tmp_path)
     with zipfile.ZipFile(bundle) as archive:
         for name in (
             "getting-started.md",
@@ -176,7 +182,7 @@ def test_internal_bundle_ships_product_guides_and_license(tmp_path: Path) -> Non
 def _installer_fixture(tmp_path: Path) -> tuple[dict[str, object], Path]:
     import runpy
 
-    bundle = build_internal_bundle(REPOSITORY_ROOT, tmp_path / "build")
+    bundle = build_release_bundle(REPOSITORY_ROOT, tmp_path / "build")
     extracted = tmp_path / "bundle"
     with zipfile.ZipFile(bundle) as archive:
         archive.extractall(extracted)
@@ -222,7 +228,7 @@ def test_installer_rejects_existing_node_before_mutation(
 ) -> None:
     namespace, comfy = _installer_fixture(tmp_path)
     main = cast(Callable[[], int], namespace["main"])
-    target = comfy / "custom_nodes" / "duet_story"
+    target = comfy / "custom_nodes" / "comfy_story"
     target.mkdir()
     (target / "keep.txt").write_text("existing installation")
     monkeypatch.setitem(main.__globals__, "version", _compatible_version)
@@ -255,7 +261,7 @@ def _compatible_version(name: str) -> str:
 
 
 def test_template_browser_contains_only_workflows_and_keeps_film_examples(tmp_path: Path) -> None:
-    bundle = build_internal_bundle(REPOSITORY_ROOT, tmp_path)
+    bundle = build_release_bundle(REPOSITORY_ROOT, tmp_path)
     with zipfile.ZipFile(bundle) as archive:
         templates = [
             name
@@ -270,9 +276,9 @@ def test_template_browser_contains_only_workflows_and_keeps_film_examples(tmp_pa
             assert isinstance(workflow["links"], list)
             assert "shots" not in workflow
         for name in ("film-first-pass-plan.json", "film-first-pass-inputs.json"):
-            assert f"custom_nodes/duet_story/example_workflows/{name}" not in archive.namelist()
+            assert f"custom_nodes/comfy_story/example_workflows/{name}" not in archive.namelist()
             assert (
-                archive.read(f"custom_nodes/duet_story/example_films/{name}")
+                archive.read(f"custom_nodes/comfy_story/example_films/{name}")
                 == (REPOSITORY_ROOT / "integrations/comfy_story/example_films" / name).read_bytes()
             )
 
@@ -301,7 +307,7 @@ def test_installer_rejects_unlisted_code_and_links(
 ) -> None:
     namespace, comfy = _installer_fixture(tmp_path)
     main = cast(Callable[[], int], namespace["main"])
-    extra = tmp_path / "bundle/custom_nodes/duet_story/unlisted.py"
+    extra = tmp_path / "bundle/custom_nodes/comfy_story/unlisted.py"
     if linked:
         extra.symlink_to(tmp_path / "bundle/LICENSE")
     else:
@@ -325,9 +331,9 @@ def test_distribution_ignores_untracked_code_and_rejects_tracked_links(tmp_path:
     (source / "local_experiment.py").write_text("# not reviewed")
     (source / "notes.txt").write_text("private local notes")
     _copy_integration(root, tmp_path / "stage")
-    assert sorted(path.name for path in (tmp_path / "stage/custom_nodes/duet_story").iterdir()) == [
-        "__init__.py"
-    ]
+    assert sorted(
+        path.name for path in (tmp_path / "stage/custom_nodes/comfy_story").iterdir()
+    ) == ["__init__.py"]
     reviewed.unlink()
     reviewed.symlink_to(source / "local_experiment.py")
     with pytest.raises(ValueError, match="symbolic links"):
@@ -340,7 +346,7 @@ def test_release_cli_rejects_dirty_checkout_before_build(
     from scripts import build_release as builder
 
     monkeypatch.setattr(subprocess, "check_output", lambda *args, **kwargs: b" M source.py")
-    monkeypatch.setattr(builder, "build_internal_bundle", _unexpected_mutation)
+    monkeypatch.setattr(builder, "build_release_bundle", _unexpected_mutation)
     with pytest.raises(SystemExit, match="2"):
         builder.main(["--output-root", str(tmp_path)])
 

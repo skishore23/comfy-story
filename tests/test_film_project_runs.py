@@ -289,7 +289,7 @@ def test_runtime_identity_covers_story_and_memory_implementation(
     hashes = before["implementation_sha256s"]
     assert isinstance(hashes, dict)
     assert "story_service.py" in hashes
-    assert "story_memory_backend.py" in hashes
+    assert "story_native_service.py" in hashes
     monkeypatch.setattr(
         film_project_runs,
         "file_digest",
@@ -492,7 +492,7 @@ def test_first_cut_delivers_without_reviewer_and_preserves_edit_inputs(
         video.write_bytes(b"changed")
         with pytest.raises(ValueError, match="integrity"):
             runner.video("project", result["run_id"])
-        with pytest.raises(ValueError, match="Configure DUET_STORY_VERIFY_MODEL"):
+        with pytest.raises(ValueError, match="Configure COMFY_STORY_VERIFY_MODEL"):
             runner.start("project", revision)
     finally:
         runner._executor.shutdown(wait=True)

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 from pathlib import Path
 from typing import Any
@@ -13,8 +12,8 @@ from comfy_execution.graph_utils import GraphBuilder
 
 from comfy_story.film_timing import trim_shot_media
 from comfy_story.h3_prompt import H3_PROMPT_FORMAT
+from comfy_story.samplers import StorySampler
 from comfy_story.story_contracts import ShotIntent
-from comfy_story.story_memory_backend import StorySampler
 from comfy_story.story_video_canvas import H3_FIRST_FRAME_CROP, H3_FIRST_FRAME_METHOD
 
 from .comfy_adapter import (
@@ -27,35 +26,8 @@ from .comfy_adapter import (
 )
 from .h3_quality_nodes import build_refinement
 
-StoryType = io.Custom("DUET_STORY")
-PreparedType = io.Custom("DUET_STORY_PREPARED")
-_COMPILER_METHODS = [
-    "native_full",
-    "native_trimmed",
-    "gated",
-    "resampler",
-    "duet",
-    "exceptions_only",
-    "duet_x",
-]
-
-
-def _compiler_experiment_input() -> Any:
-    return io.Combo.Input(
-        "Compiler experiment",
-        options=_COMPILER_METHODS,
-        default="duet_x",
-        advanced=True,
-    )
-
-
-def _story_context_experiment_input() -> Any:
-    return io.Combo.Input(
-        "Story context experiment",
-        options=["core_plus_recall", "retrieval_only"],
-        default="core_plus_recall",
-        advanced=True,
-    )
+StoryType = io.Custom("COMFY_STORY")
+PreparedType = io.Custom("COMFY_STORY_PREPARED")
 
 
 def _world_upload() -> Any:
@@ -77,7 +49,7 @@ def _world_upload() -> Any:
     )
 
 
-class DuetStory(io.ComfyNode):
+class ComfyStory(io.ComfyNode):
     """Generate one finished shot while carrying shared story state forward."""
 
     @classmethod
@@ -91,11 +63,6 @@ class DuetStory(io.ComfyNode):
                 default=ShotIntent.START_STORY.value,
             ),
             io.String.Input("Story Library", default="[]", multiline=True),
-            io.Combo.Input(
-                "Reference context",
-                options=["Native", "Compiled preview"],
-                default="Native",
-            ),
             _world_upload(),
             io.Image.Input("Motion reference", optional=True),
             io.String.Input(
@@ -169,18 +136,8 @@ class DuetStory(io.ComfyNode):
                 advanced=True,
             ),
         ]
-        if os.environ.get("DUET_H3_COMPILER_INTERNAL_TEST") == "1":
-            inputs.append(_compiler_experiment_input())
-            inputs.append(_story_context_experiment_input())
-            inputs.extend(
-                [
-                    io.String.Input("Benchmark phase", default="", advanced=True),
-                    io.String.Input("Benchmark workload", default="", advanced=True),
-                    io.String.Input("Benchmark cell", default="", advanced=True),
-                ]
-            )
         return io.Schema(
-            node_id="DuetStory",
+            node_id="ComfyStory",
             display_name="Comfy Story",
             category="Comfy/Story",
             description=(
@@ -211,7 +168,6 @@ class DuetStory(io.ComfyNode):
 
     @classmethod
     def execute(cls, **inputs: Any) -> Any:
-        living_canon = bool(inputs.pop("__living_canon", True))
         hidden = getattr(cls, "hidden", None)
         owner_node_id = str(
             inputs.pop(
@@ -219,11 +175,7 @@ class DuetStory(io.ComfyNode):
                 inputs.pop("unique_id", getattr(hidden, "unique_id", "") or ""),
             )
         )
-        prepared = (
-            prepare_node_generation(inputs, living_canon=True)
-            if living_canon
-            else prepare_node_generation(inputs)
-        )
+        prepared = prepare_node_generation(inputs)
         recovered = recover_node_generation(prepared)
         if recovered is not None:
             from comfy_api.latest import InputImpl
@@ -232,7 +184,7 @@ class DuetStory(io.ComfyNode):
             ui = (
                 None
                 if not owner_node_id
-                else {"duet_story": [story_inspector_summary(loaded, owner_node_id=owner_node_id)]}
+                else {"comfy_story": [story_inspector_summary(loaded, owner_node_id=owner_node_id)]}
             )
             return io.NodeOutput(
                 InputImpl.VideoFromFile(str(video_path)), last_frame, loaded.state, ui=ui
@@ -280,9 +232,9 @@ class DuetStory(io.ComfyNode):
             )
         if nvfp4:
             if prepared.sampler is StorySampler.NVFP4_ULTRA_FAST:
-                model = graph.node("DuetH3UltraFast", model=model.out(0))
+                model = graph.node("ComfyH3UltraFast", model=model.out(0))
             elif prepared.sampler is StorySampler.NVFP4_BALANCED:
-                model = graph.node("DuetH3BalancedCache", model=model.out(0))
+                model = graph.node("ComfyH3BalancedCache", model=model.out(0))
         clip = graph.node(
             "CLIPLoader",
             clip_name=configuration["clip"],
@@ -354,20 +306,6 @@ class DuetStory(io.ComfyNode):
         else:
             conditioning = graph.node("MiniMaxH3ReferenceToVideo", **conditioning_inputs)
         positive = conditioning.out(0)
-        reference_compile = getattr(prepared, "reference_compile", None)
-        compiled = None
-        if reference_compile is not None:
-            compiled = graph.node(
-                "DuetH3CompileReferences",
-                positive=positive,
-                request=reference_compile,
-            )
-            positive = compiled.out(0)
-        telemetry = None
-        measured = None
-        if getattr(prepared, "telemetry_enabled", False):
-            telemetry = graph.node("DuetH3TelemetryStart", positive=positive)
-            positive = telemetry.out(0)
         if (
             profile != "Animate frame"
             and inputs.get("Composition", "Continue frame") == "Continue frame"
@@ -387,7 +325,7 @@ class DuetStory(io.ComfyNode):
             last_index = duration_ms * 24 // 1000 - 1 if duration_ms else prepared.frame_count - 1
             if automatic_prompt and profile == "Animate frame":
                 guided = graph.node(
-                    "DuetStoryKeyframeTiming", positive=positive, last_index=last_index
+                    "ComfyStoryKeyframeTiming", positive=positive, last_index=last_index
                 )
             else:
                 guided = graph.node(
@@ -440,13 +378,6 @@ class DuetStory(io.ComfyNode):
                 model.out(0),
                 sampled_latent,
             )
-        if telemetry is not None:
-            measured = graph.node(
-                "DuetH3TelemetryEnd",
-                latent=sampled_latent,
-                telemetry=telemetry.out(1),
-            )
-            sampled_latent = measured.out(0)
         images = (
             graph.node(
                 "VAEDecodeTiled",
@@ -470,7 +401,10 @@ class DuetStory(io.ComfyNode):
         output_duration = getattr(prepared, "output_duration_ms", 0)
         if output_duration:
             trimmed = graph.node(
-                "DuetStoryTrim", images=image_output, audio=audio_input, duration_ms=output_duration
+                "ComfyStoryTrim",
+                images=image_output,
+                audio=audio_input,
+                duration_ms=output_duration,
             )
             image_output, audio_input = trimmed.out(0), trimmed.out(1)
         video = graph.node(
@@ -479,92 +413,39 @@ class DuetStory(io.ComfyNode):
         saved = graph.node(
             "SaveVideo",
             video=video.out(0),
-            filename_prefix="duet_story/shot",
+            filename_prefix="comfy_story/shot",
             format="auto",
             codec="auto",
         )
         commit_inputs: dict[str, Any] = {
             "decoded_images": image_output,
             "saved_video": saved.out(0),
-            "filename_prefix": "duet_story/shot",
+            "filename_prefix": "comfy_story/shot",
             "prepared": prepared.prepared,
-            "memory_vae": video_vae.out(0),
         }
-        if living_canon:
-            commit_inputs["owner_node_id"] = owner_node_id
+        commit_inputs["owner_node_id"] = owner_node_id
         committed = graph.node(
-            "DuetStoryCommit",
+            "ComfyStoryCommit",
             **commit_inputs,
         )
         story_state = committed.out(0)
-        benchmark_cell = getattr(prepared, "benchmark_cell", "")
-        if benchmark_cell:
-            if compiled is None or measured is None:
-                raise RuntimeError("H3 benchmark receipt requires compiler and telemetry nodes")
-            benchmark = graph.node(
-                "DuetH3BenchmarkReceipt",
-                story_state=story_state,
-                request=reference_compile,
-                compile_receipt=compiled.out(1),
-                context_build_ns=compiled.out(2),
-                denoising=measured.out(1),
-                phase=getattr(prepared, "benchmark_phase", ""),
-                workload_id=getattr(prepared, "benchmark_workload", ""),
-                method=getattr(prepared, "benchmark_method", ""),
-                seed=prepared.variation,
-                cell_id=benchmark_cell,
-            )
-            story_state = benchmark.out(0)
         return io.NodeOutput(saved.out(0), committed.out(1), story_state, expand=graph.finalize())
 
 
-class DuetStoryCanon(io.ComfyNode):
-    """Deprecated node-ID alias retained so existing Canon workflows still load."""
-
-    @classmethod
-    def fingerprint_inputs(cls, **inputs: Any) -> str:
-        return DuetStory.fingerprint_inputs(**inputs)
-
-    @classmethod
-    def define_schema(cls) -> Any:
-        base = DuetStory.define_schema()
-        return io.Schema(
-            node_id="DuetStoryCanon",
-            display_name="Comfy Story (legacy workflow alias)",
-            category="Comfy/Story",
-            description="Compatibility alias for workflows saved with the former Canon node ID.",
-            search_aliases=[],
-            enable_expand=base.enable_expand,
-            is_output_node=base.is_output_node,
-            is_deprecated=True,
-            inputs=base.inputs,
-            hidden=base.hidden,
-            outputs=base.outputs,
-        )
-
-    @classmethod
-    def execute(cls, **inputs: Any) -> Any:
-        inputs["__living_canon"] = True
-        hidden = getattr(cls, "hidden", None)
-        inputs["__owner_node_id"] = str(getattr(hidden, "unique_id", "") or "")
-        return DuetStory.execute(**inputs)
-
-
-class DuetStoryCommit(io.ComfyNode):
+class ComfyStoryCommit(io.ComfyNode):
     """Internal transaction boundary that publishes state only after decoding succeeds."""
 
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetStoryCommit",
+            node_id="ComfyStoryCommit",
             display_name="_Comfy Story Commit",
-            category="_Duet/Internal",
+            category="_Comfy/Internal",
             inputs=[
                 io.Image.Input("decoded_images"),
                 io.Video.Input("saved_video"),
-                io.String.Input("filename_prefix", default="duet_story/shot"),
+                io.String.Input("filename_prefix", default="comfy_story/shot"),
                 PreparedType.Input("prepared"),
-                io.Vae.Input("memory_vae"),
                 io.String.Input("owner_node_id", default="", optional=True),
             ],
             outputs=[
@@ -580,14 +461,13 @@ class DuetStoryCommit(io.ComfyNode):
             decoded_images=inputs["decoded_images"],
             saved_video=inputs["saved_video"],
             filename_prefix=inputs["filename_prefix"],
-            memory_vae=inputs["memory_vae"],
         )
         owner_node_id = str(inputs.get("owner_node_id", ""))
         ui = (
             None
             if not owner_node_id
             else {
-                "duet_story": [
+                "comfy_story": [
                     story_inspector_summary(
                         result.loaded_revision,
                         owner_node_id=owner_node_id,
@@ -598,15 +478,15 @@ class DuetStoryCommit(io.ComfyNode):
         return io.NodeOutput(result.state, result.last_frame, ui=ui)
 
 
-class DuetStoryTrim(io.ComfyNode):
+class ComfyStoryTrim(io.ComfyNode):
     """Keep the exact edited interval before saving and publishing continuation state."""
 
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetStoryTrim",
+            node_id="ComfyStoryTrim",
             display_name="_Comfy Story Trim",
-            category="_Duet/Internal",
+            category="_Comfy/Internal",
             inputs=[
                 io.Image.Input("images"),
                 io.Audio.Input("audio"),
@@ -621,18 +501,18 @@ class DuetStoryTrim(io.ComfyNode):
         return io.NodeOutput(images, audio)
 
 
-__all__ = ("DuetStory", "DuetStoryCanon", "DuetStoryCommit", "DuetStoryTrim")
+__all__ = ("ComfyStory", "ComfyStoryCommit", "ComfyStoryTrim")
 
 
-class DuetH3BalancedCache(io.ComfyNode):
+class ComfyH3BalancedCache(io.ComfyNode):
     """Internal native-H3 model patch for the public Balanced sampler."""
 
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetH3BalancedCache",
-            display_name="Duet H3 Balanced Cache",
-            category="_Duet/Internal",
+            node_id="ComfyH3BalancedCache",
+            display_name="Comfy H3 Balanced Cache",
+            category="_Comfy/Internal",
             inputs=[io.Model.Input("model")],
             outputs=[io.Model.Output()],
         )
@@ -649,15 +529,15 @@ class DuetH3BalancedCache(io.ComfyNode):
         return io.NodeOutput(patch_h3_balanced(model))
 
 
-class DuetH3UltraFast(io.ComfyNode):
+class ComfyH3UltraFast(io.ComfyNode):
     """Native Ref2VA Balanced cache plus the Space's Sol-Attn policy."""
 
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetH3UltraFast",
-            display_name="Duet H3 Ultra Fast",
-            category="_Duet/Internal",
+            node_id="ComfyH3UltraFast",
+            display_name="Comfy H3 Ultra Fast",
+            category="_Comfy/Internal",
             inputs=[io.Model.Input("model")],
             outputs=[io.Model.Output()],
         )
@@ -673,15 +553,15 @@ class DuetH3UltraFast(io.ComfyNode):
         return io.NodeOutput(patch_h3_balanced(model, sol_attention=True))
 
 
-class DuetStoryKeyframeTiming(io.ComfyNode):
+class ComfyStoryKeyframeTiming(io.ComfyNode):
     """Move the native FL2VA endpoint onto the final exported frame."""
 
     @classmethod
     def define_schema(cls) -> Any:
         return io.Schema(
-            node_id="DuetStoryKeyframeTiming",
+            node_id="ComfyStoryKeyframeTiming",
             display_name="_Comfy Story Keyframe Timing",
-            category="_Duet/Internal",
+            category="_Comfy/Internal",
             inputs=[io.Conditioning.Input("positive"), io.Int.Input("last_index", min=1)],
             outputs=[io.Conditioning.Output()],
         )

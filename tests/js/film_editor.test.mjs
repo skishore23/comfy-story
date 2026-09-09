@@ -105,11 +105,11 @@ test('shot disclosures preserve editing state by identity without changing recip
   let saves = 0
   const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
     if (options.method === 'PUT') { stored={...JSON.parse(options.body),revision:'b'.repeat(64)}; saves++ }
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
   const cards = () => body.all().filter(x=>x.tag==='details' && x.children[0]?.tag==='summary' && /^\d+\./.test(x.children[0].textContent))
   const button = label => body.all().find(x=>x.tag==='button' && x.textContent===label)
-  await openFilmEditor(api,{properties:{duet_film_project_id:'disclosures'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'disclosures'}},{},document)
   const overview = () => body.all().find(x=>x.attrs['aria-label']==='Story at a glance')
   assert.ok(overview().all().some(x=>x.textContent==='0–5s'))
   assert.ok(overview().all().some(x=>x.textContent==='5–10s'))
@@ -149,12 +149,12 @@ test('advanced controls stay optional, preserve saved settings, and reveal inval
   let saves = 0
   const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
     if (options.method === 'PUT') { stored={...JSON.parse(options.body),revision:'b'.repeat(64)}; saves++ }
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
   const control = label => body.all().find(x=>x.attrs['aria-label']===label)
   const button = label => body.all().find(x=>x.tag==='button' && x.textContent===label)
   const details = label => body.all().find(x=>x.tag==='details' && x.children[0]?.textContent===label)
-  const node = {properties:{duet_film_project_id:'simple'}}
+  const node = {properties:{comfy_film_project_id:'simple'}}
   await openFilmEditor(api,node,{},document)
   for (const label of ['Advanced shot settings','Advanced film settings']) assert.equal(details(label).open,false)
   const advanced = details('Advanced shot settings')
@@ -176,7 +176,7 @@ test('advanced controls stay optional, preserve saved settings, and reveal inval
   assert.equal(details('Advanced shot settings').open,true)
   control('Locked seed').value='not a seed'; await control('Locked seed').fire('input')
   details('Advanced shot settings').open=false
-  const card = body.all().find(x=>x.className==='duet-film-shot'); card.open=false
+  const card = body.all().find(x=>x.className==='comfy-film-shot'); card.open=false
   await button('Save plan').fire('click')
   assert.equal(saves,1)
   assert.equal(details('Advanced shot settings').open,true)
@@ -197,9 +197,9 @@ test('editor reopens precise timings and preserves seed while editing a cut', as
   let saves = 0
   const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
     if (options.method === 'PUT') { stored={...JSON.parse(options.body),revision:'b'.repeat(64)}; saves++ }
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
-  const node={properties:{duet_film_project_id:'cut'}}
+  const node={properties:{comfy_film_project_id:'cut'}}
   const control=label=>body.all().find(x=>x.attrs['aria-label']===label)
   const button=label=>body.all().find(x=>x.tag==='button' && x.textContent===label)
   await openFilmEditor(api,node,{},document)
@@ -229,7 +229,7 @@ test('opening Story from a trimmed Comfy node saves its actual interval and seed
   let stored
   const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
     if (options.method==='POST') stored={...JSON.parse(options.body),revision:'c'.repeat(64)}
-    return {ok:true,json:async()=>path==='/duet/story/films' && options.method==='GET' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' && options.method==='GET' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
   await openFilmEditor(api,{properties:{}},{'Story Library':JSON.stringify({project_name:'Precise node',references:[]}), 'What happens next?':'A leaf turns.', 'World / starting frame':'leaf.png', 'Shot length':'5 seconds','Output duration (ms)':2375,Variation:73},document)
   await body.all().find(x=>x.tag==='button' && x.textContent==='Save plan').fire('click')
@@ -248,7 +248,7 @@ for (const renderProfile of ['Animate frame', 'Reference shot']) for (const came
     if (options.method==='POST' || options.method==='PUT') {
       const request = JSON.parse(options.body)
       stored = {...request, revision:'a'.repeat(64)}; saves++; data={recipe:stored}
-    } else if (path==='/duet/story/films') data={projects:[]}
+    } else if (path==='/comfy/story/films') data={projects:[]}
     else data={recipe:stored,runs:[],verification_configured:false}
     return {ok:true,json:async()=>structuredClone(data)}
   }}
@@ -307,7 +307,7 @@ test('a new Comfy node opens an editable film before any references are configur
   let stored
   const api = { fetchApi:async(path, options)=> {
     if (options.method==='POST') { stored = JSON.parse(options.body); assert.equal(stored.inputs.library.project_name,'My first film'); return {ok:true,json:async()=>({recipe:{...stored,revision:'a'.repeat(64)}})} }
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[]} : {verification_configured:true}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[]} : {verification_configured:true}}
   }}
   await openFilmEditor(api,{properties:{}},{'Story Library':'[]','What happens next?':'','World / starting frame':'None'},document)
   assert.ok(body.all().find(x=>x.attrs['aria-label']==='Film title'))
@@ -327,7 +327,7 @@ test('an untouched new node opens a saved project and remembers it without savin
   const reads = []
   const api = {fetchApi:async(path,options)=> {
     assert.equal(options.method,'GET'); reads.push(path)
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[{project_id:'saved',title:'Saved film'}]} : {recipe:structuredClone(recipe),runs:[],verification_configured:true}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[{project_id:'saved',title:'Saved film'}]} : {recipe:structuredClone(recipe),runs:[],verification_configured:true}}
   }}
   const node = {properties:{}}
   const values = {'Story Library':'[]','World / starting frame':'None'}
@@ -336,7 +336,7 @@ test('an untouched new node opens a saved project and remembers it without savin
   await openFilmEditor(api,node,values,document)
   control('Open film project').value='saved'; await control('Open film project').fire('change')
   assert.equal(control('Film title').value,'Saved film')
-  assert.equal(node.properties.duet_film_project_id,'saved')
+  assert.equal(node.properties.comfy_film_project_id,'saved')
   await close(); await openFilmEditor(api,node,values,document)
   assert.equal(control('Film title').value,'Saved film')
   control('Film title').value='Unsaved edit'; await control('Film title').fire('input')
@@ -356,9 +356,9 @@ test('pending film launch shows progress and suppresses duplicate generate or re
   const pending = new Promise(resolve => { finish = resolve })
   const api = {fetchApi:async(path,options)=> {
     if (options.method === 'POST') { posts++; await pending; return {ok:false,json:async()=>({error:'Missing configured model'})} }
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[]} : {recipe:structuredClone(recipe),runs:[],verification_configured:true}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[]} : {recipe:structuredClone(recipe),runs:[],verification_configured:true}}
   }}
-  await openFilmEditor(api,{properties:{duet_film_project_id:'saved'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'saved'}},{},document)
   const button = name => body.all().find(x=>x.tag==='button' && x.textContent===name)
   const generate = button('Generate saved plan'), resume = button('Resume selected run')
   const first = generate.fire('click')
@@ -398,10 +398,10 @@ test('reopened editor shows current or last review stage without starting work',
     run.coverage = {target_duration_ms:60000,planned_shots:7,selected_duration_ms:10000,selected_shots:1}
     const api = {apiURL:path=>path,fetchApi:async(path,options)=> {
       assert.equal(options.method,'GET')
-      const data = path==='/duet/story/films' ? {projects:[]} : path.includes('/runs/') ? run : {recipe,runs:[run],verification_configured:true}
+      const data = path==='/comfy/story/films' ? {projects:[]} : path.includes('/runs/') ? run : {recipe,runs:[run],verification_configured:true}
       return {ok:true,json:async()=>structuredClone(data)}
     }}
-    await openFilmEditor(api,{properties:{duet_film_project_id:'saved'}},{},document)
+    await openFilmEditor(api,{properties:{comfy_film_project_id:'saved'}},{},document)
     const prefix = status==='running' ? 'Current' : 'Last'
     assert.ok(body.all().some(x=>x.textContent===`${prefix} stage: Reviewing the current shot`))
     const reason = body.all().find(x=>x.textContent===run.reason)
@@ -413,7 +413,7 @@ test('reopened editor shows current or last review stage without starting work',
     assert.notEqual(explanation.parent.tag,'details')
     assert.equal(body.all().find(x=>x.tag==='video').muted, true)
     const preview = body.all().find(x=>x.tag==='a' && x.textContent==='Preview latest candidate film')
-    assert.equal(preview.href, `/duet/story/films/saved/runs/${run.run_id}/preview`)
+    assert.equal(preview.href, `/comfy/story/films/saved/runs/${run.run_id}/preview`)
     assert.ok(body.all().some(x=>x.textContent?.includes('It may be incomplete or rejected.')))
     assert.ok(body.all().some(x=>x.textContent===filmCoverageText(run)))
     assert.ok(body.all().some(x=>x.textContent==='Candidate preview: 5 seconds. Preview length includes the current candidate, even when it failed review.'))
@@ -433,17 +433,17 @@ test('new film starts a blank draft without changing the previous project or hos
     requests.push([path,options.method])
     let data
     if(options.method==='POST') {
-      assert.equal(path,'/duet/story/films')
+      assert.equal(path,'/comfy/story/films')
       const payload=JSON.parse(options.body)
       assert.equal(payload.expected_revision,null)
       const recipe={...payload,revision:'c'.repeat(64)}
       stored.set(recipe.plan.project_id,structuredClone(recipe)); data={recipe}
-    } else if(path==='/duet/story/films') data={projects:[{project_id:'saved',title:'Original film'}]}
+    } else if(path==='/comfy/story/films') data={projects:[{project_id:'saved',title:'Original film'}]}
     else if(path.includes('/runs/')) data=run
     else data={recipe:stored.get(path.split('/').at(-1)),runs:path.endsWith('/saved')?[run]:[],verification_configured:true}
     return {ok:true,json:async()=>structuredClone(data)}
   }}
-  const node={properties:{duet_film_project_id:'saved'}}
+  const node={properties:{comfy_film_project_id:'saved'}}
   const button=name=>body.all().find(x=>x.tag==='button' && x.textContent===name)
   const control=name=>body.all().find(x=>x.attrs['aria-label']===name)
   await openFilmEditor(api,node,{},document)
@@ -455,7 +455,7 @@ test('new film starts a blank draft without changing the previous project or hos
   assert.equal(control('Visible action').value,'')
   assert.equal(control('Open film project').value,'')
   assert.equal(control('Maximum attempts per shot').value,'2')
-  assert.equal(node.properties.duet_film_project_id,'saved')
+  assert.equal(node.properties.comfy_film_project_id,'saved')
   assert.equal(body.all().some(x=>x.attrs['aria-label']==='Film run'),false)
   assert.equal(requests.some(([,method])=>method!=='GET'),false)
   control('Film title').value='Fresh story'; await control('Film title').fire('input')
@@ -465,7 +465,7 @@ test('new film starts a blank draft without changing the previous project or hos
   control('Visible action').value='A leaf falls.'; await control('Visible action').fire('input')
   control('Starting image (blank uses previous frame)').value='leaf.png'; await control('Starting image (blank uses previous frame)').fire('input')
   await button('Save plan').fire('click')
-  const id=node.properties.duet_film_project_id
+  const id=node.properties.comfy_film_project_id
   assert.notEqual(id,'saved')
   assert.equal(stored.get(id).plan.title,'Fresh story')
   assert.deepEqual(stored.get(id).inputs.library.references,[])
@@ -488,10 +488,10 @@ test('new film cannot race a pending save and lose its response', async () => {
   const pending=new Promise(resolve=>{finish=resolve})
   const api={fetchApi:async(path,options)=>{
     if(options.method==='PUT'){saves++;await pending;return {ok:true,json:async()=>({recipe:structuredClone(recipe)})}}
-    return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:{recipe:structuredClone(recipe),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:{recipe:structuredClone(recipe),runs:[],verification_configured:false}}
   }}
   const button=name=>body.all().find(x=>x.tag==='button' && x.textContent===name)
-  await openFilmEditor(api,{properties:{duet_film_project_id:'saved'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'saved'}},{},document)
   const saving=button('Save plan').fire('click')
   await Promise.resolve();await Promise.resolve()
   assert.equal(button('New film').disabled,true)
@@ -516,7 +516,7 @@ test('soundtrack controls bind uploaded bytes, persist edits and leave visual re
       data={path:'music/score.wav',sha256:(audioChanged?'c':'b').repeat(64),duration_ms:12000,levels:{status:'measured',peak_dbfs:0,rms_dbfs:-18,silent:false,reaches_full_scale:true}}
     } else if(options.method==='POST' || options.method==='PUT') {
       stored={...JSON.parse(options.body),revision:'a'.repeat(64)};saves++;data={recipe:stored}
-    } else if(path==='/duet/story/films') data={projects:[]}
+    } else if(path==='/comfy/story/films') data={projects:[]}
     else data={recipe:stored,runs:[],verification_configured:false}
     return {ok:true,json:async()=>structuredClone(data)}
   }}
@@ -620,7 +620,7 @@ test('creator state meanings survive save and reopen and can be removed without 
       stored={...JSON.parse(options.body),revision:'b'.repeat(64)};writes++
       return {ok:true,json:async()=>({recipe:structuredClone(stored)})}
     }
-    return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
   const node={properties:{}}
   const values={'Story Library':JSON.stringify({project_name:'A box',references:[]}), 'World / starting frame':'box.png','What happens next?':'A closed box is visible.',Variation:123}
@@ -692,7 +692,7 @@ test('editor approach selection persists a coherent pair and added shots inherit
   let stored,mutations=0
   const api={apiURL:path=>path,fetchApi:async(path,options)=>{
     if(options.method==='POST'||options.method==='PUT') {mutations++;stored=JSON.parse(options.body);return {ok:true,json:async()=>({recipe:{...stored,revision:'a'.repeat(64)}})}}
-    return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:{verification_configured:true}}
+    return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:{verification_configured:true}}
   }}
   const control=name=>body.all().find(x=>x.attrs['aria-label']===name)
   const button=name=>body.all().find(x=>x.tag==='button'&&x.textContent===name)
@@ -720,7 +720,7 @@ test('customer can add named cast in the editor and duplicate or unsafe names do
     let data
     if (options.method==='POST' || options.method==='PUT') {
       stored = {...JSON.parse(options.body),revision:'a'.repeat(64)}; data={recipe:stored}
-    } else if (path==='/duet/story/films') data={projects:[]}
+    } else if (path==='/comfy/story/films') data={projects:[]}
     else data={recipe:stored,runs:[],verification_configured:false}
     return {ok:true,json:async()=>structuredClone(data)}
   }}
@@ -786,9 +786,9 @@ test('optional story intent survives save and reopen, rejects partial data and c
   let saves = 0
   const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
     if (options.method === 'PUT') { stored={...JSON.parse(options.body),revision:'b'.repeat(64)}; saves++ }
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false,impact:{reusable_prefix:['one'],requires_generation_review:[],narrative_review_changed:true}}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[]} : {recipe:structuredClone(stored),runs:[],verification_configured:false,impact:{reusable_prefix:['one'],requires_generation_review:[],narrative_review_changed:true}}}
   }}
-  const node={properties:{duet_film_project_id:'intent'}}
+  const node={properties:{comfy_film_project_id:'intent'}}
   const control=label=>body.all().find(x=>x.attrs['aria-label']===label)
   const button=label=>body.all().find(x=>x.tag==='button' && x.textContent===label)
   await openFilmEditor(api,node,{},document)
@@ -828,9 +828,9 @@ for (const fails of [false, true]) test(`project loading cannot launch or overwr
     if (options.method !== 'GET') { mutations.push({path,body:JSON.parse(options.body)}); return {ok:false,json:async()=>({error:'Recorded submission'})} }
     reads.push(path)
     if (path.endsWith('/second')) { await pending; if (fails) return {ok:false,json:async()=>({error:'Project unavailable'})} }
-    return {ok:true,json:async()=>path === '/duet/story/films' ? {projects:[{project_id:'first',title:'first'},{project_id:'second',title:'second'}]} : {recipe:recipe(path.endsWith('/second') ? 'second' : 'first'), runs:[], verification_configured:true}}
+    return {ok:true,json:async()=>path === '/comfy/story/films' ? {projects:[{project_id:'first',title:'first'},{project_id:'second',title:'second'}]} : {recipe:recipe(path.endsWith('/second') ? 'second' : 'first'), runs:[], verification_configured:true}}
   }}
-  const node = {properties:{duet_film_project_id:'first'}}
+  const node = {properties:{comfy_film_project_id:'first'}}
   const control = label => body.all().find(x => x.attrs['aria-label'] === label)
   const button = label => body.all().find(x => x.tag === 'button' && x.textContent === label)
   await openFilmEditor(api,node,{},document)
@@ -848,7 +848,7 @@ for (const fails of [false, true]) test(`project loading cannot launch or overwr
   assert.equal(mutations.length,0)
   finish(); await loading
   const expected = fails ? 'first' : 'second'
-  assert.equal(node.properties.duet_film_project_id,expected)
+  assert.equal(node.properties.comfy_film_project_id,expected)
   assert.equal(chooser.value,expected)
   assert.equal(control('Film title').value,expected)
   assert.equal(control('Film title').parent.parent.inert,false)
@@ -857,7 +857,7 @@ for (const fails of [false, true]) test(`project loading cannot launch or overwr
   assert.match(status, fails ? /Project unavailable/ : /Opened saved film project/)
   await button('Generate saved plan').fire('click')
   assert.equal(mutations.length,1)
-  assert.equal(mutations[0].path,`/duet/story/films/${expected}/runs`)
+  assert.equal(mutations[0].path,`/comfy/story/films/${expected}/runs`)
   assert.equal(mutations[0].body.revision,recipe(expected).revision)
   await button('Close').fire('click')
 })
@@ -871,11 +871,11 @@ for (const malformed of [false,true]) test(`recipe import is isolated from proje
   const api = {fetchApi:async(path,options)=>{
     requests.push({path,method:options.method})
     assert.equal(options.method,'GET')
-    return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
   const button = label=>body.all().find(x=>x.tag==='button' && x.textContent===label)
   const control = label=>body.all().find(x=>x.attrs['aria-label']===label)
-  await openFilmEditor(api,{properties:{duet_film_project_id:'first'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'first'}},{},document)
   const input = control('Import film recipe')
   input.files=[{size:100,text:async()=>{await reading;return malformed?'not JSON':JSON.stringify({...stored,plan:{...stored.plan,title:'Imported'}})}}]
   const importing=input.fire('change')
@@ -900,9 +900,9 @@ test('editor distinguishes prose and state meanings from declared state checks a
   let writes = 0
   const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
     if (options.method !== 'GET') writes++
-    return {ok:true,json:async()=>path==='/duet/story/films' ? {projects:[]} : {recipe:structuredClone(recipe),runs:[],verification_configured:true}}
+    return {ok:true,json:async()=>path==='/comfy/story/films' ? {projects:[]} : {recipe:structuredClone(recipe),runs:[],verification_configured:true}}
   }}
-  const node = {properties:{duet_film_project_id:'coverage'}}
+  const node = {properties:{comfy_film_project_id:'coverage'}}
   const control = label=>body.all().find(x=>x.attrs['aria-label']===label)
   const message = ()=>control('Declared state checks').textContent
   await openFilmEditor(api,node,{},document)
@@ -926,10 +926,10 @@ test('stopped opening review shows observed facts and images without changing th
   const recipe = {revision:'a'.repeat(64),plan:{project_id:'saved',title:'Film',initial_facts:[],shots:[{shot_id:'one',duration_ms:5000,purpose:'Act',action:'A leaf turns.',present:[]}]},inputs:{library:{references:[]},shots_by_id:{one:{variation:42}}}}
   const run = {run_id:'b'.repeat(64),revision:recipe.revision,status:'needs_attention',phase:'checking_opening',max_attempts:2,shot_id:'one',opening_attempt:2,selected:[],opening_candidates:[{attempt:1,image:'staged/fitted.png',raw_image:'staged/raw.png',fitted:true,state:{conditions:{'Leaf.color':{expected:'green',observed:'brown',evidence:'Brown surface.'}}},visibility:{observations:{Leaf:{extent:'entire',evidence:'Whole leaf visible.'}}}},{attempt:2,unavailable:'Opening evidence is incomplete, missing or changed.'}]}
   const calls = []
-  const api = {apiURL:path=>path,fetchApi:async(path,options)=>{calls.push([path,options.method]);return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:path.includes('/runs/')?run:{recipe:structuredClone(recipe),runs:[run],verification_configured:true}}}}
+  const api = {apiURL:path=>path,fetchApi:async(path,options)=>{calls.push([path,options.method]);return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:path.includes('/runs/')?run:{recipe:structuredClone(recipe),runs:[run],verification_configured:true}}}}
   run.opening_candidates[0].visibility.requirements = {Crate:'absent'}
   run.opening_candidates[0].visibility.observations.Crate = {extent:'partial',evidence:'Corner at the picture edge.'}
-  await openFilmEditor(api,{properties:{duet_film_project_id:'saved'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'saved'}},{},document)
   assert.ok(body.all().some(x=>x.textContent==='Leaf.color: expected green; observed brown. Brown surface.'))
   assert.ok(body.all().some(x=>x.textContent==='Leaf: entire. Whole leaf visible.'))
   assert.ok(body.all().some(x=>x.textContent==='Crate: expected absent; observed partial. Corner at the picture edge.'))
@@ -947,11 +947,11 @@ test('refinement mode survives save and reopen without changing the locked seed'
   let stored={revision:'a'.repeat(64),plan:{project_id:'refine',title:'A prepared scene',target_duration_ms:5000,initial_facts:[],shots:[{shot_id:'one',duration_ms:5000,purpose:'Observe',action:'A leaf turns.',present:[],composition:'Continue frame'}]},inputs:{library:{references:[]},shots_by_id:{one:{variation:72,world:'leaf.png',opening_prompt:'Blend the prepared leaf with its background',opening_mode:'Compose',opening_attempts:1,render_profile:'Animate frame',intent:'New Scene'}}}}
   const api={apiURL:path=>path,fetchApi:async(path,options)=>{
     if(options.method==='PUT')stored={...JSON.parse(options.body),revision:'b'.repeat(64)}
-    return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
   const control=label=>body.all().find(x=>x.attrs['aria-label']===label)
   const button=label=>body.all().find(x=>x.tag==='button'&&x.textContent===label)
-  const node={properties:{duet_film_project_id:'refine'}}
+  const node={properties:{comfy_film_project_id:'refine'}}
   await openFilmEditor(api,node,{},document)
   assert.equal(control('Opening image mode').value,'Compose')
   control('Opening image mode').value='Refine';await control('Opening image mode').fire('change')
@@ -975,9 +975,9 @@ test('uploaded starting-state failure shows evidence without edits or generation
   const run = {run_id:'b'.repeat(64),revision:recipe.revision,status:'needs_attention',phase:'checking_inputs',max_attempts:2,selected:[],starting_state_review:{kind:'uploaded',image:'checks/parcel.png',state:{conditions:{'Parcel.state':{expected:'sealed',observed:null,evidence:'Seal is obscured.'}}}}}
   const api = {apiURL:path=>path,fetchApi:async(path,options)=> {
     assert.equal(options.method,'GET')
-    return {ok:true,json:async()=>structuredClone(path==='/duet/story/films' ? {projects:[]} : path.includes('/runs/') ? run : {recipe,runs:[run],verification_configured:true})}
+    return {ok:true,json:async()=>structuredClone(path==='/comfy/story/films' ? {projects:[]} : path.includes('/runs/') ? run : {recipe,runs:[run],verification_configured:true})}
   }}
-  await openFilmEditor(api,{properties:{duet_film_project_id:'parcel'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'parcel'}},{},document)
   assert.ok(body.all().some(x=>x.textContent==='Starting image check'))
   assert.equal(body.all().find(x=>x.alt==='Assessed starting image').src,'/view?type=input&subfolder=checks&filename=parcel.png')
   assert.ok(body.all().some(x=>x.textContent==='Parcel.state: expected sealed; observed uncertain. Seal is obscured.'))
@@ -993,10 +993,10 @@ test('first cut is the editor default without a reviewer; legacy resume retains 
   const posts = []
   const api = {apiURL:path=>path,fetchApi:async(path,options)=>{
     if (options.method === 'POST') { posts.push(JSON.parse(options.body)); run = {...run,mode:posts.at(-1).mode,status:'draft_ready',phase:'complete',rendered:[{shot_id:'one',video_sha256:'c'.repeat(64)}]} }
-    return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:path.includes('/runs')?run:{recipe:structuredClone(recipe),runs:[run],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:path.includes('/runs')?run:{recipe:structuredClone(recipe),runs:[run],verification_configured:false}}
   }}
   const button = label=>body.all().find(x=>x.tag==='button' && x.textContent===label)
-  await openFilmEditor(api,{properties:{duet_film_project_id:'delivery'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'delivery'}},{},document)
   assert.equal(body.all().find(x=>x.attrs['aria-label']==='Generation mode').value,'First cut')
   assert.ok(!body.all().some(x=>x.textContent?.includes('host must configure')))
   await button('Resume selected run').fire('click')
@@ -1027,11 +1027,11 @@ for (const fails of [false,true]) test(`slow soundtrack attachment prevents an i
       return {ok:!fails,json:async()=>fails?{error:'Audio unavailable'}:{path:'score.flac',sha256:'c'.repeat(64),duration_ms:180000}}
     }
     if(options.method!=='GET') {writes.push(path);stored={...JSON.parse(options.body),revision:'b'.repeat(64)}}
-    return {ok:true,json:async()=>path==='/duet/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
+    return {ok:true,json:async()=>path==='/comfy/story/films'?{projects:[]}:{recipe:structuredClone(stored),runs:[],verification_configured:false}}
   }}
   const button=label=>body.all().find(x=>x.tag==='button' && x.textContent===label)
   const control=label=>body.all().find(x=>x.attrs['aria-label']===label)
-  await openFilmEditor(api,{properties:{duet_film_project_id:'long-film'}},{},document)
+  await openFilmEditor(api,{properties:{comfy_film_project_id:'long-film'}},{},document)
   control('Uploaded soundtrack filename').value='score.flac';await control('Uploaded soundtrack filename').fire('input')
   const attaching=button('Add soundtrack').fire('click')
   await Promise.resolve()

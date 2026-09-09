@@ -8,13 +8,13 @@ from comfy_story.story_product_contracts import (
     CanonEntity,
     CanonPresence,
     MemoryAction,
+    NativeRGBObservation,
     ObservationKind,
     PendingCanonObservation,
     StoryCanon,
     StoryEvidenceRecord,
     StoryMemoryCommand,
     StoryMemoryPolicy,
-    StoryObservation,
     StoryObservationPacket,
     StoryProductState,
 )
@@ -25,7 +25,7 @@ def _digest(character: str) -> str:
 
 
 def _product_state() -> StoryProductState:
-    observation = StoryObservation(
+    observation = NativeRGBObservation(
         evidence_id="evidence-01",
         kind=ObservationKind.OPENING,
         frame_index=0,
@@ -34,8 +34,6 @@ def _product_state() -> StoryProductState:
         geometry_q16=(0, 0, 65_536, 65_536),
         asset_sha256=_digest("a"),
         preprocessing_sha256=_digest("b"),
-        vae_sha256=_digest("c"),
-        latent_sha256=_digest("d"),
         salience_q=900_000,
         change_score_q=0,
         entity_ids=("maya",),
@@ -47,7 +45,7 @@ def _product_state() -> StoryProductState:
         timeline_start_ns=0,
         timeline_stop_ns=5_000_000_000,
         source_video_sha256=_digest("e"),
-        source_video_locator=f"duet-evidence://story/sha256/{_digest('e')}",
+        source_video_locator=f"comfy-evidence://story/sha256/{_digest('e')}",
         extraction_policy_sha256=_digest("f"),
         referenced_entity_ids=("maya",),
         observations=(observation,),

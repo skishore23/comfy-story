@@ -1,9 +1,4 @@
-"""Versioned exact-reference storage, independent of trained memory checkpoints.
-
-The archive reuses Story assets, canon, evidence selection and the opaque state wire.
-It stores no dense operators and never presents its runtime identity as model weights.
-Legacy trained revisions remain in their existing store and cannot be opened here.
-"""
+"""Immutable reference archives, shot evidence, and generation receipts."""
 
 from __future__ import annotations
 
@@ -12,7 +7,7 @@ from dataclasses import dataclass
 from typing import Self
 
 from comfy_story.story_contracts import (
-    DuetStoryStateRef,
+    ComfyStoryStateRef,
     StoryLibrary,
     canonical_story_json,
     decode_canonical_story_object,
@@ -25,17 +20,15 @@ from comfy_story.story_product_contracts import (
 )
 from comfy_story.story_store import StoryProjectStore, _read_regular
 
-_FORMAT = "duet-story-native-reference-revision-v1"
-_MEMORY_FORMAT = "duet-story-native-reference-memory-v1"
+_FORMAT = "comfy-story-native-reference-revision-v1"
+_MEMORY_FORMAT = "comfy-story-native-reference-memory-v1"
 NATIVE_REFERENCE_RUNTIME_SHA256 = hashlib.sha256(
     canonical_story_json(
         {
             "format": _FORMAT,
-            "observations": "duet-story-rgb-observation-v1",
+            "observations": "comfy-story-rgb-observation-v1",
             "capacity": 128,
             "recall": "declared-exact-evidence",
-            "dense_state": False,
-            "trained_checkpoint": False,
         }
     )
 ).hexdigest()
@@ -54,7 +47,7 @@ def _digest(value: object, field: str) -> str:
 
 @dataclass(frozen=True, slots=True)
 class NativeReferenceReceipt:
-    """Generation provenance with an explicit runtime identity, not a checkpoint."""
+    """Generation provenance bound to the configured runtime."""
 
     execution_sha256: str
     prompt_sha256: str
@@ -109,7 +102,7 @@ class NativeReferenceReceipt:
 
 @dataclass(frozen=True, slots=True)
 class NativeArchiveRevision:
-    state: DuetStoryStateRef
+    state: ComfyStoryStateRef
     library: StoryLibrary
     product_state: StoryProductState
     last_frame_png: bytes
@@ -135,7 +128,7 @@ class NativeReferenceArchive:
             raise ValueError(f"{field} SHA-256 changed")
         return encoded
 
-    def _manifest(self, state: DuetStoryStateRef) -> dict[str, object]:
+    def _manifest(self, state: ComfyStoryStateRef) -> dict[str, object]:
         state.validate()
         data = decode_canonical_story_object(
             self._json_asset(state.revision_sha256, "native revision"), field="native revision"
@@ -159,7 +152,7 @@ class NativeReferenceArchive:
             raise ValueError("revision is not compatible with the native reference runtime")
         parent = data["parent"]
         parent_ref = (
-            None if parent is None else DuetStoryStateRef.from_json(canonical_story_json(parent))
+            None if parent is None else ComfyStoryStateRef.from_json(canonical_story_json(parent))
         )
         expected = {
             "project_id": state.project_id,
@@ -200,10 +193,10 @@ class NativeReferenceArchive:
             raise ValueError("native revision requires project, branch and integer shot count")
         parent = data.get("parent")
         parent_ref = (
-            None if parent is None else DuetStoryStateRef.from_json(canonical_story_json(parent))
+            None if parent is None else ComfyStoryStateRef.from_json(canonical_story_json(parent))
         )
         configuration = _digest(data.get("model_configuration_sha256"), "model configuration")
-        state = DuetStoryStateRef(
+        state = ComfyStoryStateRef(
             project,
             branch,
             None if parent_ref is None else parent_ref.revision_sha256,
@@ -218,7 +211,7 @@ class NativeReferenceArchive:
         return self.load(state, model_configuration_sha256=configuration)
 
     def load(
-        self, state: DuetStoryStateRef, *, model_configuration_sha256: str
+        self, state: ComfyStoryStateRef, *, model_configuration_sha256: str
     ) -> NativeArchiveRevision:
         if state.model_configuration_sha256 != _digest(
             model_configuration_sha256, "model_configuration_sha256"
@@ -228,7 +221,7 @@ class NativeReferenceArchive:
         # Authenticate every ancestor manifest without recursively decoding all videos.
         cursor = data
         for _ in range(state.shot_count - 1):
-            parent = DuetStoryStateRef.from_json(canonical_story_json(cursor["parent"]))
+            parent = ComfyStoryStateRef.from_json(canonical_story_json(cursor["parent"]))
             cursor = self._manifest(parent)
         if cursor["parent"] is not None:
             raise ValueError("native revision ancestry exceeds its shot count")
@@ -278,9 +271,7 @@ class NativeReferenceArchive:
             for p in product.observation_packets
             for o in p.observations
         ):
-            raise ValueError(
-                "native archive requires RGB observations, not trained latent observations"
-            )
+            raise ValueError("Story archives require native RGB observations")
         records = {
             o.evidence_id: StoryEvidenceRecord.from_observation(p, o)
             for p in product.observation_packets
@@ -311,14 +302,14 @@ class NativeReferenceArchive:
         *,
         project_id: str,
         branch_id: str,
-        parent: DuetStoryStateRef | None,
+        parent: ComfyStoryStateRef | None,
         library: StoryLibrary,
         product_state: StoryProductState,
         model_configuration_sha256: str,
         last_frame_png: bytes,
         shot_metadata: dict[str, object],
         receipt: NativeReferenceReceipt,
-    ) -> DuetStoryStateRef:
+    ) -> ComfyStoryStateRef:
         if parent is not None:
             parent.validate()
         count = 1 if parent is None else parent.shot_count + 1
@@ -383,7 +374,7 @@ class NativeReferenceArchive:
         if len(encoded) > _MAX_JSON_BYTES:
             raise ValueError("native revision metadata exceeds its byte limit")
         revision_sha = self.assets.put_asset(encoded)
-        state = DuetStoryStateRef(
+        state = ComfyStoryStateRef(
             project_id,
             branch_id,
             None if parent is None else parent.revision_sha256,

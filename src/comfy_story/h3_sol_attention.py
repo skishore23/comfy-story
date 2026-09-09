@@ -14,7 +14,7 @@ import torch
 import torch.nn.functional as F
 
 SOL_CONFIGURATION = {
-    "format": "duet-h3-sol-v1",
+    "format": "comfy-h3-sol-v1",
     "backend": "sol-attn-triton",
     "source_revision": "46031940ba8af5d18054217e571149579424c0b1",
     "tau": 1.0,

@@ -18,7 +18,7 @@ from comfy_story.film_project import FilmProjectStore
 from comfy_story.film_workflow import FilmShotInput, _input_file, compile_film_workflow
 from comfy_story.story_contracts import canonical_story_json
 
-_FORMAT = "duet-film-inputs-v1"
+_FORMAT = "comfy-film-inputs-v1"
 _MAX_ASSET = 256 * 1024 * 1024
 _MAX_TOTAL = 1024 * 1024 * 1024
 _MAX_FILES = 512
@@ -74,7 +74,7 @@ def export_film_inputs(
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists():
         raise FileExistsError("film inputs bundle already exists")
-    with tempfile.TemporaryDirectory(prefix="duet-inputs-export-", dir=destination.parent) as temp:
+    with tempfile.TemporaryDirectory(prefix="comfy-inputs-export-", dir=destination.parent) as temp:
         staging = Path(temp)
         assets: dict[str, dict[str, Any]] = {}
         total = 0
@@ -82,7 +82,7 @@ def export_film_inputs(
             path = _asset_path(root, row[field], kind)
             with path.open("rb") as source, (staging / "copy").open("wb") as target:
                 digest, size = _copy(source, target, _MAX_ASSET)
-            name = f"duet_story_inputs/{digest}{path.suffix.lower()}"
+            name = f"comfy_story_inputs/{digest}{path.suffix.lower()}"
             if name not in assets:
                 total += size
                 if total > _MAX_TOTAL:
@@ -128,7 +128,7 @@ def _import_film_inputs(
     project_id = project_id or "film-" + str(uuid.uuid4())
     if store.project_path(project_id).exists():
         raise ValueError("choose a new project ID for importing a film")
-    with tempfile.TemporaryDirectory(prefix="duet-inputs-import-", dir=root) as temp:
+    with tempfile.TemporaryDirectory(prefix="comfy-inputs-import-", dir=root) as temp:
         staging = Path(temp)
         with zipfile.ZipFile(bundle) as archive:
             entries = archive.infolist()
@@ -182,7 +182,7 @@ def _import_film_inputs(
                     or any(c not in "0123456789abcdef" for c in digest)
                 ):
                     raise ValueError("invalid film bundle asset digest")
-                if name != f"duet_story_inputs/{digest}{target.suffix}":
+                if name != f"comfy_story_inputs/{digest}{target.suffix}":
                     raise ValueError("film bundle asset name is not content addressed")
                 member = "assets/" + target.name
                 if asset.get("member") != member:

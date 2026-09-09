@@ -20,7 +20,7 @@ from comfy_story.h3_sol_attention import H3SolAttention, load_sol_kernel
 _LOG = logging.getLogger(__name__)
 NVFP4_MODEL = "minimax_h3_ref2va_pruned_nvfp4.safetensors"
 CACHE_CONFIGURATION = {
-    "format": "duet-h3-balanced-cache-v1",
+    "format": "comfy-h3-balanced-cache-v1",
     "threshold": 0.08,
     "dense_start": 3,
     "dense_end": 2,
@@ -109,9 +109,9 @@ def patch_h3_balanced(model: Any, *, sol_attention: bool = False) -> Any:
     ):
         raise ValueError("H3 Ultra Fast cannot overwrite an existing attention override")
     kernel = load_sol_kernel() if sol_attention else None
-    sol_state: ContextVar[H3SolAttention | None] = ContextVar("duet_h3_sol", default=None)
+    sol_state: ContextVar[H3SolAttention | None] = ContextVar("comfy_h3_sol", default=None)
     patched = model.clone()
-    state: ContextVar[H3BlockCache | None] = ContextVar("duet_h3_cache", default=None)
+    state: ContextVar[H3BlockCache | None] = ContextVar("comfy_h3_cache", default=None)
 
     def outer(executor: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         sigmas = kwargs.get("sigmas", args[3] if len(args) > 3 else None)
@@ -128,13 +128,15 @@ def patch_h3_balanced(model: Any, *, sol_attention: bool = False) -> Any:
             if cache.step != cache.total_steps:
                 raise ValueError("H3 Balanced did not observe exactly one H3 call per Euler step")
             _LOG.info(
-                "Duet H3 Balanced: %d dense, %d cached steps",
+                "Comfy H3 Balanced: %d dense, %d cached steps",
                 cache.step - cache.reused,
                 cache.reused,
             )
             if sol is not None:
                 _LOG.info(
-                    "Duet H3 Sol-Attn: %d sparse, %d dense calls", sol.sparse_calls, sol.dense_calls
+                    "Comfy H3 Sol-Attn: %d sparse, %d dense calls",
+                    sol.sparse_calls,
+                    sol.dense_calls,
                 )
             return result
         finally:
@@ -179,5 +181,5 @@ def patch_h3_balanced(model: Any, *, sol_attention: bool = False) -> Any:
 
     for index in range(50):
         patched.set_model_patch_replace(block_patch(index), "dit", "double_block", index)
-    patched.add_wrapper_with_key("outer_sample", "duet_h3_balanced", outer)
+    patched.add_wrapper_with_key("outer_sample", "comfy_h3_balanced", outer)
     return patched

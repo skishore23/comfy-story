@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from PIL import Image
 
-from comfy_story.story_contracts import DuetStoryStateRef, canonical_story_json
+from comfy_story.story_contracts import ComfyStoryStateRef, canonical_story_json
 from comfy_story.story_native_archive import (
     NativeArchiveRevision,
     NativeReferenceArchive,
@@ -35,7 +35,7 @@ from comfy_story.story_store import StoryProjectStore
 NATIVE_RGB_CAPTURE_POLICY_SHA256 = _sha256(
     canonical_story_json(
         {
-            "format": "duet-story-native-rgb-capture-v2",
+            "format": "comfy-story-native-rgb-capture-v2",
             "frame_selection": "opening-maximum-change-384-square-closing",
             "normalization": "RGB-u8-native-resolution-and-aspect",
             "salience": "not-predicted-zero",
@@ -56,7 +56,7 @@ def _native_frame_png(image: torch.Tensor) -> bytes:
 
 @dataclass(frozen=True, slots=True)
 class NativeStoryCommitResult:
-    state: DuetStoryStateRef
+    state: ComfyStoryStateRef
     last_frame: torch.Tensor
     loaded_revision: NativeArchiveRevision
 
@@ -68,10 +68,6 @@ def commit_native_story_generation(
 ) -> NativeStoryCommitResult:
     prepared = request.prepared
     settings = prepared.request
-    if not settings.native_reference_archive or settings.checkpoint_sha256 is not None:
-        raise ValueError("Native archive commit requires an explicit checkpoint-free request")
-    if prepared.parent is not None and not isinstance(prepared.parent, NativeArchiveRevision):
-        raise ValueError("Native archive cannot reinterpret a trained-memory parent")
     product, decision = prepared.product_state, prepared.recall_decision
     if product is None or decision is None:
         raise ValueError("Native archive preparation is incomplete")
@@ -79,7 +75,7 @@ def commit_native_story_generation(
         raise ValueError("Native guide roster changed after preparation")
     execution = _digest(settings.execution_sha256, "execution_sha256")
     video = _digest(request.saved_video_sha256, "video_sha256")
-    if request.saved_video_locator != f"duet-evidence://story/sha256/{video}":
+    if request.saved_video_locator != f"comfy-evidence://story/sha256/{video}":
         raise ValueError("saved video locator must match its SHA-256")
     images = validate_comfy_images(request.decoded_images, field="decoded_images")
     last_frame = images[-1:].clone().contiguous()

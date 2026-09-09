@@ -8,7 +8,7 @@ from typing import TypedDict
 import pytest
 
 from comfy_story.story_contracts import (
-    DuetStoryStateRef,
+    ComfyStoryStateRef,
     ReferenceRole,
     StoryLibrary,
     StoryReference,
@@ -29,7 +29,6 @@ from comfy_story.story_product_contracts import (
     StoryCanon,
     StoryEvidenceRecord,
     StoryMemoryPolicy,
-    StoryObservation,
     StoryObservationPacket,
     StoryProductState,
 )
@@ -47,7 +46,7 @@ def _setup(tmp_path: Path) -> tuple[StoryProjectStore, NativeReferenceArchive, S
                 ReferenceRole.PROP,
                 "Brown shell",
                 baseline,
-                f"duet-story://assets/sha256/{baseline}",
+                f"comfy-story://assets/sha256/{baseline}",
                 (baseline,),
                 "1" * 64,
             ),
@@ -59,7 +58,7 @@ def _setup(tmp_path: Path) -> tuple[StoryProjectStore, NativeReferenceArchive, S
 class NativePayload(TypedDict):
     project_id: str
     branch_id: str
-    parent: DuetStoryStateRef | None
+    parent: ComfyStoryStateRef | None
     library: StoryLibrary
     product_state: StoryProductState
     model_configuration_sha256: str
@@ -98,7 +97,7 @@ def _payload(
         index * 100,
         (index + 1) * 100,
         video,
-        f"duet-evidence://story/sha256/{video}",
+        f"comfy-evidence://story/sha256/{video}",
         "3" * 64,
         ("acorn",),
         (observation,),
@@ -173,7 +172,7 @@ def test_native_archive_reopens_exact_state_without_checkpoint_or_operators(tmp_
     assert b"checkpoint" not in manifest
     assert b"operator" not in manifest
     assert loaded.generation_receipt.runtime_sha256 == NATIVE_REFERENCE_RUNTIME_SHA256
-    assert not list((tmp_path / "snapshots/sha256").iterdir())
+    assert not (tmp_path / "snapshots").exists()
 
 
 def test_native_rgb_wire_cannot_impersonate_encoded_observation(tmp_path: Path) -> None:
@@ -184,8 +183,6 @@ def test_native_rgb_wire_cannot_impersonate_encoded_observation(tmp_path: Path) 
     assert b"latent_sha256" not in encoded
     assert StoryProductState.from_json(encoded) == product
     value = json.loads(encoded)["observation_packets"][0]["observations"][0]
-    with pytest.raises(ValueError, match="missing or unknown"):
-        StoryObservation.from_mapping(value)
     value["vae_sha256"] = "6" * 64
     with pytest.raises(ValueError, match="missing or unknown"):
         NativeRGBObservation.from_mapping(value)
@@ -247,8 +244,8 @@ def test_native_archive_rejects_identity_corruption_and_future_recall(tmp_path: 
 
 def test_native_archive_refuses_unrelated_legacy_manifest(tmp_path: Path) -> None:
     assets, archive, _ = _setup(tmp_path)
-    sha = assets.put_asset(canonical_story_json({"format": "duet-story-revision-v3"}))
-    state = DuetStoryStateRef(
+    sha = assets.put_asset(canonical_story_json({"format": "comfy-story-revision-v3"}))
+    state = ComfyStoryStateRef(
         "oak", "main", None, sha, "1" * 64, "2" * 64, 1, 1, "3" * 64, "4" * 64
     )
     with pytest.raises(ValueError, match="missing or unknown"):
@@ -395,7 +392,7 @@ def test_film_state_recall_uses_latest_joint_snapshot_and_rejects_tombstones(
         ),
     ).validate()
 
-    def sources(last: DuetStoryStateRef) -> tuple[SelectedStateSource, ...]:
+    def sources(last: ComfyStoryStateRef) -> tuple[SelectedStateSource, ...]:
         return tuple(
             SelectedStateSource(
                 state.revision_sha256,

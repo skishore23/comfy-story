@@ -146,12 +146,12 @@ export const parseEndingCounts = (text) => {
 }
 
 export async function openFilmEditor(api, node, values, document = window.document) {
-  const existing = document.getElementById('duet-film-editor')
+  const existing = document.getElementById('comfy-film-editor')
   if (existing) { existing.focus(); return }
-  const dialog = document.createElement('dialog'); dialog.id = 'duet-film-editor'
+  const dialog = document.createElement('dialog'); dialog.id = 'comfy-film-editor'
   dialog.style.cssText = 'width:min(1160px,94vw);max-height:92vh;overflow:auto;background:#171922;color:#eee;border:1px solid #5c5475;border-radius:14px;padding:24px;font:14px system-ui'
   const style = document.createElement('style')
-  style.textContent = '#duet-film-editor input,#duet-film-editor textarea,#duet-film-editor select{box-sizing:border-box;width:100%;padding:8px;background:#232635;color:#eee;border:1px solid #514b66;border-radius:6px}#duet-film-editor label{display:block;margin:8px 0}#duet-film-editor button{padding:8px 12px;margin:4px;border:0;border-radius:6px;cursor:pointer}#duet-film-editor section,#duet-film-editor details.duet-film-shot{border:1px solid #494154;padding:14px;margin:12px 0;border-radius:8px}#duet-film-editor details.duet-film-shot>summary{cursor:pointer;font-weight:600}#duet-film-editor video{width:260px;max-width:100%}'
+  style.textContent = '#comfy-film-editor input,#comfy-film-editor textarea,#comfy-film-editor select{box-sizing:border-box;width:100%;padding:8px;background:#232635;color:#eee;border:1px solid #514b66;border-radius:6px}#comfy-film-editor label{display:block;margin:8px 0}#comfy-film-editor button{padding:8px 12px;margin:4px;border:0;border-radius:6px;cursor:pointer}#comfy-film-editor section,#comfy-film-editor details.comfy-film-shot{border:1px solid #494154;padding:14px;margin:12px 0;border-radius:8px}#comfy-film-editor details.comfy-film-shot>summary{cursor:pointer;font-weight:600}#comfy-film-editor video{width:260px;max-width:100%}'
   dialog.append(style)
   const el = (tag, text, parent = dialog) => { const x = document.createElement(tag); if (text) x.textContent = text; parent.append(x); return x }
   const heading = el('h2', 'Comfy Story · Film project')
@@ -164,7 +164,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     b.addEventListener('click', () => Promise.resolve().then(action).catch(reportError)); return b
   }
   const request = async (path, method = 'GET', data) => {
-    const response = await api.fetchApi('/duet/story/films' + path, { method, ...(data ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) } : {}) })
+    const response = await api.fetchApi('/comfy/story/films' + path, { method, ...(data ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) } : {}) })
     const result = await response.json()
     if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`)
     return result
@@ -261,7 +261,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     resumeButton.hidden = !run || ['draft_ready', 'ready_for_review'].includes(run.status)
     pauseButton.hidden = run?.status !== 'running' || run?.mode === 'first_cut'
     if (generationMode === 'checked' && configured === null) el('p', 'Save the plan to check the host’s verification setup.', progress)
-    if (generationMode === 'checked' && configured === false) el('p', 'The host must configure DUET_STORY_VERIFY_MODEL before verified film generation.', progress)
+    if (generationMode === 'checked' && configured === false) el('p', 'The host must configure COMFY_STORY_VERIFY_MODEL before verified film generation.', progress)
     if (run) knownRuns = [run, ...knownRuns.filter(x => x.run_id !== run.run_id)]
     if (knownRuns.length) {
       const select = el('select', '', progress); select.setAttribute('aria-label', 'Film run')
@@ -311,7 +311,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     el('p', run.mode === 'first_cut' ? 'First cuts have not been checked by the visual reviewer.' : 'Machine selections are candidates, not creator approval.', progress)
     if (run.preview) {
       const link = el('a', 'Preview latest candidate film', progress)
-      link.href = api.apiURL('/duet/story/films' + projectPath() + '/runs/' + run.run_id + '/preview'); link.target = '_blank'; link.rel = 'noopener'
+      link.href = api.apiURL('/comfy/story/films' + projectPath() + '/runs/' + run.run_id + '/preview'); link.target = '_blank'; link.rel = 'noopener'
       el('p', `Through ${run.preview.shot_id} · attempt ${run.preview.attempt}. Includes unapproved footage and uses the chosen film soundtrack. It may be incomplete or rejected.`, progress)
       if (Number.isSafeInteger(run.preview.duration_ms)) el('p', `Candidate preview: ${run.preview.duration_ms / 1000} seconds. Preview length includes the current candidate, even when it failed review.`, progress)
     }
@@ -319,11 +319,11 @@ export async function openFilmEditor(api, node, values, document = window.docume
     for (const take of [...(run.rendered ?? []), ...(run.selected ?? [])]) {
       const card = el('section', '', progress); el('strong', take.shot_id, card)
       const video = el('video', '', card); video.controls = true; video.preload = 'metadata'; video.muted = true
-      video.src = api.apiURL('/duet/story/video/' + encodeURIComponent(take.video_sha256))
+      video.src = api.apiURL('/comfy/story/video/' + encodeURIComponent(take.video_sha256))
     }
     if (['ready_for_review', 'draft_ready'].includes(run.status)) {
       const link = el('a', 'Open assembled film', progress)
-      link.href = api.apiURL('/duet/story/films' + projectPath() + '/runs/' + run.run_id + '/video'); link.target = '_blank'; link.rel = 'noopener'
+      link.href = api.apiURL('/comfy/story/films' + projectPath() + '/runs/' + run.run_id + '/video'); link.target = '_blank'; link.rel = 'noopener'
     }
   }
   const refreshRun = async () => {
@@ -412,7 +412,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
     }, meanings)
     for (const [index, shot] of plan.shots.entries()) {
       const card = el('details', '', content), settings = inputs.shots_by_id[shot.shot_id]
-      card.className = 'duet-film-shot'
+      card.className = 'comfy-film-shot'
       const key = shotViewKey(shot.shot_id)
       if (!expandedShots.has(key)) expandedShots.set(key, index === 0)
       card.open = expandedShots.get(key)
@@ -568,7 +568,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
       if (!recipe.inputs.library.project_name?.trim()) recipe.inputs.library.project_name = recipe.plan.title.trim()
       recipe.plan.target_duration_ms = recipe.plan.shots.reduce((n,s) => n+s.duration_ms, 0)
       const result = await request(recipe.revision ? projectPath() : '', recipe.revision ? 'PUT' : 'POST', { plan: recipe.plan, inputs: recipe.inputs, expected_revision: recipe.revision || null })
-      recipe = result.recipe; dirty = false; node.properties ??= {}; node.properties.duet_film_project_id = recipe.plan.project_id
+      recipe = result.recipe; dirty = false; node.properties ??= {}; node.properties.comfy_film_project_id = recipe.plan.project_id
       const option = Array.from(chooser.children).find(x => x.value === recipe.plan.project_id) || el('option', '', chooser)
       option.value = recipe.plan.project_id; option.textContent = recipe.plan.title; chooser.value = option.value
       const detail = await request(projectPath()); configured = detail.verification_configured
@@ -624,7 +624,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
   const downloadBundleButton = button('Download inputs bundle', () => {
     if (projectBusy()) return
     if (dirty || !recipe.revision) throw new Error('Save the plan before exporting its inputs.')
-    const link = document.createElement('a'); link.href = api.apiURL('/duet/story/films' + projectPath() + '/inputs-bundle?revision=' + recipe.revision); link.download = 'duet-story-inputs.zip'; link.click()
+    const link = document.createElement('a'); link.href = api.apiURL('/comfy/story/films' + projectPath() + '/inputs-bundle?revision=' + recipe.revision); link.download = 'comfy-story-inputs.zip'; link.click()
   }, projectTools)
   const bundleUpload = el('input', '', projectTools); bundleUpload.type = 'file'; bundleUpload.accept = '.zip'; bundleUpload.hidden = true
   const importBundleButton = button('Import inputs bundle', () => { if (!projectBusy()) bundleUpload.click() }, projectTools)
@@ -634,9 +634,9 @@ export async function openFilmEditor(api, node, values, document = window.docume
     try {
       const file = bundleUpload.files?.[0]; if (!file) return
       const body = new FormData(); body.append('bundle', file)
-      const response = await api.fetchApi('/duet/story/films/import-inputs', {method:'POST', body})
+      const response = await api.fetchApi('/comfy/story/films/import-inputs', {method:'POST', body})
       const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Inputs bundle import failed')
-      node.properties ??= {}; node.properties.duet_film_project_id = result.recipe.plan.project_id
+      node.properties ??= {}; node.properties.comfy_film_project_id = result.recipe.plan.project_id
       await load(result.recipe.plan.project_id); status.textContent = `Imported ${result.assets_restored} input assets. No completed-take approvals were imported.`
     } catch (error) { reportError(error) } finally { bundleUpload.value = ''; importPending = false; syncProjectActions() }
   })
@@ -672,16 +672,16 @@ export async function openFilmEditor(api, node, values, document = window.docume
     status.textContent = 'Loading the selected film project…'
     try {
       const data = await request('/' + encodeURIComponent(id)); validateEditorSeeds(data.recipe.inputs)
-      node.properties ??= {}; node.properties.duet_film_project_id = id; chooser.value = id
+      node.properties ??= {}; node.properties.comfy_film_project_id = id; chooser.value = id
       recipe = data.recipe; configured = data.verification_configured; knownRuns = data.runs; run = data.runs[0] || null; if (run) { attempts = run.max_attempts; budgetControl.value = String(attempts) } dirty = false; render(); await refreshRun()
       status.textContent = 'Opened saved film project.'
     } catch (error) {
-      chooser.value = node.properties?.duet_film_project_id || ''; throw error
+      chooser.value = node.properties?.comfy_film_project_id || ''; throw error
     } finally { projectLoading = false; syncProjectActions() }
   }
   chooser.addEventListener('change', async () => {
     if (projectBusy()) return
-    if (dirty) { chooser.value = node.properties?.duet_film_project_id || ''; status.textContent = 'Save the current draft before opening another project.'; return }
+    if (dirty) { chooser.value = node.properties?.comfy_film_project_id || ''; status.textContent = 'Save the current draft before opening another project.'; return }
     if (chooser.value) { try { await load(chooser.value) } catch (error) { reportError(error) } }
   })
   button('Close', () => dialog.close(), actions)
@@ -691,7 +691,7 @@ export async function openFilmEditor(api, node, values, document = window.docume
   try {
     const saved = await request('')
     for (const item of saved.projects) { const option = el('option', item.title, chooser); option.value = item.project_id }
-    if (node.properties?.duet_film_project_id) await load(node.properties.duet_film_project_id)
+    if (node.properties?.comfy_film_project_id) await load(node.properties.comfy_film_project_id)
     else {
       let library = JSON.parse(values['Story Library'] || '[]')
       if (Array.isArray(library) && library.length === 0) library = {project_name:'',references:[]}

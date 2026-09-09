@@ -1,6 +1,6 @@
 [project]
 name = "comfy-story"
-version = "0.3.0"
+version = "0.4.0"
 description = "Reusable cast, story continuity and film production for ComfyUI and MiniMax H3."
 readme = "README.md"
 license = "AGPL-3.0-only"
@@ -10,7 +10,6 @@ dependencies = [
   "aiohttp>=3.11,<4",
   "cryptography>=43,<50",
   "numpy>=1.26",
-  "omegaconf>=2.3",
   "packaging>=24",
   "Pillow>=10,<13",
   "torch>=2.8,<2.13",
@@ -90,6 +89,3 @@ follow_imports = "skip"
 addopts = "-q --strict-config --strict-markers"
 pythonpath = ["src"]
 testpaths = ["tests"]
-markers = [
-  "ltx_comfy: requires pinned external ComfyUI",
-]

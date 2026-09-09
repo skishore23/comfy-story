@@ -1,6 +1,6 @@
 """Versioned H3 prompting matched to the actual encoder roster and render task.
 
-The legacy formatters remain unchanged. This compiler preserves authored action and
+This compiler preserves authored action and
 language; it does not invent story events or certify generated continuity.
 """
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from comfy_story.story_service import PreparedStoryGeneration
 
 H3_PROMPT_FORMAT = "H3 automatic v1"
-H3_PROMPT_PROTOCOL = "duet-h3-mode-aware-v1"
+H3_PROMPT_PROTOCOL = "comfy-h3-mode-aware-v1"
 
 
 def compile_h3_prompt(

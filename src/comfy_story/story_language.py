@@ -8,7 +8,7 @@ from typing import Any
 import torch
 import torch.nn.functional as functional
 
-from comfy_story.contracts import tensor_sha256
+from comfy_story.tensors import tensor_sha256
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,7 +10,7 @@ from typing import Any, Self
 from comfy_story.film_retell import FilmRetell
 from comfy_story.story_contracts import canonical_story_json
 
-NARRATIVE_PROTOCOL = "duet-film-narrative-comparison-v1"
+NARRATIVE_PROTOCOL = "comfy-film-narrative-comparison-v1"
 NARRATIVE_FIELDS = ("goal", "obstacle", "decision", "outcome")
 
 

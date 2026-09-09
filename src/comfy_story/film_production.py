@@ -493,7 +493,7 @@ def _produce(
     identity = hashlib.sha256(
         canonical_story_json(
             {
-                "format": "duet-verified-production-v1",
+                "format": "comfy-verified-production-v1",
                 "visual_audit_protocol": VISUAL_AUDIT_PROTOCOL,
                 "starting_state_protocol": STARTING_STATE_PROTOCOL,
                 "plan": plan,
@@ -662,7 +662,7 @@ def _produce(
                     _write_selected_state(
                         attempt_root / "selected-state.json",
                         {
-                            "format": "duet-film-selected-state-v1",
+                            "format": "comfy-film-selected-state-v1",
                             "creator_approval": False,
                             "bindings": bindings,
                             "mode": "reference_evidence"

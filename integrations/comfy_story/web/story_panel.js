@@ -1,21 +1,20 @@
 import { api } from '../../scripts/api.js'
 import { app } from '../../scripts/app.js'
 import { openFilmEditor } from './film_editor.mjs'
-import { CURRENT_WIDGET_ORDER, deriveStoryView, encodeLibrary, encodeMemoryCommands, fieldMapFromWidgets, isDuetStoryNode, keepAsCurrentLook, migrateSerializedStoryWidgets, nextShotWiring, normalizeInspectorSummary, normalizeLibrary, pendingMemoryCommands, recordCompletedStory, setPendingMemoryCommands, stageMemoryCommand } from './story_state.mjs?v=7'
+import { CURRENT_WIDGET_ORDER, deriveStoryView, encodeLibrary, encodeMemoryCommands, fieldMapFromWidgets, isComfyStoryNode, keepAsCurrentLook, restoreSerializedStoryWidgets, nextShotWiring, normalizeInspectorSummary, normalizeLibrary, pendingMemoryCommands, recordCompletedStory, setPendingMemoryCommands, stageMemoryCommand } from './story_state.mjs?v=7'
 
-const CURRENT_NODE_TYPE = 'DuetStory'
-const CANON_NODE_TYPE = 'DuetStoryCanon'
+const CURRENT_NODE_TYPE = 'ComfyStory'
 const OPTIONAL_DEFAULTS = {'Composition':'Continue frame', 'Output duration (ms)':0, 'Render profile':'Reference shot', 'Prompt format':'Current'}
 const SAVED_WIDGET_ORDER = [...CURRENT_WIDGET_ORDER, ...Object.keys(OPTIONAL_DEFAULTS)]
 const NAMED_CONTINUITY_FIELDS = ['Scene entities', 'Shot state evidence']
 const ROLES = ['Character', 'Product', 'Prop', 'Location', 'Costume', 'Style']
 
 function installStyles() {
-  if (document.getElementById('duet-story-style')) return
+  if (document.getElementById('comfy-story-style')) return
   const style = document.createElement('style')
-  style.id = 'duet-story-style'
+  style.id = 'comfy-story-style'
   style.textContent = `
-    .duet-story{box-sizing:border-box;min-width:390px;height:100%;overflow:auto;padding:16px;border:1px solid #514a78;border-radius:15px;background:linear-gradient(145deg,#242034,#12141d);color:#f7f4ff;font:13px/1.42 Inter,system-ui,sans-serif}.duet-story *{box-sizing:border-box}.duet-story-head,.duet-story-row,.duet-story-actions{display:flex;align-items:center;gap:9px}.duet-story-head{justify-content:space-between;margin-bottom:6px}.duet-story-title{font-size:16px;font-weight:760}.duet-story-state{padding:3px 8px;border-radius:999px;background:#273e3a;color:#a9ead7;font-size:11px}.duet-story-copy{margin:0 0 13px;color:#bdb7cc}.duet-story-help{margin:5px 0 0;color:#918ba3;font-size:11px}.duet-story-label{display:block;margin:11px 0 5px;color:#9992aa;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}.duet-story input,.duet-story select,.duet-story textarea{width:100%;border:1px solid #4c465e;border-radius:7px;padding:7px 8px;background:#171922;color:#f5f2ff}.duet-story textarea{resize:vertical;min-height:90px}.duet-story-settings{margin-top:12px}.duet-story-library{max-height:200px;overflow:auto;display:grid;gap:7px}.duet-story-reference{padding:9px;border:1px solid #3b374b;border-radius:9px;background:#1a1b26}.duet-story-reference .duet-story-row{display:grid;grid-template-columns:1fr 110px 28px}.duet-story-file{color:#b9afe9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.duet-story-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.duet-story-chip{padding:4px 9px!important;border:1px solid #40385c!important;border-radius:999px!important;background:#252334;color:#8d879d;font-weight:600!important}.duet-story-chip[data-active=true]{background:#30294b;color:#dacfff}.duet-story-chip[data-protected=true]{border-color:#59aa8f!important;background:#24443b;color:#c8ffec}.duet-story-motion{margin-top:7px;padding:6px 8px;border-radius:7px;background:#191b25;color:#918ba3}.duet-story-motion[data-connected=true]{color:#9fe4ca}.duet-story-status{margin-top:10px;color:#9fe4ca}.duet-story-status[data-ready=false]{color:#ffbd8e}.duet-story button{border:0;border-radius:8px;padding:8px 10px;cursor:pointer;font-weight:700}.duet-story button:disabled{opacity:.45;cursor:not-allowed}.duet-story-primary{flex:1;background:#8f7cff;color:white}.duet-story-next{flex:1;background:#2e544d;color:#d5fff4}.duet-story-secondary{background:#302d3d;color:#d8d1e9}.duet-story-remove{width:28px;padding:6px!important;background:#412c36;color:#ffc4cf}.duet-story-actions{margin-top:13px}.duet-story-upload{display:none}.duet-story-inspector{display:grid;gap:6px}.duet-story-memory-row{padding:8px;border:1px solid #3b374b;border-radius:8px;background:#171922}.duet-story-memory-title{font-weight:700}.duet-story-memory-note{color:#bdb7cc}.duet-story-memory-buttons{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.duet-story-memory-buttons button{padding:5px 7px;font-size:11px}`
+    .comfy-story{box-sizing:border-box;min-width:390px;height:100%;overflow:auto;padding:16px;border:1px solid #514a78;border-radius:15px;background:linear-gradient(145deg,#242034,#12141d);color:#f7f4ff;font:13px/1.42 Inter,system-ui,sans-serif}.comfy-story *{box-sizing:border-box}.comfy-story-head,.comfy-story-row,.comfy-story-actions{display:flex;align-items:center;gap:9px}.comfy-story-head{justify-content:space-between;margin-bottom:6px}.comfy-story-title{font-size:16px;font-weight:760}.comfy-story-state{padding:3px 8px;border-radius:999px;background:#273e3a;color:#a9ead7;font-size:11px}.comfy-story-copy{margin:0 0 13px;color:#bdb7cc}.comfy-story-help{margin:5px 0 0;color:#918ba3;font-size:11px}.comfy-story-label{display:block;margin:11px 0 5px;color:#9992aa;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}.comfy-story input,.comfy-story select,.comfy-story textarea{width:100%;border:1px solid #4c465e;border-radius:7px;padding:7px 8px;background:#171922;color:#f5f2ff}.comfy-story textarea{resize:vertical;min-height:90px}.comfy-story-settings{margin-top:12px}.comfy-story-library{max-height:200px;overflow:auto;display:grid;gap:7px}.comfy-story-reference{padding:9px;border:1px solid #3b374b;border-radius:9px;background:#1a1b26}.comfy-story-reference .comfy-story-row{display:grid;grid-template-columns:1fr 110px 28px}.comfy-story-file{color:#b9afe9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.comfy-story-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.comfy-story-chip{padding:4px 9px!important;border:1px solid #40385c!important;border-radius:999px!important;background:#252334;color:#8d879d;font-weight:600!important}.comfy-story-chip[data-active=true]{background:#30294b;color:#dacfff}.comfy-story-chip[data-protected=true]{border-color:#59aa8f!important;background:#24443b;color:#c8ffec}.comfy-story-motion{margin-top:7px;padding:6px 8px;border-radius:7px;background:#191b25;color:#918ba3}.comfy-story-motion[data-connected=true]{color:#9fe4ca}.comfy-story-status{margin-top:10px;color:#9fe4ca}.comfy-story-status[data-ready=false]{color:#ffbd8e}.comfy-story button{border:0;border-radius:8px;padding:8px 10px;cursor:pointer;font-weight:700}.comfy-story button:disabled{opacity:.45;cursor:not-allowed}.comfy-story-primary{flex:1;background:#8f7cff;color:white}.comfy-story-next{flex:1;background:#2e544d;color:#d5fff4}.comfy-story-secondary{background:#302d3d;color:#d8d1e9}.comfy-story-remove{width:28px;padding:6px!important;background:#412c36;color:#ffc4cf}.comfy-story-actions{margin-top:13px}.comfy-story-upload{display:none}.comfy-story-inspector{display:grid;gap:6px}.comfy-story-memory-row{padding:8px;border:1px solid #3b374b;border-radius:8px;background:#171922}.comfy-story-memory-title{font-weight:700}.comfy-story-memory-note{color:#bdb7cc}.comfy-story-memory-buttons{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.comfy-story-memory-buttons button{padding:5px 7px;font-size:11px}`
   document.head.appendChild(style)
 }
 
@@ -23,7 +22,7 @@ const findWidget = (node, name) => (node.widgets ?? []).find((item) => item.name
 
 function values(node) {
   const mapped = fieldMapFromWidgets(node.widgets ?? [])
-  for (const name of ['Create', 'Story Library', 'Reference context', 'What happens next?', 'Keep this detail', 'Shot length', 'Variation', 'Story revision', 'Reference policy', 'Memory backend', 'Sampler', 'Memory actions', 'Composition', 'Output duration (ms)', 'Render profile', 'Prompt format']) {
+  for (const name of ['Create', 'Story Library', 'What happens next?', 'Shot length', 'Variation', 'Story revision', 'Reference policy', 'Sampler', 'Memory actions', 'Composition', 'Output duration (ms)', 'Render profile', 'Prompt format']) {
     const item = findWidget(node, name)
     if (item) mapped[name] = item.value
   }
@@ -69,12 +68,9 @@ function createNextShot(node) {
   const current = values(node)
   setWidget(next, 'Create', 'Next Shot')
   setWidget(next, 'Story Library', current['Story Library'])
-  setWidget(next, 'Reference context', current['Reference context'])
-  setWidget(next, 'Keep this detail', current['Keep this detail'])
   setWidget(next, 'Shot length', current['Shot length'])
   setWidget(next, 'Reference policy', current['Reference policy'])
   setWidget(next, 'Memory actions', encodeMemoryCommands(pendingMemoryCommands(node)))
-  setWidget(next, 'Memory backend', current['Memory backend'])
   setWidget(next, 'Sampler', current.Sampler)
   setWidget(next, 'Composition', current.Composition ?? 'Continue frame')
   setWidget(next, 'Render profile', current['Render profile'] ?? 'Reference shot')
@@ -82,30 +78,29 @@ function createNextShot(node) {
   setWidget(next, 'Prompt format', current['Prompt format'] ?? 'Current')
   nextShotWiring(node, next)
   node.properties ??= {}
-  node.properties.duet_pending_memory = []
-  node.__duetRefresh?.()
+  node.properties.comfy_pending_memory = []
+  node.__comfyRefresh?.()
   app.canvas?.selectNode?.(next)
   app.canvas?.centerOnNode?.(next)
 }
 
 function attachEditor(node) {
-  if (node.__duetStoryEditor || typeof node.addDOMWidget !== 'function') return
+  if (node.__comfyStoryEditor || typeof node.addDOMWidget !== 'function') return
   installStyles()
-  if (node.properties?.duet_story_inspector && !node.__duetInspector) {
-    try { recordCompletedStory(node, node.properties.duet_story_inspector) }
-    catch (error) { console.error('Rejected saved Duet inspector', error) }
+  if (node.properties?.comfy_story_inspector && !node.__comfyInspector) {
+    try { recordCompletedStory(node, node.properties.comfy_story_inspector) }
+    catch (error) { console.error('Rejected saved Comfy inspector', error) }
   }
-  const livingCanon = true
-  for (const name of [...SAVED_WIDGET_ORDER, 'Keep this detail', 'Compiler experiment']) {
+  for (const name of SAVED_WIDGET_ORDER) {
     const item = findWidget(node, name)
     if (item) { item.hidden = true; item.computeSize = () => [0, 0] }
   }
   const root = document.createElement('section')
-  root.className = 'duet-story'
-  root.innerHTML = `<div class="duet-story-head"><span class="duet-story-title">Comfy Story</span><span class="duet-story-state"></span></div><p class="duet-story-copy">Build the next shot. Your cast, world, and important earlier moments travel through the green Story State wire.</p><label class="duet-story-label">Story project</label><input class="duet-story-project" placeholder="Name this story"/><label class="duet-story-label">Reference context</label><select class="duet-story-context"><option>Native</option><option>Compiled preview</option></select><p class="duet-story-help">Native H3 is the validated generation path. Compiled preview is experimental; quality and speed advantages are unproven.</p><div class="duet-story-motion" data-connected="false">Motion reference · not connected</div><div class="duet-story-head"><span class="duet-story-label">Shared reference library</span><button class="duet-story-secondary duet-story-add" type="button">+ Add reference</button></div><div class="duet-story-library"></div><input class="duet-story-upload" type="file" accept="image/png,image/jpeg,image/webp"/><div class="duet-story-chips"></div><p class="duet-story-help">Select references with @Name. Named references and approved details share the image budget; the final set is checked before rendering. After a shot, approve a visible moment to carry its look forward.</p><div class="duet-story-status"></div><div class="duet-story-actions"><button class="duet-story-primary" type="button">Run workflow</button><button class="duet-story-next" type="button">Add Next Shot →</button></div>`
+  root.className = 'comfy-story'
+  root.innerHTML = `<div class="comfy-story-head"><span class="comfy-story-title">Comfy Story</span><span class="comfy-story-state"></span></div><p class="comfy-story-copy">Build the next shot. Your cast, world, and important earlier moments travel through the green Story State wire.</p><label class="comfy-story-label">Story project</label><input class="comfy-story-project" placeholder="Name this story"/><div class="comfy-story-motion" data-connected="false">Motion reference · not connected</div><div class="comfy-story-head"><span class="comfy-story-label">Shared reference library</span><button class="comfy-story-secondary comfy-story-add" type="button">+ Add reference</button></div><div class="comfy-story-library"></div><input class="comfy-story-upload" type="file" accept="image/png,image/jpeg,image/webp"/><div class="comfy-story-chips"></div><p class="comfy-story-help">Select references with @Name. Named references and approved details share the image budget; the final set is checked before rendering. After a shot, approve a visible moment to carry its look forward.</p><div class="comfy-story-status"></div><div class="comfy-story-actions"><button class="comfy-story-primary" type="button">Run workflow</button><button class="comfy-story-next" type="button">Add Next Shot →</button></div>`
   const shotControls = document.createElement('div')
   const advanced = document.createElement('details')
-  advanced.className = 'duet-story-settings'
+  advanced.className = 'comfy-story-settings'
   const advancedTitle = document.createElement('summary')
   advancedTitle.textContent = 'Generation settings and recovery'
   advanced.append(advancedTitle)
@@ -113,7 +108,7 @@ function attachEditor(node) {
   const addField = (container, name, label, options = null, multiline = false) => {
     const wrapper = document.createElement('label')
     const heading = document.createElement('span')
-    heading.className = 'duet-story-label'; heading.textContent = label
+    heading.className = 'comfy-story-label'; heading.textContent = label
     const control = document.createElement(options ? 'select' : multiline ? 'textarea' : 'input')
     control.setAttribute('aria-label', label)
     if (options) control.replaceChildren(...options.map((value) => {
@@ -130,16 +125,16 @@ function attachEditor(node) {
   addField(shotControls, 'Create', 'Create', ['Start Story', 'Continue This Shot', 'Next Shot', 'New Scene'])
   addField(shotControls, 'What happens next?', 'What happens next?', null, true)
   addField(shotControls, 'Render profile', 'Render profile', ['Reference shot', 'Animate frame'])
-  const profileHelp = document.createElement('p'); profileHelp.className = 'duet-story-help'
+  const profileHelp = document.createElement('p'); profileHelp.className = 'comfy-story-help'
   profileHelp.textContent = 'Reference shot uses selected reference images. Animate frame animates the starting frame with the first-frame model; it requires Continue frame and does not recall separate images.'
   shotControls.append(profileHelp)
   addField(shotControls, 'Shot length', 'Shot length', ['5 seconds', '10 seconds', '15 seconds'])
   addField(shotControls, 'World / starting frame', 'World / starting frame', null)
-  const worldHelp = document.createElement('p'); worldHelp.className = 'duet-story-help'
+  const worldHelp = document.createElement('p'); worldHelp.className = 'comfy-story-help'
   worldHelp.textContent = 'Use an uploaded filename or choose an image. With None, Next Shot uses the connected Previous Frame; Frame animation and Continue frame require a starting image for a new story or scene. Native Reference shot with New composition can start from selected references alone.'
   shotControls.append(worldHelp)
   const worldUpload = document.createElement('input'); worldUpload.type = 'file'; worldUpload.accept = 'image/png,image/jpeg,image/webp'; worldUpload.hidden = true
-  const worldButton = document.createElement('button'); worldButton.type = 'button'; worldButton.className = 'duet-story-secondary'; worldButton.textContent = 'Choose starting image…'
+  const worldButton = document.createElement('button'); worldButton.type = 'button'; worldButton.className = 'comfy-story-secondary'; worldButton.textContent = 'Choose starting image…'
   worldButton.addEventListener('click', () => worldUpload.click())
   worldUpload.addEventListener('change', async () => {
     const file = worldUpload.files?.[0]
@@ -157,28 +152,27 @@ function attachEditor(node) {
   addField(advanced, 'Output duration (ms)', 'Output duration (ms)')
   addField(advanced, 'Prompt format', 'Prompt format', ['Current', 'Structured reference (experimental)', 'H3 automatic v1'])
   addField(advanced, 'Story revision', 'Recovery revision JSON', null, true)
-  root.querySelector('.duet-story-copy').after(shotControls)
-  root.querySelector('.duet-story-actions').before(advanced)
-  const project = root.querySelector('.duet-story-project')
-  const libraryRoot = root.querySelector('.duet-story-library')
-  const upload = root.querySelector('.duet-story-upload')
-  const context = root.querySelector('.duet-story-context')
-  const motion = root.querySelector('.duet-story-motion')
+  root.querySelector('.comfy-story-copy').after(shotControls)
+  root.querySelector('.comfy-story-actions').before(advanced)
+  const project = root.querySelector('.comfy-story-project')
+  const libraryRoot = root.querySelector('.comfy-story-library')
+  const upload = root.querySelector('.comfy-story-upload')
+  const motion = root.querySelector('.comfy-story-motion')
   const sound = document.createElement('div')
-  sound.className = 'duet-story-motion'
+  sound.className = 'comfy-story-motion'
   sound.setAttribute('aria-label', 'Shot audio source')
   const soundHelp = document.createElement('p')
-  soundHelp.className = 'duet-story-help'
+  soundHelp.className = 'comfy-story-help'
   soundHelp.textContent = 'For exact narration, connect this shot’s approved track to Authored audio. It replaces generated sound; it does not animate lip sync.'
   motion.after(sound, soundHelp)
-  const chips = root.querySelector('.duet-story-chips')
-  const status = root.querySelector('.duet-story-status')
-  const state = root.querySelector('.duet-story-state')
-  const generate = root.querySelector('.duet-story-primary')
-  root.querySelector('.duet-story-title').textContent = 'Comfy Story'
+  const chips = root.querySelector('.comfy-story-chips')
+  const status = root.querySelector('.comfy-story-status')
+  const state = root.querySelector('.comfy-story-state')
+  const generate = root.querySelector('.comfy-story-primary')
+  root.querySelector('.comfy-story-title').textContent = 'Comfy Story'
   const inspector = document.createElement('section')
-  inspector.className = 'duet-story-inspector'
-  if (livingCanon) status.after(inspector)
+  inspector.className = 'comfy-story-inspector'
+  status.after(inspector)
   const preview = document.createElement('video')
   preview.controls = true; preview.preload = 'metadata'; preview.hidden = true
   preview.style.width = '100%'; preview.setAttribute('aria-label', 'Accepted shot video')
@@ -195,11 +189,11 @@ function attachEditor(node) {
   }
   const actionButton = (label, action) => {
     const button = document.createElement('button')
-    button.type = 'button'; button.className = 'duet-story-secondary'; button.textContent = label
+    button.type = 'button'; button.className = 'comfy-story-secondary'; button.textContent = label
     button.addEventListener('click', action)
     return button
   }
-  root.querySelector('.duet-story-head').append(actionButton('Open Story', () => openFilmEditor(api, node, values(node))))
+  root.querySelector('.comfy-story-head').append(actionButton('Open Story', () => openFilmEditor(api, node, values(node))))
   const memoryButton = (label, command) => actionButton(label, () => stageAction(command))
   const currentLookButton = (label, options) => actionButton(label, () => {
     try {
@@ -215,22 +209,21 @@ function attachEditor(node) {
   })
   const memorySection = (label) => {
     const section = document.createElement('section')
-    const heading = document.createElement('span'); heading.className = 'duet-story-label'; heading.textContent = label
+    const heading = document.createElement('span'); heading.className = 'comfy-story-label'; heading.textContent = label
     section.append(heading); return section
   }
   const memoryRow = (title, note = '') => {
-    const row = document.createElement('div'); row.className = 'duet-story-memory-row'
-    const heading = document.createElement('div'); heading.className = 'duet-story-memory-title'; heading.textContent = title
+    const row = document.createElement('div'); row.className = 'comfy-story-memory-row'
+    const heading = document.createElement('div'); heading.className = 'comfy-story-memory-title'; heading.textContent = title
     row.append(heading)
-    if (note) { const detail = document.createElement('div'); detail.className = 'duet-story-memory-note'; detail.textContent = note; row.append(detail) }
+    if (note) { const detail = document.createElement('div'); detail.className = 'comfy-story-memory-note'; detail.textContent = note; row.append(detail) }
     return row
   }
   const renderInspector = () => {
-    if (!livingCanon) return
-    const summary = node.__duetInspector
+    const summary = node.__comfyInspector
     preview.hidden = !summary?.video_sha256
     if (summary?.video_sha256 && preview.dataset.digest !== summary.video_sha256) {
-      preview.src = api.apiURL(`/duet/story/video/${summary.video_sha256}`)
+      preview.src = api.apiURL(`/comfy/story/video/${summary.video_sha256}`)
       preview.dataset.digest = summary.video_sha256
     }
     inspector.replaceChildren()
@@ -244,7 +237,7 @@ function attachEditor(node) {
     const canon = memorySection('Story Canon')
     for (const entity of summary.canon) {
       const row = memoryRow(entity.reference_name, `${entity.state_note || 'Approved original'} · ${entity.presence.replace('_', ' ')}`)
-      const buttons = document.createElement('div'); buttons.className = 'duet-story-memory-buttons'
+      const buttons = document.createElement('div'); buttons.className = 'comfy-story-memory-buttons'
       buttons.append(memoryButton('Restore original', { action: 'restore_original', parent_revision_sha256: parent, target_id: entity.entity_id }))
       for (const [label, presence] of [['Present next shot', 'present'], ['Off screen next shot', 'off_screen']]) {
         buttons.append(memoryButton(label, {
@@ -257,7 +250,7 @@ function attachEditor(node) {
     }
     for (const pending of summary.pending) {
       const row = memoryRow(`Review ${pending.entity_id}`, pending.state_note)
-      const buttons = document.createElement('div'); buttons.className = 'duet-story-memory-buttons'
+      const buttons = document.createElement('div'); buttons.className = 'comfy-story-memory-buttons'
       buttons.append(currentLookButton('Keep as current look', {
         parentRevisionSha256: parent,
         entityId: pending.entity_id,
@@ -272,14 +265,14 @@ function attachEditor(node) {
       const location = moment.shot_index == null ? 'legacy evidence' : `shot ${moment.shot_index + 1} · frame ${moment.frame_index + 1}`
       const row = memoryRow(moment.entity_ids.join(', ') || moment.kind, location)
       const preview = document.createElement('img')
-      preview.src = api.apiURL(`/duet/story/evidence/${moment.asset_sha256}`)
+      preview.src = api.apiURL(`/comfy/story/evidence/${moment.asset_sha256}`)
       preview.alt = `Stored evidence from ${location}`
       preview.loading = 'lazy'
       preview.style.cssText = 'width:100%;max-height:180px;object-fit:contain;border-radius:6px;margin-top:6px'
       row.append(preview)
-      const buttons = document.createElement('div'); buttons.className = 'duet-story-memory-buttons'
+      const buttons = document.createElement('div'); buttons.className = 'comfy-story-memory-buttons'
       buttons.append(
-        memoryButton(moment.retained ? 'Let fade' : 'Keep this detail', { action: moment.retained ? 'let_fade' : 'keep', parent_revision_sha256: parent, target_id: moment.evidence_id }),
+        memoryButton(moment.retained ? 'Let fade' : 'Keep this moment', { action: moment.retained ? 'let_fade' : 'keep', parent_revision_sha256: parent, target_id: moment.evidence_id }),
         memoryButton('Use in next shot', { action: 'use_in_this_shot', parent_revision_sha256: parent, target_id: moment.evidence_id }),
         memoryButton('Forget', { action: 'forget', parent_revision_sha256: parent, target_id: moment.evidence_id }),
       )
@@ -307,15 +300,15 @@ function attachEditor(node) {
   let refresh
   const renderRows = () => {
     libraryRoot.replaceChildren(...library.references.map((reference, index) => {
-      const row = document.createElement('div'); row.className = 'duet-story-reference'
-      const top = document.createElement('div'); top.className = 'duet-story-row'
+      const row = document.createElement('div'); row.className = 'comfy-story-reference'
+      const top = document.createElement('div'); top.className = 'comfy-story-row'
       const name = document.createElement('input'); name.placeholder = 'Reference name'; name.value = reference.name
       const role = document.createElement('select')
       role.replaceChildren(...ROLES.map((value) => { const option = document.createElement('option'); option.value = value; option.textContent = value; return option }))
       role.value = reference.role
-      const remove = document.createElement('button'); remove.className = 'duet-story-remove'; remove.type = 'button'; remove.textContent = '×'
+      const remove = document.createElement('button'); remove.className = 'comfy-story-remove'; remove.type = 'button'; remove.textContent = '×'
       const note = document.createElement('input'); note.placeholder = 'What must stay recognizable?'; note.value = reference.note
-      const file = document.createElement('button'); file.className = 'duet-story-secondary duet-story-file'; file.type = 'button'; file.textContent = reference.file || 'Choose image…'
+      const file = document.createElement('button'); file.className = 'comfy-story-secondary comfy-story-file'; file.type = 'button'; file.textContent = reference.file || 'Choose image…'
       name.addEventListener('input', () => { reference.name = name.value; save(); refresh() })
       role.addEventListener('change', () => { reference.role = role.value; save(); refresh() })
       note.addEventListener('input', () => { reference.note = note.value; save() })
@@ -325,7 +318,7 @@ function attachEditor(node) {
     }))
   }
   refresh = () => {
-    const view = deriveStoryView(values(node), connected(node), { allowNoMentions: livingCanon })
+    const view = deriveStoryView(values(node), connected(node), { allowNoMentions: true })
     for (const [name, control] of controls) {
       if (document.activeElement !== control) control.value = findWidget(node, name)?.value ?? ''
     }
@@ -335,42 +328,32 @@ function attachEditor(node) {
       ? 'Starting image is connected. Start Story and New Scene use that image instead of the uploaded filename. Next Shot continues to use Previous Frame when connected.'
       : 'Use an uploaded filename, choose an image, or connect an image node to Starting image. With None, Next Shot uses Previous Frame; Frame animation and Continue frame require a starting image for a new story or scene. Native Reference shot with New composition can start from selected references alone.'
     project.disabled = inherited
-    root.querySelector('.duet-story-add').disabled = inherited
+    root.querySelector('.comfy-story-add').disabled = inherited
     for (const control of libraryRoot.querySelectorAll('input, select, button')) control.disabled = inherited
     libraryRoot.title = inherited ? 'This library is inherited from the connected Story State.' : ''
-    context.value = view.referenceContext
     motion.dataset.connected = String(view.motion)
     motion.textContent = `Motion reference · ${view.motion ? 'connected' : 'not connected'}`
     const authored = hasInputLink(node, 'Authored audio', -1)
     sound.dataset.connected = String(authored)
     sound.textContent = authored ? 'Audio · approved track connected' : 'Audio · generated sound'
-    state.textContent = livingCanon && node.__duetInspector ? `${node.__duetInspector.shot_count} shots remembered` : view.state
+    state.textContent = node.__comfyInspector ? `${node.__comfyInspector.shot_count} shots remembered` : view.state
     status.textContent = view.message
     status.dataset.ready = String(view.ready)
     const active = new Set(view.active)
     const protectedNames = new Set(view.protected)
     chips.replaceChildren(...view.allReferences.map((reference) => {
       const chip = document.createElement('button')
-      chip.type = 'button'; chip.className = 'duet-story-chip'; chip.dataset.active = String(active.has(reference)); chip.dataset.protected = String(protectedNames.has(reference))
+      chip.type = 'button'; chip.className = 'comfy-story-chip'; chip.dataset.active = String(active.has(reference)); chip.dataset.protected = String(protectedNames.has(reference))
       chip.textContent = `${reference}${protectedNames.has(reference) ? ' · keep exact' : ''}`
-      chip.disabled = livingCanon || !active.has(reference)
-      chip.title = livingCanon
-        ? 'Living Canon manages exact evidence in the memory inspector'
-        : active.has(reference) ? 'Toggle exact detail preservation' : 'Mention this reference in the prompt to activate it'
-      chip.addEventListener('click', () => {
-        const next = new Set(view.protected)
-        if (next.has(reference)) next.delete(reference)
-        else if (next.size < 2) next.add(reference)
-        setWidget(node, 'Keep this detail', [...next].join(', ')); refresh()
-      })
+      chip.disabled = true
+      chip.title = 'Approve and recall shot evidence in the memory inspector'
       return chip
     }))
     generate.disabled = !view.ready
     renderInspector()
   }
   project.addEventListener('input', () => { library.project_name = project.value; save(); refresh() })
-  context.addEventListener('change', () => { setWidget(node, 'Reference context', context.value); refresh() })
-  root.querySelector('.duet-story-add').addEventListener('click', () => { library.references.push({ file: '', name: `Reference${library.references.length + 1}`, note: '', role: 'Character' }); save(); renderRows(); refresh() })
+  root.querySelector('.comfy-story-add').addEventListener('click', () => { library.references.push({ file: '', name: `Reference${library.references.length + 1}`, note: '', role: 'Character' }); save(); renderRows(); refresh() })
   upload.addEventListener('change', async () => {
     const file = upload.files?.[0]
     if (file && pendingReference != null) {
@@ -385,24 +368,24 @@ function attachEditor(node) {
     setWidget(node, 'Variation', Number.isSafeInteger(old) && old < Number.MAX_SAFE_INTEGER ? old + 1 : Math.floor(Math.random() * 0xFFFFFFFF))
     await app.queuePrompt?.(0)
   })
-  root.querySelector('.duet-story-actions').append(reroll)
-  root.querySelector('.duet-story-next').addEventListener('click', () => createNextShot(node))
+  root.querySelector('.comfy-story-actions').append(reroll)
+  root.querySelector('.comfy-story-next').addEventListener('click', () => createNextShot(node))
   for (const item of node.widgets ?? []) {
     const previous = item.callback
-    item.callback = function (...args) { const result = previous?.apply(this, args); setWidget(this, 'Prompt format', 'H3 automatic v1'); queueMicrotask(refresh); return result }
+    item.callback = function (...args) { const result = previous?.apply(this, args); queueMicrotask(refresh); return result }
   }
-  node.addDOMWidget('duet_story_editor', 'Comfy Story', root, { getHeight: () => 800, getMinHeight: () => 600, getValue: () => 'duet-story', hideOnZoom: false, setValue: () => {}, serialize: false })
-  node.__duetStoryEditor = root
-  node.__duetRefresh = refresh
+  node.addDOMWidget('comfy_story_editor', 'Comfy Story', root, { getHeight: () => 800, getMinHeight: () => 600, getValue: () => 'comfy-story', hideOnZoom: false, setValue: () => {}, serialize: false })
+  node.__comfyStoryEditor = root
+  node.__comfyRefresh = refresh
   node.setSize?.([Math.max(node.size?.[0] ?? 0, 450), Math.max(node.size?.[1] ?? 0, 900)])
   renderRows(); refresh()
 }
 
 app.registerExtension({
-  name: 'duet.story',
+  name: 'comfy.story',
   beforeRegisterNodeDef(nodeType, nodeData) {
-    if (![CURRENT_NODE_TYPE, CANON_NODE_TYPE].includes(nodeData?.name)) return
-    if (!nodeType.prototype.__duetWidgetMigrationInstalled) {
+    if (nodeData?.name !== CURRENT_NODE_TYPE) return
+    if (!nodeType.prototype.__comfyWidgetHooksInstalled) {
       const previousSerialize = nodeType.prototype.onSerialize
       nodeType.prototype.onSerialize = function (info) {
         const result = previousSerialize?.call(this, info)
@@ -412,54 +395,54 @@ app.registerExtension({
           if (widget) fields[name] = widget.value
         }
         info.properties ??= {}
-        info.properties.duet_story_fields = fields
+        info.properties.comfy_story_fields = fields
         info.widgets_values = SAVED_WIDGET_ORDER.map((name) => fields[name])
         return result
       }
       const previousConfigure = nodeType.prototype.onConfigure
       nodeType.prototype.onConfigure = function (info) {
         const original = info?.widgets_values
-        const savedFields = info?.properties?.duet_story_fields
-        const migrated = savedFields && CURRENT_WIDGET_ORDER.every((name) => Object.hasOwn(savedFields, name))
+        const savedFields = info?.properties?.comfy_story_fields
+        const restored = savedFields && CURRENT_WIDGET_ORDER.every((name) => Object.hasOwn(savedFields, name))
           ? SAVED_WIDGET_ORDER.map((name) => savedFields[name] ?? OPTIONAL_DEFAULTS[name])
-          : migrateSerializedStoryWidgets(nodeData.name, original)
-        const changed = Array.isArray(original) && (migrated.length !== original.length || migrated.some((value, index) => value !== original[index]))
-        if (changed) info.widgets_values = migrated
+          : restoreSerializedStoryWidgets(original)
+        const changed = Array.isArray(original) && (restored.length !== original.length || restored.some((value, index) => value !== original[index]))
+        if (changed) info.widgets_values = restored
         const result = previousConfigure?.call(this, info)
         const restore = () => {
-          if (Array.isArray(migrated) && [CURRENT_WIDGET_ORDER.length, CURRENT_WIDGET_ORDER.length + 1, SAVED_WIDGET_ORDER.length].includes(migrated.length)) {
+          if (Array.isArray(restored) && [CURRENT_WIDGET_ORDER.length, CURRENT_WIDGET_ORDER.length + 1, SAVED_WIDGET_ORDER.length].includes(restored.length)) {
             for (const [index, name] of SAVED_WIDGET_ORDER.entries()) {
               const widget = findWidget(this, name)
-              if (widget) widget.value = index < migrated.length ? migrated[index] : OPTIONAL_DEFAULTS[name]
+              if (widget) widget.value = index < restored.length ? restored[index] : OPTIONAL_DEFAULTS[name]
             }
             for (const name of NAMED_CONTINUITY_FIELDS) {
               const widget = findWidget(this, name)
               if (widget && savedFields && Object.hasOwn(savedFields, name)) widget.value = savedFields[name]
             }
-            this.__duetRefresh?.()
+            this.__comfyRefresh?.()
           }
         }
         restore()
         queueMicrotask(restore)
         return result
       }
-      nodeType.prototype.__duetWidgetMigrationInstalled = true
+      nodeType.prototype.__comfyWidgetHooksInstalled = true
     }
     const previous = nodeType.prototype.onNodeCreated
     nodeType.prototype.onNodeCreated = function (...args) { const result = previous?.apply(this, args); setWidget(this, 'Prompt format', 'H3 automatic v1'); queueMicrotask(() => attachEditor(this)); return result }
   },
-  nodeCreated(node) { if (isDuetStoryNode(node)) queueMicrotask(() => attachEditor(node)) },
+  nodeCreated(node) { if (isComfyStoryNode(node)) queueMicrotask(() => attachEditor(node)) },
 })
 
 api.addEventListener('executed', (event) => {
-  const value = event?.detail?.output?.duet_story
+  const value = event?.detail?.output?.comfy_story
   if (!value) return
   try {
     const summary = normalizeInspectorSummary(value)
     const node = app.graph?.getNodeById?.(summary.owner_node_id)
-    if (!node || !isDuetStoryNode(node)) return
+    if (!node || !isComfyStoryNode(node)) return
     recordCompletedStory(node, summary)
-    if (node.__duetRefresh) queueMicrotask(node.__duetRefresh)
+    if (node.__comfyRefresh) queueMicrotask(node.__comfyRefresh)
   } catch (error) {
     console.error('Rejected Comfy Story inspector payload', error)
   }

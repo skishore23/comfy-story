@@ -12,7 +12,7 @@ from comfy_story.story_video_canvas import (
     H3_VIDEO_WIDTH,
 )
 
-STAGING_PROTOCOL = "duet-film-opening-stage-v3"
+STAGING_PROTOCOL = "comfy-film-opening-stage-v3"
 STAGING_MODELS = {
     "diffusion_models": "qwen_image_edit_2511_int8_convrot.safetensors",
     "text_encoders": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
@@ -130,7 +130,7 @@ def compile_opening_stage(
         latent_image=["12", 0],
     )
     node("22", "VAEDecode", samples=["21", 0], vae=["3", 0])
-    node("25", "SaveImage", filename_prefix="duet_story_staging/raw", images=["22", 0])
+    node("25", "SaveImage", filename_prefix="comfy_story_staging/raw", images=["22", 0])
     node(
         "26",
         "ImageScale",
@@ -140,5 +140,5 @@ def compile_opening_stage(
         height=H3_VIDEO_HEIGHT,
         crop=H3_FIRST_FRAME_CROP,
     )
-    node("24", "SaveImage", filename_prefix="duet_story_staging/opening", images=["26", 0])
+    node("24", "SaveImage", filename_prefix="comfy_story_staging/opening", images=["26", 0])
     return graph

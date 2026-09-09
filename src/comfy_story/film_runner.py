@@ -256,7 +256,7 @@ def _run_film_locked(plan_path: Path, inputs_path: Path, server: str, directory:
             node["class_type"] not in info for node in workflow.values() if isinstance(node, dict)
         ):
             raise ValueError("Comfy is missing a required public film workflow node")
-        story_inputs = info["DuetStory"].get("input", {})
+        story_inputs = info["ComfyStory"].get("input", {})
         if not any(
             "Output duration (ms)" in story_inputs.get(section, {})
             for section in ("required", "optional")
@@ -290,7 +290,7 @@ def _run_film_locked(plan_path: Path, inputs_path: Path, server: str, directory:
             for section in ("required", "optional")
         ):
             raise ValueError("Upgrade the Comfy Story node to support shot state evidence")
-        payload = {"prompt": workflow, "client_id": "duet-film-" + identity[:24]}
+        payload = {"prompt": workflow, "client_id": "comfy-film-" + identity[:24]}
         _write(intent, payload)
         response = _json_request(server, "/prompt", payload)
         if not isinstance(response.get("prompt_id"), str):
@@ -316,7 +316,7 @@ def _run_film_locked(plan_path: Path, inputs_path: Path, server: str, directory:
         raise RuntimeError("Film workflow failed; original history saved, no automatic retake")
     summaries: dict[str, dict[str, Any]] = {}
     for output in record["outputs"].values():
-        for summary in output.get("duet_story", []):
+        for summary in output.get("comfy_story", []):
             if isinstance(summary, dict):
                 owner = summary.get("owner_node_id")
                 if isinstance(owner, str) and owner in workflow:
@@ -330,7 +330,7 @@ def _run_film_locked(plan_path: Path, inputs_path: Path, server: str, directory:
     for index, shot in enumerate(plan.shots):
         summary = summaries.get(str((index + 1) * 10))
         if summary is None or "parent_revision_sha256" not in summary:
-            raise ValueError("Story output lacks generation ancestry; update the Duet node")
+            raise ValueError("Story output lacks generation ancestry; update the Comfy node")
         digest = summary["video_sha256"]
         if (
             not isinstance(digest, str)
@@ -343,7 +343,7 @@ def _run_film_locked(plan_path: Path, inputs_path: Path, server: str, directory:
             temporary = path.with_suffix(".partial")
             with (
                 urllib.request.urlopen(
-                    server + "/duet/story/video/" + digest, timeout=60
+                    server + "/comfy/story/video/" + digest, timeout=60
                 ) as response,
                 temporary.open("wb") as handle,
             ):

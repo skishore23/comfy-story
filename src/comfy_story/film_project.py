@@ -117,7 +117,7 @@ class FilmProjectStore:
         if hashlib.sha256(raw).hexdigest() != revision:
             raise ValueError("film recipe integrity check failed")
         data = json.loads(raw)
-        if not isinstance(data, dict) or data.get("format") != "duet-film-project-v1":
+        if not isinstance(data, dict) or data.get("format") != "comfy-film-project-v1":
             raise ValueError("unsupported film project recipe")
         return {**data, "revision": revision}
 
@@ -149,7 +149,7 @@ class FilmProjectStore:
             plan_data.pop("state_definitions")
         if plan.narrative is None:
             plan_data.pop("narrative")
-        payload = {"format": "duet-film-project-v1", "plan": plan_data, "inputs": bound}
+        payload = {"format": "comfy-film-project-v1", "plan": plan_data, "inputs": bound}
         raw = canonical_story_json(payload)
         if len(raw) > 2 * 1024 * 1024:
             raise ValueError("film project recipe exceeds 2 MiB")

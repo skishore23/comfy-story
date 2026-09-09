@@ -23,7 +23,7 @@ def normalize_kernel_user_agent() -> None:
             return
         raise
     original = module._get_hf_api
-    if getattr(original, "_duet_normalizes_empty_user_agent", False):
+    if getattr(original, "_comfy_normalizes_empty_user_agent", False):
         return
 
     @wraps(original)
@@ -33,5 +33,5 @@ def normalize_kernel_user_agent() -> None:
             api.user_agent = None
         return api
 
-    client.__dict__["_duet_normalizes_empty_user_agent"] = True
+    client.__dict__["_comfy_normalizes_empty_user_agent"] = True
     module.__dict__["_get_hf_api"] = client

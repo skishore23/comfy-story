@@ -11,7 +11,6 @@ from dataclasses import dataclass, replace
 
 from PIL import Image
 
-from comfy_story.contracts import ExceptionItem
 from comfy_story.story_contracts import StoryLibrary, canonical_story_json
 from comfy_story.story_product_contracts import (
     CanonEntity,
@@ -27,7 +26,6 @@ from comfy_story.story_product_contracts import (
     StoryRecallDecision,
 )
 
-_MENTION = re.compile(r"(?<![A-Za-z0-9_])@([A-Za-z][A-Za-z0-9_-]{0,63})")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -178,19 +176,7 @@ def apply_story_memory_commands(
 
 
 def _mentions(prompt: str, library: StoryLibrary) -> tuple[str, ...]:
-    if not isinstance(prompt, str) or not prompt.strip():
-        raise ValueError("What happens next? must be nonempty")
-    lookup = {reference.name.casefold(): reference for reference in library.references}
-    result: list[str] = []
-    for match in _MENTION.finditer(prompt):
-        entity_id = match.group(1).casefold()
-        if entity_id not in lookup:
-            raise ValueError(f"Unknown Story Library reference: @{match.group(1)}")
-        if entity_id not in result:
-            result.append(entity_id)
-    if len(result) > 7:
-        raise ValueError("MiniMax shots support at most seven explicit Story entities")
-    return tuple(result)
+    return tuple(reference.name.casefold() for reference in library.resolve_references(prompt))
 
 
 def _latest_record(
@@ -275,7 +261,6 @@ def parse_shot_state_evidence(encoded: object) -> tuple[tuple[str, str], ...]:
 def select_story_recall(
     applied: AppliedStoryCommands,
     library: StoryLibrary,
-    reservoir: tuple[ExceptionItem, ...],
     *,
     prompt: str,
     reference_policy: str,
@@ -305,12 +290,9 @@ def select_story_recall(
         if shot_state_evidence or applied.forced_evidence_ids or applied.restored_entity_ids:
             raise ValueError("Animate frame cannot use recalled images; choose Reference shot")
         # Names still label the intended cast. No image evidence is claimed as used.
-        return StoryRecallDecision(explicit, (), (), (), (), (), None, ()).validate()
+        return StoryRecallDecision(explicit, (), (), (), (), (), ()).validate()
     evidence = {item.evidence_id: item for item in state.evidence_records}
     entities = {item.entity_id: item for item in state.canon.entities}
-    # The bounded salience reservoir is an acceleration structure, not the
-    # authority for creator-approved or explicitly requested evidence.
-    del reservoir
     tombstoned = set(state.policy.tombstoned_evidence_ids)
     # A one-shot read view can use selected evidence without changing creator canon.
     overrides = dict(shot_state_evidence)
@@ -427,7 +409,6 @@ def select_story_recall(
         tuple(rejected),
         tuple(selected_ids),
         tuple(packets),
-        None,
         (),
     ).validate()
 

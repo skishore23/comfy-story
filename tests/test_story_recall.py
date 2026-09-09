@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import io
-from dataclasses import dataclass
 
 import pytest
 from PIL import Image
@@ -12,13 +11,13 @@ from comfy_story.story_product_contracts import (
     CanonEntity,
     CanonPresence,
     MemoryAction,
+    NativeRGBObservation,
     ObservationKind,
     StoryCanon,
     StoryEvidencePacketSpec,
     StoryEvidenceRecord,
     StoryMemoryCommand,
     StoryMemoryPolicy,
-    StoryObservation,
     StoryObservationPacket,
     StoryProductState,
 )
@@ -40,7 +39,7 @@ def _reference(name: str, role: ReferenceRole) -> StoryReference:
         role,
         "approved original",
         digest,
-        f"duet-story://assets/sha256/{digest}",
+        f"comfy-story://assets/sha256/{digest}",
         (digest,),
         _digest(f"pre-{name}"),
     ).validate()
@@ -58,7 +57,7 @@ def _library() -> StoryLibrary:
 
 
 def _packet(shot: int, evidence_id: str, entity_id: str, asset: str) -> StoryObservationPacket:
-    observation = StoryObservation(
+    observation = NativeRGBObservation(
         evidence_id,
         ObservationKind.CLOSING,
         1,
@@ -67,8 +66,6 @@ def _packet(shot: int, evidence_id: str, entity_id: str, asset: str) -> StoryObs
         (0, 0, 65_536, 65_536),
         _digest(asset),
         _digest(f"pre-{asset}"),
-        _digest("vae"),
-        _digest(f"latent-{asset}"),
         800_000 + shot,
         0,
         (entity_id,),
@@ -81,7 +78,7 @@ def _packet(shot: int, evidence_id: str, entity_id: str, asset: str) -> StoryObs
         shot * 5_000_000_000,
         (shot + 1) * 5_000_000_000,
         video,
-        f"duet-evidence://story/sha256/{video}",
+        f"comfy-evidence://story/sha256/{video}",
         _digest("extractor"),
         (entity_id,),
         (observation,),
@@ -145,18 +142,6 @@ def _story(*, presence: CanonPresence) -> StoryProductState:
     return StoryProductState(packets, records, canon, StoryMemoryPolicy()).validate()
 
 
-@dataclass(frozen=True)
-class _Candidate:
-    item_id: str
-
-    def fingerprint(self) -> str:
-        return _digest(f"candidate-{self.item_id}")
-
-
-def _reservoir() -> tuple[_Candidate, ...]:
-    return tuple(_Candidate(item) for item in ("mara-latest", "orin-latest", "key-bent"))
-
-
 def test_latest_confirmed_key_state_returns_after_absence() -> None:
     applied = apply_story_memory_commands(
         _story(presence=CanonPresence.OFF_SCREEN),
@@ -168,14 +153,12 @@ def test_latest_confirmed_key_state_returns_after_absence() -> None:
     unrelated = select_story_recall(
         applied,
         _library(),
-        _reservoir(),  # type: ignore[arg-type]
         prompt="Mara crosses the workshop.",
         reference_policy="Automatic",
     )
     recalled = select_story_recall(
         applied,
         _library(),
-        _reservoir(),  # type: ignore[arg-type]
         prompt="@Orin returns with @BrassKey.",
         reference_policy="Automatic",
     )
@@ -195,7 +178,6 @@ def test_prompt_mentions_only_leaves_unused_capacity_empty() -> None:
     decision = select_story_recall(
         applied,
         _library(),
-        _reservoir(),  # type: ignore[arg-type]
         prompt="An empty corridor.",
         reference_policy="Prompt mentions only",
     )
@@ -220,7 +202,6 @@ def test_use_command_precedes_mentions_and_binds_exact_parent() -> None:
     decision = select_story_recall(
         applied,
         _library(),
-        _reservoir(),  # type: ignore[arg-type]
         prompt="@Mara waits.",
         reference_policy="Automatic",
     )
@@ -258,7 +239,6 @@ def test_approved_state_survives_eviction_from_salience_reservoir() -> None:
     decision = select_story_recall(
         applied,
         _library(),
-        (),
         prompt="@BrassKey returns.",
         reference_policy="Prompt mentions only",
     )
@@ -276,7 +256,6 @@ def test_forgetting_only_approved_support_requires_explicit_resolution() -> None
         select_story_recall(
             applied,
             _library(),
-            (),
             prompt="@BrassKey returns.",
             reference_policy="Prompt mentions only",
         )
@@ -289,7 +268,6 @@ def test_forgetting_only_approved_support_requires_explicit_resolution() -> None
     decision = select_story_recall(
         restored,
         _library(),
-        (),
         prompt="@BrassKey returns.",
         reference_policy="Prompt mentions only",
     )
@@ -304,7 +282,6 @@ def test_approved_state_capacity_conflict_is_not_silent_baseline_fallback() -> N
         select_story_recall(
             applied,
             _library(),
-            (),
             prompt="@Orin and @Mara hold @BrassKey.",
             reference_policy="Prompt mentions only",
         )
@@ -331,7 +308,6 @@ def test_frame_animation_does_not_silently_ignore_image_memory_commands(
         select_story_recall(
             applied,
             _library(),
-            (),
             prompt="@BrassKey returns.",
             reference_policy="Automatic",
             image_references=False,
@@ -347,7 +323,6 @@ def test_one_shot_state_evidence_preserves_creator_canon() -> None:
     decision = select_story_recall(
         applied,
         _library(),
-        (),
         prompt="@BrassKey lies on a different table.",
         reference_policy="Prompt mentions only",
         shot_state_evidence=parse_shot_state_evidence('{"brasskey":"key-bent"}'),
@@ -378,7 +353,6 @@ def test_one_shot_state_rejects_wrong_entity_missing_or_duplicate_evidence(
         select_story_recall(
             applied,
             _library(),
-            (),
             prompt="@BrassKey lies on a table.",
             reference_policy="Automatic",
             shot_state_evidence=pairs,
@@ -393,7 +367,6 @@ def test_animate_frame_cannot_claim_one_shot_state_recall() -> None:
         select_story_recall(
             applied,
             _library(),
-            (),
             prompt="@BrassKey lies on a table.",
             reference_policy="Automatic",
             image_references=False,
@@ -420,7 +393,6 @@ def test_one_shot_state_cannot_recall_forgotten_evidence() -> None:
         select_story_recall(
             applied,
             _library(),
-            (),
             prompt="@BrassKey rests.",
             reference_policy="Automatic",
             shot_state_evidence=(("brasskey", "key-bent"),),
@@ -438,7 +410,6 @@ def test_one_shot_state_conflicts_with_explicit_restore() -> None:
         select_story_recall(
             applied,
             _library(),
-            (),
             prompt="@BrassKey rests.",
             reference_policy="Automatic",
             shot_state_evidence=(("brasskey", "key-bent"),),

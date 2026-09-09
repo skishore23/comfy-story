@@ -17,7 +17,7 @@ from comfy_story.film_state_audit import (
 )
 from comfy_story.story_contracts import canonical_story_json
 
-STARTING_STATE_PROTOCOL = "duet-film-starting-state-v2"
+STARTING_STATE_PROTOCOL = "comfy-film-starting-state-v2"
 
 
 def check_starting_state(

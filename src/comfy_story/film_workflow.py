@@ -180,7 +180,6 @@ def compile_film_workflow(
         node_inputs: dict[str, object] = {
             "Create": "Start Story" if index == 0 else settings.intent,
             "Story Library": library_json,
-            "Reference context": "Native",
             "World / starting frame": settings.world or "None",
             "What happens next?": (
                 film_h3_direction(plan, index, generated_audio=generated_audio)
@@ -230,7 +229,7 @@ def compile_film_workflow(
             }
             node_inputs["Ending frame"] = [ending_id, 0]
         graph[node_id] = {
-            "class_type": "DuetStory",
+            "class_type": "ComfyStory",
             "inputs": node_inputs,
             "_meta": {"title": f"{index + 1:02} · {shot.purpose}"},
         }

@@ -6,7 +6,6 @@ import pytest
 import torch
 
 from comfy_story.story_contracts import ReferenceRole, ShotIntent, StoryLibrary, StoryReference
-from comfy_story.story_memory_backend import StoryMemoryBackend
 from comfy_story.story_product_contracts import CanonPresence
 from comfy_story.story_prompt import _mentions, structured_reference_prompt
 from comfy_story.story_service import (
@@ -23,7 +22,7 @@ def _prepared() -> PreparedStoryGeneration:
             role,
             note,
             "a" * 64,
-            "duet-story://assets/sha256/" + "a" * 64,
+            "comfy-story://assets/sha256/" + "a" * 64,
             ("a" * 64,),
             "b" * 64,
         )
@@ -46,9 +45,7 @@ def _prepared() -> PreparedStoryGeneration:
         prompt="@Crane lowers @Parcel onto the floor.",
         shot_length_seconds=5,
         variation=41,
-        checkpoint_sha256="a" * 64,
         model_configuration_sha256="b" * 64,
-        memory_backend=StoryMemoryBackend.MINIMAX_H3,
     )
     return PreparedStoryGeneration(
         request,

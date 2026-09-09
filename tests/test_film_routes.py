@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import importlib.util
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
@@ -71,70 +71,72 @@ def test_project_http_save_conflict_resume_configuration_and_origin(
 
     async def scenario() -> None:
         async with TestClient(TestServer(app)) as client:
-            response = await client.post("/duet/story/films", json=payload)
+            response = await client.post("/comfy/story/films", json=payload)
             assert response.status == 200
             saved = (await response.json())["recipe"]
             assert saved["inputs"]["shots_by_id"]["one"]["variation"] == 7
-            response = await client.get("/duet/story/films/project")
+            response = await client.get("/comfy/story/films/project")
             data = await response.json()
             assert data["recipe"] == saved
             assert data["verification_configured"] is False
             run_id = "b" * 64
-            response = await client.get(f"/duet/story/films/project/runs/{run_id}/preview")
+            response = await client.get(f"/comfy/story/films/project/runs/{run_id}/preview")
             assert response.status == 200
             assert response.headers["Content-Type"] == "video/mp4"
             assert await response.read() == preview.read_bytes()
             assert preview_reads == [("project", run_id)]
             assert runner.runs("project") == []
-            response = await client.put("/duet/story/films/project", json=payload)
+            response = await client.put("/comfy/story/films/project", json=payload)
             assert response.status == 409
             payload["expected_revision"] = saved["revision"]
-            response = await client.put("/duet/story/films/project", json=payload)
+            response = await client.put("/comfy/story/films/project", json=payload)
             assert response.status == 200
             response = await client.post(
-                "/duet/story/films/project/runs", json={"revision": saved["revision"]}
+                "/comfy/story/films/project/runs", json={"revision": saved["revision"]}
             )
             assert response.status == 400
             assert "VERIFY_MODEL" in (await response.json())["error"]
             response = await client.put(
-                "/duet/story/films/project",
+                "/comfy/story/films/project",
                 json=payload,
                 headers={"Origin": "https://unrelated.example"},
             )
             assert response.status == 403
-            response = await client.post("/duet/story/films/soundtrack", json={"path": "score.wav"})
+            response = await client.post(
+                "/comfy/story/films/soundtrack", json={"path": "score.wav"}
+            )
             assert response.status == 200
             assert (await response.json())["duration_ms"] == 5000
             assert soundtrack_reads == [(tmp_path, "score.wav")]
-            response = await client.post("/duet/story/films/soundtrack", json={"path": 4})
+            response = await client.post("/comfy/story/films/soundtrack", json={"path": 4})
             assert response.status == 400
             response = await client.post(
-                "/duet/story/films/soundtrack",
+                "/comfy/story/films/soundtrack",
                 json={"path": "score.wav"},
                 headers={"Origin": "https://unrelated.example"},
             )
             assert response.status == 403
             assert len(soundtrack_reads) == 1
             response = await client.get(
-                "/duet/story/films/project/inputs-bundle?revision=" + saved["revision"]
+                "/comfy/story/films/project/inputs-bundle?revision=" + saved["revision"]
             )
             assert response.status == 200
             archive = await response.read()
             assert response.headers["Content-Type"] == "application/zip"
             form = FormData()
             form.add_field("bundle", archive, filename="film.zip", content_type="application/zip")
-            response = await client.post("/duet/story/films/import-inputs", data=form)
+            response = await client.post("/comfy/story/films/import-inputs", data=form)
             assert response.status == 200
             imported = await response.json()
             assert imported["assets_restored"] == 1
             assert imported["approvals_imported"] is False
             assert imported["recipe"]["plan"]["project_id"] != "project"
             assert imported["recipe"]["inputs"]["shots_by_id"]["one"]["variation"] == 7
-            response = await client.post("/duet/story/films/import-inputs", json={})
+            response = await client.post("/comfy/story/films/import-inputs", json={})
             assert response.status == 400
-            response = await client.get("/duet/story/films/missing")
+            response = await client.get("/comfy/story/films/missing")
             assert response.status == 404
-            response = await client.get("/duet/story/films")
+            response = await client.get("/comfy/story/films")
             assert "project" in {row["project_id"] for row in (await response.json())["projects"]}
 
     try:
@@ -166,13 +168,6 @@ def test_film_generation_identity_tracks_inputs_models_and_integration(
         raising=False,
     )
 
-    @dataclass
-    class MemoryIdentity:
-        checkpoint_sha256: str = "c" * 64
-
-    memory = MemoryIdentity()
-    monkeypatch.setattr(adapter, "_minimax_identity", lambda: memory, raising=False)
-    monkeypatch.setattr(adapter, "_native_reference_runtime", lambda: False, raising=False)
     requested = []
 
     def lora_digest(folder: str, name: str) -> str:
@@ -242,16 +237,11 @@ def test_film_generation_identity_tracks_inputs_models_and_integration(
     (tmp_path / "folder_paths.py").write_text("# Comfy source changed")
     source_changed = module._film_generation_identity(recipe)
     assert source_changed["implementation"] != image_changed["implementation"]
-    memory.checkpoint_sha256 = "d" * 64
-    assert (
-        module._film_generation_identity(recipe)["memory_checkpoint"] != native["memory_checkpoint"]
-    )
-    monkeypatch.setattr(adapter, "_native_reference_runtime", lambda: True)
+    from comfy_story import story_native_archive
 
-    def no_checkpoint() -> None:
-        pytest.fail("Native film identity must not load a trained memory checkpoint")
-
-    monkeypatch.setattr(adapter, "_minimax_identity", no_checkpoint)
+    monkeypatch.setattr(story_native_archive, "NATIVE_REFERENCE_RUNTIME_SHA256", "d" * 64)
+    assert module._film_generation_identity(recipe)["memory_runtime"] != native["memory_runtime"]
+    recipe["inputs"]["recall_selected_state"] = True
     archive = module._film_generation_identity(recipe)
     assert "memory_checkpoint" not in archive
     assert len(archive["memory_runtime"]) == 64

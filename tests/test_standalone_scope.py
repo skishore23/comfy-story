@@ -3,15 +3,12 @@
 from __future__ import annotations
 
 import ast
-import hashlib
 import importlib
 import subprocess
+import symtable
 import tomllib
 from importlib.util import resolve_name
 from pathlib import Path
-from types import SimpleNamespace
-
-import pytest
 
 import comfy_story
 
@@ -84,47 +81,30 @@ def test_no_generated_or_private_payload_is_tracked() -> None:
         assert not path.name.startswith(".env")
 
 
-def test_source_origin_checks_include_the_installed_namespace(tmp_path: Path) -> None:
-    from comfy_story.ltx_quality_operations import (
-        SourceArchiveEntry,
-        SourceArchiveReceipt,
-        verify_loaded_duet_module_origins,
-    )
-
-    encoded = b"value = 1\n"
-    relative = "src/comfy_story/example.py"
-    source = tmp_path / relative
-    source.parent.mkdir(parents=True)
-    source.write_bytes(encoded)
-    entry = SourceArchiveEntry(
-        relative,
-        "100644",
-        0o644,
-        len(encoded),
-        hashlib.sha256(encoded).hexdigest(),
-        hashlib.sha1(b"blob " + str(len(encoded)).encode() + b"\0" + encoded).hexdigest(),
-    )
-    receipt = SourceArchiveReceipt(
-        "duet-x-ltx-source-archive-v1",
-        "a" * 40,
-        "b" * 40,
-        "c" * 64,
-        "d" * 64,
-        1,
-        (entry,),
-    ).validate()
-    modules = {"comfy_story.example": SimpleNamespace(__file__=str(source))}
-    verify_loaded_duet_module_origins(
-        tmp_path,
-        receipt,
-        required_modules=("comfy_story.example",),
-        loaded_modules=modules,
-    )
-    source.write_bytes(b"value = 2\n")
-    with pytest.raises(ValueError, match="source identity changed"):
-        verify_loaded_duet_module_origins(
-            tmp_path,
-            receipt,
-            required_modules=("comfy_story.example",),
-            loaded_modules=modules,
-        )
+def test_local_imported_symbols_exist_without_host_test_stubs() -> None:
+    # Integration fixtures replace host dependencies; a stale imported function
+    # must still fail even when a test stub accidentally supplies that function.
+    paths = [*(ROOT / "src").rglob("*.py"), *(ROOT / "integrations/comfy_story").rglob("*.py")]
+    symbols = {
+        path: {
+            symbol.get_name()
+            for symbol in symtable.symtable(path.read_text(), str(path), "exec").get_symbols()
+            if symbol.is_assigned() or symbol.is_imported()
+        }
+        for path in paths
+    }
+    for path in paths:
+        for node in ast.walk(ast.parse(path.read_text())):
+            if not isinstance(node, ast.ImportFrom) or not node.module:
+                continue
+            if node.level == 1:
+                target = path.parent / (node.module.replace(".", "/") + ".py")
+            elif node.level == 0 and node.module.startswith("comfy_story."):
+                target = ROOT / "src" / (node.module.replace(".", "/") + ".py")
+            else:
+                continue
+            assert target in symbols, f"{path.name} imports missing {target}"
+            for alias in node.names:
+                assert alias.name in symbols[target], (
+                    f"{path.name} imports missing {node.module}.{alias.name}"
+                )

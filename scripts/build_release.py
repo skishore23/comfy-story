@@ -1,4 +1,4 @@
-"""Build the deterministic, dependency-safe Comfy Story internal distribution."""
+"""Build the deterministic, dependency-safe Comfy Story distribution."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def verify_bundle(bundle):
     if not isinstance(manifest, dict):
         raise SystemExit("invalid bundle manifest")
     files = manifest.get("files")
-    if (manifest.get("format") != "duet-story-internal-bundle-v1"
+    if (manifest.get("format") != "comfy-story-bundle-v1"
         or not isinstance(files, dict) or not files):
         raise SystemExit("invalid bundle manifest")
     for name, expected in files.items():
@@ -71,7 +71,6 @@ def verify_bundle(bundle):
 def main() -> int:
     parser = argparse.ArgumentParser(description="Install Comfy Story into an existing ComfyUI")
     parser.add_argument("--comfy-root", type=Path, required=True)
-    parser.add_argument("--with-ltx", action="store_true")
     parser.add_argument("--check-only", action="store_true", help="Verify without installing")
     args = parser.parse_args()
     if sys.platform not in ("linux", "darwin"):
@@ -81,18 +80,6 @@ def main() -> int:
     root = args.comfy_root.resolve()
     if not (root / "main.py").is_file() or not (root / "custom_nodes").is_dir():
         raise SystemExit("--comfy-root must be an existing ComfyUI root")
-    if args.with_ltx:
-        try:
-            import OpenImageIO  # noqa: F401
-            openimageio_version = version("OpenImageIO")
-        except (ImportError, PackageNotFoundError) as error:
-            raise SystemExit(
-                "Historical LTX memory requires OpenImageIO==3.1.16.0 in ComfyUI's Python"
-            ) from error
-        if openimageio_version != "3.1.16.0":
-            raise SystemExit(
-                "Historical LTX memory requires OpenImageIO==3.1.16.0 in ComfyUI's Python"
-            )
     bundle = Path(__file__).resolve().parent
     verify_bundle(bundle)
     wheels = sorted((bundle / "wheels").glob("comfy_story-*.whl"))
@@ -121,8 +108,8 @@ def main() -> int:
         raise SystemExit(
             "Comfy Story dependency preflight failed before installation: " + "; ".join(failures)
         )
-    source = bundle / "custom_nodes" / "duet_story"
-    target = root / "custom_nodes" / "duet_story"
+    source = bundle / "custom_nodes" / "comfy_story"
+    target = root / "custom_nodes" / "comfy_story"
     if target.exists() or target.is_symlink():
         raise SystemExit(
             "Comfy Story already exists; stage the new release separately "
@@ -154,7 +141,7 @@ supported environment, setup, and first sequence.
    `python install.py --comfy-root /path/to/ComfyUI --check-only`.
 3. Resolve reported dependencies in that environment, preserving its Torch/CUDA build.
 4. Run the same command without `--check-only`, then restart ComfyUI.
-5. Add **Comfy Story** from **Comfy / Story** and begin with Native reference context.
+5. Add **Comfy Story** from **Comfy / Story**.
 
 The installer verifies the exact file inventory and hashes before installation and uses `--no-deps`.
 Models and access credentials are not included. Back up your complete story directory and workflow.
@@ -195,7 +182,7 @@ def _tracked_files(root: Path, prefix: str, suffixes: set[str]) -> list[Path]:
 
 def _copy_integration(root: Path, stage: Path) -> None:
     source = root / "integrations/comfy_story"
-    target = stage / "custom_nodes/duet_story"
+    target = stage / "custom_nodes/comfy_story"
     for path in _tracked_files(root, "integrations/comfy_story", _INTEGRATION_SUFFIXES):
         destination = target / path.relative_to(source)
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -211,7 +198,7 @@ def _manifest(stage: Path, source_commit: str) -> bytes:
     return json.dumps(
         {
             "files": files,
-            "format": "duet-story-internal-bundle-v1",
+            "format": "comfy-story-bundle-v1",
             "source_commit": source_commit,
             "payload_sha256": _sha256(
                 json.dumps(files, sort_keys=True, separators=(",", ":")).encode()
@@ -310,8 +297,8 @@ def _zip_tree(stage: Path, target: Path) -> None:
             )
 
 
-def build_internal_bundle(repository_root: Path, output_root: Path) -> Path:
-    """Build and publish one deterministic internal ZIP plus digest sidecar."""
+def build_release_bundle(repository_root: Path, output_root: Path) -> Path:
+    """Build and publish one deterministic release ZIP plus digest sidecar."""
     root = repository_root.resolve()
     output = output_root.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -361,7 +348,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(
             "release builds require a clean committed checkout; local files are not published"
         )
-    path = build_internal_bundle(root, args.output_root)
+    path = build_release_bundle(root, args.output_root)
     print(path)
     return 0
 
