@@ -433,3 +433,21 @@ def test_installer_preflight_failure_does_not_install_node(
     with pytest.raises(ValueError, match="authentication"):
         main()
     assert not (comfy / "custom_nodes/comfy_story").exists()
+
+
+def test_installer_resolves_shared_paths_before_temporary_preflight(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace, comfy = _installer_fixture(tmp_path)
+    preflight = cast(Callable[..., None], namespace["check_runtime"])
+    wheel = next((tmp_path / "bundle/wheels").glob("*.whl"))
+    calls: list[list[str]] = []
+
+    def run(command: list[str], **kwargs: object) -> None:
+        calls.append(command)
+        assert kwargs["cwd"] != str(tmp_path)
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(subprocess, "run", run)
+    preflight(wheel, comfy, [Path("shared.yaml")])
+    assert calls[0][-2:] == ["--extra-model-paths-config", str(tmp_path / "shared.yaml")]

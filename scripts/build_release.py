@@ -79,7 +79,7 @@ def check_runtime(wheel_path, root, extra_paths):
         env["PYTHONPATH"] = temporary
         command = [sys.executable, "-m", "comfy_story.installation", "--comfy-root", str(root)]
         for path in extra_paths:
-            command.extend(["--extra-model-paths-config", str(path)])
+            command.extend(["--extra-model-paths-config", str(path.resolve())])
         subprocess.run(command, env=env, cwd=temporary, check=True)
 
 def main() -> int:
