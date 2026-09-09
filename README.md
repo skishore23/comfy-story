@@ -1,85 +1,51 @@
 # Comfy Story
 
-Comfy Story is a film-making custom node for ComfyUI and MiniMax H3. Build a reusable cast,
-name your characters and props, plan a sequence of shots, and carry Story State forward as you
-render. Review takes, revise a scene, add a soundtrack, and export an assembled film from the
-same project.
+Build a film one shot at a time. Comfy Story brings a reusable cast, story memory, a visual
+shot timeline, and soundtrack editing to ComfyUI and MiniMax H3.
 
-**Checkpoint-backed associative memory is a required part of Comfy Story.** Every new shot records
-learned history alongside its visual evidence. Generation requires a compatible trained memory
-checkpoint, installed and configured automatically by the installer; there is no memory-off mode.
+Give your characters and props names, describe what happens next, and develop the story across
+scenes. Preview your takes, try a different direction, and bring everything together in one project.
 
-## What you can do
+[Get started](#get-started) · [Download](https://github.com/skishore23/comfy-story/releases/latest) · [Film guide](docs/films.md) · [Prompt guide](docs/prompting.md)
 
-- **Keep a cast and visual library:** give characters, props and locations stable names, attach
-  reference images, and mention them as `@Name` in shot prompts.
-- **Build a sequence:** connect Story State and Last Frame with **Add Next Shot**, or open the film
-  editor to select shots on a visual timeline, describe actions, choose subjects and set start/end
-  frames. The player previews saved takes without leaving the editor.
-- **Carry history across shots:** retain ordered associative memory, fusion trees and dense state
-  in saved revisions, together with the exact images you approve as evidence.
-- **Iterate on a film:** save a plan, generate a first cut, review individual takes and change the
-  affected shots. Unchanged completed work can be recovered when its inputs and runtime match.
-- **Finish and transfer:** add soundtrack cues, export the assembled video, save the ComfyUI
-  workflow and transfer a project's input bundle to another compatible installation.
+## Make the story yours
 
-The film editor has three sections: **Shots**, **Cast & world**, and **Soundtrack**. Select cast and
-props by name, upload music directly, and position it using seconds and volume controls. Save an
-edit to see which earlier shots are eligible for reuse and which later shots need generation
-review. **Story memory · Always on** describes the required memory system; **Appearance references**
-chooses exact visual evidence and does not disable associative memory. Soundtrack uploads are mixed
-into the export; they do not condition the generated motion.
+- **Build your cast.** Add reference images for characters, props, and locations. Mention them as
+  `@Name` in your prompts to tell Comfy Story who and what belongs in each shot.
+- **Plan the action.** Arrange shots on a visual timeline, set their duration, and choose starting
+  and ending frames. Describe the action and how you want the camera to follow it.
+- **Carry the story forward.** Built-in associative memory preserves shot history alongside your
+  references, giving later shots context from what came before.
+- **Watch and refine.** Preview a saved take or the assembled film. Edit a shot, try a new variation,
+  and see which parts of the sequence need rendering again.
+- **Add the sound.** Upload music or dialogue, choose when it starts, and adjust its volume.
+  Export the film with your soundtrack and save the workflow for later.
 
-## How Story memory works
+## Get started
 
-A reference library describes what your characters, objects and locations should look like.
-Associative memory adds a learned representation of what has happened in the sequence. Comfy Story
-keeps both; they serve different purposes.
+You'll need:
 
-| Component | What it preserves | How it is used |
-| --- | --- | --- |
-| Named references and approved evidence | Exact images of your cast, props, locations and selected moments | Supplies explicit visual references; creator approval remains separate from generation |
-| Ordered associative history | Encoded opening, change and closing observations from rendered shots | Composes learned operators in sequence so history and order can affect the memory readout |
-| Fusion trees | Sixteen persistent blocks with eight shot slots each | Maintains up to 128 shots of structured history and supports removing a source shot from later history |
-| Dense memory state | The composed historical operators and authenticated snapshots | Restores the saved memory state without reconstructing the story from prompts alone |
-| Trained checkpoint | The learned memory modules and their model contract | Produces the historical readout; checked against the foundation model, training configuration and video VAE |
+- **ComfyUI with a working MiniMax H3 setup**, including the authorized generation models,
+  encoders, and video/audio VAEs, plus Python 3.11 or newer and suitable hardware.
+- **Linux or macOS** for story storage. GPU generation has been tested on Linux; Windows story
+  storage is not currently supported.
+- **FFmpeg and ffprobe** available on your system for film export.
 
-For **Reference shot → Continue frame**, the previous revision's memory readout supplies a historical
-context image alongside the selected references. It occupies one of H3's nine visual-source slots.
-The first shot has no previous history. **New composition** and **Animate frame** still record memory,
-but omit that inherited context image so a previous scene is not imposed on the new composition.
-Forgetting an observation removes its entire source shot from dense history in subsequent revisions.
-
-Memory is guidance, not a guarantee of visual correctness. Review faces, clothing, weapon ownership,
-prop state and action before keeping a take. Rendering a planned event does not automatically make
-it confirmed canon. **Keep this moment** and **Keep @Name look** record evidence you approve.
-
-## Requirements
-
-- Python 3.11 or newer and an existing ComfyUI installation with working, authorized MiniMax H3
-  generation models, text/vision encoders and video/audio VAEs.
-- A supported story-storage host: Linux or macOS. GPU generation has been exercised on Linux;
-  Windows storage is not supported. See the installation guide for the tested host configuration.
-
-The installable release includes the tested associative-memory checkpoint. The installer verifies
-it and the required H3 model identities, installs missing Python dependencies while preserving your
-Torch/CUDA build, and selects memory automatically. **No memory environment variables are needed.**
-
-H3 foundation models, encoders, VAEs and credentials are separate prerequisites. Install the
-authorized H3 model pack in ComfyUI first. Film export also needs `ffmpeg` and `ffprobe` on PATH.
-The installer reports missing models and tools; it does not download large foundation models or
-replace a GPU driver. CUDA availability is reported separately from checkpoint integrity.
-
-## Install and create your first shot
-
-Download and extract the **complete installer ZIP** from [Releases](https://github.com/skishore23/comfy-story/releases/latest),
-then run it with the Python environment used by ComfyUI:
+Download the **complete installer ZIP** from [Releases](https://github.com/skishore23/comfy-story/releases/latest)
+and extract it. From that folder, run the installer using ComfyUI's Python environment:
 
 ```bash
 /path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
 ```
 
-Or install from a clean source checkout, outside `custom_nodes`:
+The installer sets up Comfy Story and its story memory automatically, checks your H3 models,
+and installs missing Python dependencies while preserving your existing Torch/CUDA build.
+The H3 foundation models and encoders are installed separately through your ComfyUI model setup.
+
+<details>
+<summary>Install from source</summary>
+
+Clone the repository outside ComfyUI's `custom_nodes` folder, then run the same installer:
 
 ```bash
 git clone https://github.com/skishore23/comfy-story.git
@@ -87,39 +53,76 @@ cd comfy-story
 /path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
 ```
 
-The source installer downloads the checksum-pinned memory release once and caches it under
-`artifacts/checkpoints/`. The complete installer ZIP includes it already and needs no checkpoint
-download. Neither installation method needs GitHub credentials or memory environment variables.
+The installer downloads the small memory model automatically. No GitHub credentials or manual
+memory configuration are needed. Use the installer to set up the complete custom node;
+cloning the repository or running `pip install .` alone does not complete installation.
 
-1. Restart ComfyUI after installation. Add **Comfy Story** from **Comfy / Story**.
-2. Choose **Start Story**, add named character/prop/location references and a starting frame, then
-   describe a short visible action.
-3. Generate and review the first shot. Use **Add Next Shot** to connect Story State and Last Frame,
-   or **Open Story** to plan a film.
-4. Save the workflow and back up the complete story directory.
+</details>
 
-Use `--check-only` for a preflight without installing packages or nodes. If your normal ComfyUI
-launch uses shared model paths, pass the same `--extra-model-paths-config /path/to/models.yaml` to
-the installer. The [installation guide](docs/getting-started.md) lists the exact baseline model
-files, offline installation and advanced checkpoint overrides. A source clone or `pip install .`
-alone does not install the complete custom node and memory payload; use the installer above.
+See the [installation guide](docs/getting-started.md) for model filenames, shared model paths,
+offline setup, and the `--check-only` option.
 
-[Film workflow](docs/films.md) · [Writing prompts](docs/prompting.md) · [Security](SECURITY.md)
+## Create your first film
 
-## Saving, recovery and upgrades
+1. **Open Comfy Story.** Restart ComfyUI and add **Comfy Story** from **Comfy / Story**. Select
+   **Open Story** to open the film editor.
+2. **Meet your cast.** In **Cast & world**, name your characters, props, and locations and upload
+   their reference images.
+3. **Write the opening.** In **Shots**, add a starting image and describe a short, visible action.
+   Select the references that should appear and choose the shot's duration.
+4. **Generate a first cut.** Save the plan, then choose **Generate saved plan**. Select a shot on
+   the timeline to preview its take, or choose **Watch assembled film** to watch the sequence.
+5. **Make it your own.** Add more shots, refine the action, and use **Soundtrack** to add music.
+   Save your changes and generate again to create the updated film.
 
-Story data lives under `comfy_story` in ComfyUI's user directory. Set `COMFY_STORY_ROOT` to an
-absolute directory before launching ComfyUI to choose another location. Preserve the **complete
-story directory**, including memory snapshots and media, as well as the workflow JSON. A film
-inputs bundle transfers the plan and referenced images/audio; it does not contain model weights,
-completed takes, approvals or the full memory archive.
+Start with one clear action. For example, after adding references named `Aiko` and `Moonblade`:
 
-Completed-shot recovery reopens verified saved output; it does not resume interrupted sampling.
-Checkpoint, model and runtime identities are bound to saved revisions. Keep the matching software
-and models when reopening a branch. Start a new story when changing that configuration; legacy
-reference-only stories cannot be continued by silently inventing missing associative history.
-When upgrading the memory runtime, retain a matching installation for historical branches and
-start new stories on the upgraded version.
+> @Aiko draws @Moonblade as rain scatters across the rooftop. She turns toward the distant gate.
+> The camera moves slowly alongside her, keeping her face and the sword in view.
+
+You can also build directly on the ComfyUI canvas: choose **Start Story** for the opening, then
+use **Add Next Shot** to connect the previous shot's Story State and Last Frame.
+
+## Keep your characters and story connected
+
+Your reference library establishes the look of your cast and world. Story memory keeps a history
+of rendered shots so later shots can draw on earlier events. It is set up for you during installation.
+
+When you like a result, the node's **Keep this moment** and **Keep @Name look** controls let you
+save visual evidence for future shots. Review faces, clothing, props, and action as you go;
+memory helps guide continuity, but a generated take still needs your eye.
+
+Use **Continue with references** to continue from the previous frame with historical context.
+Choose **Compose from references** to create a new view from your selected references. The
+[film guide](docs/films.md) explains other render approaches and their model requirements.
+
+## Edit without starting over
+
+Saving an edit shows which earlier shots are eligible for reuse and which shots need generation
+review. Changing a shot can affect everything after it because later shots inherit its story state.
+Unchanged earlier shots can reuse saved output when their inputs and runtime still match.
+
+Soundtrack-only edits can reuse the visuals. Uploaded audio is mixed into the finished film;
+it does not drive the generated motion. To keep H3's own speech and effects, choose **Generated
+speech and effects** and follow the [audio instructions](docs/films.md#audio-and-timing).
+
+Open **Generation history & review details** to revisit previous runs and their assessments.
+Generation continues on the ComfyUI host when you close the editor. The editor asks you to save
+or discard unsaved edits before closing.
+
+## Save and return later
+
+Save your ComfyUI workflow and back up the complete story directory under `comfy_story` in
+ComfyUI's user directory. It contains the media, history, and memory needed to return to your work.
+To choose another location, set `COMFY_STORY_ROOT` to an absolute directory before launching ComfyUI.
+
+Use **Download inputs bundle** to transfer a plan and its reference images/audio to another
+compatible installation. Keep your story-directory backup too: the inputs bundle does not include
+completed takes, approvals, model weights, or the full memory archive.
+
+Saved work is tied to the software and models that created it. Keep a matching installation for
+older runs, and start a new story when changing the memory runtime or model configuration.
+Recovery reopens completed output; it does not resume sampling that was interrupted.
 
 ## Development
 
@@ -133,8 +136,8 @@ uv run python -m pytest
 node --test tests/js/*.mjs
 ```
 
-Keep models, credentials, source media, generated output, and local caches outside Git.
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute and [SECURITY.md](SECURITY.md) to report a
+security issue. Keep models, credentials, source media, and generated output outside Git.
 
 ## License
 
