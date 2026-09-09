@@ -246,7 +246,7 @@ class H3ReferenceCompiler(nn.Module):
             padding += pack.padding_temporal_tokens
         return tuple(blocks), padding
 
-    def compile(self, references: tuple[H3VisualReference, ...]) -> H3CompiledContext:
+    def compile_references(self, references: tuple[H3VisualReference, ...]) -> H3CompiledContext:
         """Compile once without changing the Qwen semantic roster or source order."""
         if not isinstance(references, tuple) or not references:
             raise ValueError("H3 compiler requires a nonempty reference tuple")

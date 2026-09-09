@@ -117,7 +117,7 @@ def test_native_full_is_an_exact_bypass_with_receipt() -> None:
         H3ReferenceBudget(max_visual_rows=12, max_exceptions=2),
     )
 
-    compiled = compiler.compile(references)
+    compiled = compiler.compile_references(references)
 
     assert [
         block.latent is source.latent
@@ -146,7 +146,7 @@ def test_duet_x_compiles_dense_history_and_preserves_exact_exceptions() -> None:
         checkpoint_sha256=_CHECKPOINT_SHA256,
     )
 
-    compiled = compiler.compile(references)
+    compiled = compiler.compile_references(references)
 
     assert len(compiled.blocks) == 3
     assert compiled.blocks[0].source_ids == ("world", "prop")
@@ -179,7 +179,7 @@ def test_incompatible_singleton_shapes_remain_native() -> None:
         checkpoint_sha256=_CHECKPOINT_SHA256,
     )
 
-    compiled = compiler.compile(references)
+    compiled = compiler.compile_references(references)
 
     assert len(compiled.blocks) == 2
     assert compiled.blocks[0].latent is references[0].latent
@@ -193,7 +193,7 @@ def test_video_uses_ordered_eight_way_temporal_fold() -> None:
         checkpoint_sha256=_CHECKPOINT_SHA256,
     )
 
-    compiled = compiler.compile((_video(),))
+    compiled = compiler.compile_references((_video(),))
 
     assert compiled.blocks[0].kind is H3ReferenceKind.VIDEO
     assert compiled.blocks[0].latent.shape == (1, 24, 3, 4, 6)
@@ -209,7 +209,7 @@ def test_native_trimmed_keeps_source_order_within_budget() -> None:
         H3ReferenceBudget(max_visual_rows=13, max_exceptions=0),
     )
 
-    compiled = compiler.compile(references)
+    compiled = compiler.compile_references(references)
 
     assert tuple(block.source_ids for block in compiled.blocks) == (("ref-0",), ("ref-1",))
     assert compiled.receipt.output_visual_rows == 12
@@ -222,13 +222,13 @@ def test_exceptions_only_requires_and_emits_only_protected_images() -> None:
         H3ReferenceBudget(max_visual_rows=6, max_exceptions=1),
     )
 
-    compiled = compiler.compile(references)
+    compiled = compiler.compile_references(references)
 
     assert len(compiled.blocks) == 1
     assert compiled.blocks[0].source_ids == ("hero",)
     assert compiled.blocks[0].exact is True
     with pytest.raises(ValueError, match="requires a protected"):
-        compiler.compile((references[0],))
+        compiler.compile_references((references[0],))
 
 
 def test_compiler_rejects_budget_overflow_and_checkpoint_mismatch() -> None:
@@ -245,7 +245,7 @@ def test_compiler_rejects_budget_overflow_and_checkpoint_mismatch() -> None:
         checkpoint_sha256=_CHECKPOINT_SHA256,
     )
     with pytest.raises(ValueError, match="visual row budget"):
-        compiler.compile((reference,))
+        compiler.compile_references((reference,))
 
 
 def test_compiler_rejects_ambiguous_source_order() -> None:
@@ -255,4 +255,8 @@ def test_compiler_rejects_ambiguous_source_order() -> None:
     )
 
     with pytest.raises(ValueError, match="ascending ordinals"):
-        compiler.compile((_image("later", 2, 1), _image("earlier", 1, 2)))
+        compiler.compile_references((_image("later", 2, 1), _image("earlier", 1, 2)))
+
+
+def test_reference_compilation_does_not_override_torch_module_compile() -> None:
+    assert H3ReferenceCompiler.compile is torch.nn.Module.compile

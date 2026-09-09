@@ -12,7 +12,7 @@ are exercised. The source inventory records every file examined in the merged Du
 The initial standalone source passed:
 
 - Ruff formatting, lint, format verification, and strict mypy (168 checked source files).
-- 1,381 Python tests passed; 4 tests skipped for external-runtime or version prerequisites.
+- 1,382 Python tests passed; 4 tests skipped for external-runtime or version prerequisites.
 - All 80 JavaScript frontend tests passed.
 - Offline lockfile consistency, wheel/source builds, exact wheel module inventory, and an installed
   wheel smoke test of the retained lazy exports and both product CLI commands.
@@ -45,3 +45,7 @@ access. The final merged main has exactly the same Git tree as that tested candi
 The upstream PR stack documented successful Linux film completion but also unresolved story,
 refinement, and unplanned-speech concerns. Those results are inherited context, not a fresh GPU
 acceptance run of this extracted repository. See [customer criteria](DUET_STORY_CUSTOMER_ACCEPTANCE.md).
+
+The first independent Linux check exposed a PyTorch `Module.compile()` name collision. The product
+reference method was renamed to `compile_references()` and its callers and regression tests updated.
+This preserves PyTorch's compile API and checkpoint contents instead of suppressing the type error.

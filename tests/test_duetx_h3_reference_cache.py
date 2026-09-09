@@ -30,7 +30,9 @@ def _image(source_id: str, ordinal: int, value: float) -> H3VisualReference:
 def test_compiled_pack_cache_is_content_addressed(tmp_path: Path) -> None:
     references = (_image("a", 0, 1), _image("b", 1, 2))
     budget = H3ReferenceBudget(12, 0)
-    expected = H3ReferenceCompiler(H3ReferenceMethod.NATIVE_FULL, budget).compile(references)
+    expected = H3ReferenceCompiler(H3ReferenceMethod.NATIVE_FULL, budget).compile_references(
+        references
+    )
     cache = CompiledReferenceCache(tmp_path)
     key = cache.key_for(
         references,
@@ -92,7 +94,9 @@ def test_cache_key_changes_with_method_budget_content_and_protection(tmp_path: P
 def test_cache_rejects_tensor_drift(tmp_path: Path) -> None:
     references = (_image("a", 0, 1),)
     budget = H3ReferenceBudget(6, 0)
-    context = H3ReferenceCompiler(H3ReferenceMethod.NATIVE_FULL, budget).compile(references)
+    context = H3ReferenceCompiler(H3ReferenceMethod.NATIVE_FULL, budget).compile_references(
+        references
+    )
     cache = CompiledReferenceCache(tmp_path)
     key = cache.key_for(
         references,

@@ -34,3 +34,6 @@ Customer documents keep their historical filenames to preserve links and install
 References to research-only documents point to the exact upstream snapshot. The original Duet
 checkout and its uncommitted work remain untouched. Publication is a separate decision after the
 [private alpha gates](VALIDATION.md).
+
+The internal H3 compiler method is `compile_references()`. It leaves PyTorch's inherited
+`Module.compile()` available for model compilation; checkpoint tensor names and formats are unchanged.

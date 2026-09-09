@@ -157,7 +157,7 @@ class DuetH3CompileReferences(io.ComfyNode):
         if context is None:
             request.compiler.to(device)
             try:
-                context = request.compiler.compile(references)
+                context = request.compiler.compile_references(references)
             finally:
                 request.compiler.to("cpu")
             if request.cache is not None and key is not None:
