@@ -114,10 +114,8 @@ def _film_generation_identity(recipe: dict[str, Any]) -> dict[str, object]:
     ):
         for path in sorted(paths):
             implementation[label + "/" + path.relative_to(base).as_posix()] = file_digest(path)
-    from comfy_story.memory.settings import configured_memory
     from comfy_story.story_native_archive import NATIVE_REFERENCE_RUNTIME_SHA256
 
-    memory = configured_memory()
     return {
         **({"associative_memory": memory.binding()} if memory is not None else {}),
         "model_files": models,

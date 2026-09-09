@@ -9,6 +9,7 @@ import pytest
 import torch
 
 from comfy_story.memory.backend import StoryMemoryBackend, StoryMemoryRuntime
+from comfy_story.memory.bridge import H3LatentHistoryBridge
 from comfy_story.memory.checkpoint import (
     MemoryProtocol,
     build_memory_modules,
@@ -42,6 +43,7 @@ def _checkpoint(path: Path) -> tuple[str, str, str]:
     model_configuration = "2" * 64
     protocol = MemoryProtocol.default().fingerprint()
     modules = build_memory_modules()
+    assert isinstance(modules.bridge, H3LatentHistoryBridge)
     with torch.no_grad():
         modules.bridge.residual.weight.copy_(torch.eye(24) * 0.1)
     save_minimax_h3_runtime_checkpoint(
