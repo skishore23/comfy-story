@@ -6,9 +6,10 @@ import hashlib
 import os
 import re
 import stat
-import sys
 import tempfile
 from pathlib import Path
+
+from comfy_story.platform_io import NONBLOCK, fsync_directory, open_no_follow
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _MAX_ASSET_BYTES = 4 * 1024 * 1024 * 1024
@@ -25,9 +26,8 @@ def _digest(value: object, field: str) -> str:
 
 
 def _read_regular(path: Path, field: str, maximum: int) -> bytes:
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
-        descriptor = os.open(path, flags)
+        descriptor = open_no_follow(path)
     except OSError as error:
         raise ValueError(f"{field} is unavailable") from error
     try:
@@ -52,22 +52,10 @@ def _read_regular(path: Path, field: str, maximum: int) -> bytes:
         os.close(descriptor)
 
 
-def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-
-
 class StoryProjectStore:
     """Persist story assets and revisions beneath one configured regular root."""
 
     def __init__(self, root: Path) -> None:
-        if sys.platform != "darwin" and not sys.platform.startswith("linux"):
-            raise ValueError(
-                "Comfy Story currently requires Linux or macOS for atomic revision storage"
-            )
         if not isinstance(root, Path) or not root.is_absolute() or root.is_symlink():
             raise ValueError("story project root must be an absolute regular directory")
         root.mkdir(parents=True, exist_ok=True)
@@ -100,7 +88,7 @@ class StoryProjectStore:
             except FileExistsError:
                 if _read_regular(target, "content-addressed object", len(value)) != value:
                     raise ValueError("refusing conflicting content-addressed object") from None
-            _fsync_directory(directory)
+            fsync_directory(directory)
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
@@ -120,9 +108,8 @@ class StoryProjectStore:
         """Authenticate immutable media in bounded memory before HTTP range serving."""
         expected = _digest(digest, "story asset")
         path = self._assets / expected
-        flags = os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
         try:
-            descriptor = os.open(path, flags)
+            descriptor = open_no_follow(path, os.O_RDONLY | NONBLOCK)
         except OSError as error:
             raise ValueError("story asset is unavailable") from error
         try:
