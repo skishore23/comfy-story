@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import fcntl
 import hashlib
 import json
 import shutil
@@ -15,6 +14,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+from comfy_story.file_lock import lock_exclusive
 from comfy_story.film_export import FilmAudio, export_film_draft, file_digest
 from comfy_story.film_io import film_plan_from_json, normalize_film_settings
 from comfy_story.film_plan import FilmPlan, RenderedTake
@@ -98,7 +98,7 @@ def run_film(plan_path: Path, inputs_path: Path, server: str, directory: Path) -
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / "run.lock").open("a") as lock:
         try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_exclusive(lock, blocking=False)
         except BlockingIOError as error:
             raise ValueError("film command is already running in this output directory") from error
         return _run_film_locked(plan_path, inputs_path, server, directory)

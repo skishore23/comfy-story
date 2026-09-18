@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import io
 import logging
@@ -14,6 +13,7 @@ from pathlib import Path
 
 import torch
 
+from comfy_story.file_lock import lock_exclusive
 from comfy_story.tensors import tensor_sha256
 
 _LOG = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class ReferenceCache:
             _LOG.warning("Reference cache unavailable; encoding normally")
             return encoder(pixels)
         with lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+            lock_exclusive(lock)
             path = self.root / (key + ".pt")
             cached = self._read(path)
             if cached is not None:

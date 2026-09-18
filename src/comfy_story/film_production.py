@@ -7,7 +7,6 @@ candidates cannot become the parent of the next story event.
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 from collections.abc import Callable
@@ -15,6 +14,7 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
 
+from comfy_story.file_lock import lock_exclusive
 from comfy_story.film_audit import (
     VISUAL_AUDIT_PROTOCOL,
     ShotVisualAudit,
@@ -422,7 +422,7 @@ def run_production(
     directory.mkdir(parents=True, exist_ok=True)
     with (directory / "production.lock").open("a") as lock:
         try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_exclusive(lock, blocking=False)
         except BlockingIOError as error:
             raise ValueError("verified production is already running") from error
         return _produce(
