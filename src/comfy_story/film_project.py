@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import re
@@ -12,6 +11,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
+from comfy_story.file_lock import lock_exclusive, unlock
 from comfy_story.film_io import bind_film_settings, film_plan_from_json, normalize_film_settings
 from comfy_story.film_plan import FilmPlan, compile_candidate_prompt
 from comfy_story.film_workflow import FilmShotInput, compile_film_workflow
@@ -95,11 +95,11 @@ class FilmProjectStore:
     def _lock(self, project: Path) -> Iterator[None]:
         project.mkdir(exist_ok=True)
         with self._inside(project, "edit.lock").open("a") as handle:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            lock_exclusive(handle)
             try:
                 yield
             finally:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                unlock(handle)
 
     def load(self, project_id: str, revision: str | None = None) -> dict[str, Any]:
         project = self.project_path(project_id)

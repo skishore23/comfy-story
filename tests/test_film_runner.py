@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import fcntl
 import json
 import shutil
 import subprocess
@@ -11,6 +10,7 @@ from typing import Any
 import pytest
 
 from comfy_story import film_runner
+from comfy_story.file_lock import lock_exclusive
 from comfy_story.film_export import export_film_draft as real_export
 from comfy_story.film_export import file_digest
 from comfy_story.film_plan import FilmCue, FilmPlan, FilmShot
@@ -18,7 +18,7 @@ from comfy_story.film_plan import FilmCue, FilmPlan, FilmShot
 
 def test_second_customer_launch_cannot_enter_an_active_run(tmp_path: Path) -> None:
     with (tmp_path / "run.lock").open("a") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_exclusive(lock, blocking=False)
         with pytest.raises(ValueError, match="already running"):
             film_runner.run_film(tmp_path / "plan.json", tmp_path / "inputs.json", "", tmp_path)
     # OS releases the reservation even when its owner exits; a stale lock file is harmless.
