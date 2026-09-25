@@ -8,6 +8,7 @@ import os
 import tempfile
 from pathlib import Path
 
+from comfy_story.platform_io import fsync_directory
 from comfy_story.story_contracts import ComfyStoryStateRef, canonical_story_json
 
 
@@ -67,11 +68,7 @@ class StoryAttemptIndex:
             except FileExistsError:
                 if self.load(request_sha256) != state:
                     raise ValueError("a different take already completed this request") from None
-            directory = os.open(self.root, os.O_RDONLY)
-            try:
-                os.fsync(directory)
-            finally:
-                os.close(directory)
+            fsync_directory(self.root)
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
