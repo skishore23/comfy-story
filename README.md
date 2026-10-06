@@ -27,8 +27,7 @@ You'll need:
 
 - **ComfyUI with a working MiniMax H3 setup**, including the authorized generation models,
   encoders, and video/audio VAEs, plus Python 3.11 or newer and suitable hardware.
-- **Linux or macOS** for story storage. GPU generation has been tested on Linux; Windows story
-  storage is not currently supported.
+- **Linux, macOS or Windows** for story storage. GPU generation has been tested on Linux.
 - **FFmpeg and ffprobe** available on your system for film export.
 
 Download the **complete installer ZIP** from [Releases](https://github.com/skishore23/comfy-story/releases/latest)
@@ -36,6 +35,12 @@ and extract it. From that folder, run the installer using ComfyUI's Python envir
 
 ```bash
 /path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
+```
+
+On Windows, use the environment's `Scripts\python.exe`:
+
+```powershell
+C:\path\to\ComfyUI\.venv\Scripts\python.exe install.py --comfy-root C:\path\to\ComfyUI
 ```
 
 The installer sets up Comfy Story and its story memory automatically, checks your H3 models,

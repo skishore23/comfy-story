@@ -211,6 +211,33 @@ def test_installer_check_only_does_not_install_or_copy(
     assert list((comfy / "custom_nodes").iterdir()) == []
 
 
+@pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
+def test_installer_accepts_supported_platforms(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, platform: str
+) -> None:
+    namespace, comfy = _installer_fixture(tmp_path)
+    main = cast(Callable[[], int], namespace["main"])
+    monkeypatch.setitem(main.__globals__, "version", _compatible_version)
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy), "--check-only"])
+    monkeypatch.setitem(main.__globals__, "check_runtime", lambda *args: None)
+    monkeypatch.setattr(subprocess, "run", _unexpected_mutation)
+    assert main() == 0
+
+
+def test_installer_rejects_unsupported_platform_before_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace, comfy = _installer_fixture(tmp_path)
+    main = cast(Callable[[], int], namespace["main"])
+    monkeypatch.setattr(sys, "platform", "cygwin")
+    monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy)])
+    monkeypatch.setattr(subprocess, "run", _unexpected_mutation)
+    monkeypatch.setattr(shutil, "copytree", _unexpected_mutation)
+    with pytest.raises(SystemExit, match="requires Linux, macOS or Windows"):
+        main()
+
+
 def test_installer_rejects_missing_dependency_before_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

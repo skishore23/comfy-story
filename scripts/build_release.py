@@ -88,8 +88,8 @@ def main() -> int:
     parser.add_argument("--check-only", action="store_true", help="Verify without installing")
     parser.add_argument("--extra-model-paths-config", type=Path, action="append", default=[])
     args = parser.parse_args()
-    if sys.platform not in ("linux", "darwin"):
-        raise SystemExit("Comfy Story currently requires Linux or macOS")
+    if sys.platform not in ("linux", "darwin", "win32"):
+        raise SystemExit("Comfy Story currently requires Linux, macOS or Windows")
     if sys.version_info < (3, 11):
         raise SystemExit("Comfy Story requires Python 3.11 or newer")
     root = args.comfy_root.resolve()
