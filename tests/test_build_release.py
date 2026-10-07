@@ -125,8 +125,8 @@ def test_release_contains_native_runtime_but_no_artifacts(tmp_path: Path) -> Non
             ):
                 assert wheel.read(license_root + name) == (REPOSITORY_ROOT / source).read_bytes()
             requirements = metadata.get_all("Requires-Dist") or []
-            assert "torch>=2.8,<2.13" in requirements
-            assert "cryptography>=43,<50" in requirements
+            assert "torch>=2.8,<2.15" in requirements
+            assert "cryptography>=43,<51" in requirements
             assert "Pillow>=10,<13" in requirements
             assert any(name.endswith("/licenses/LICENSE") for name in wheel_names)
             assert "comfy_story/h3_reference_compressors.py" not in wheel_names
@@ -441,7 +441,7 @@ def test_installer_installs_missing_dependencies_without_changing_torch(
     monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy)])
     assert main() == 0
     assert len(calls) == 2
-    assert "cryptography<50,>=43" in calls[0]
+    assert "cryptography<51,>=43" in calls[0]
     assert "--no-deps" in calls[1]
     assert (comfy / "custom_nodes/comfy_story/__init__.py").is_file()
 

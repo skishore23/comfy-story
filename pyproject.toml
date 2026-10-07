@@ -8,11 +8,11 @@ license-files = ["LICENSE", "NOTICE", "LICENSING.md", "licenses/Apache-2.0.txt"]
 requires-python = ">=3.11"
 dependencies = [
   "aiohttp>=3.11,<4",
-  "cryptography>=43,<50",
+  "cryptography>=43,<51",
   "numpy>=1.26",
   "packaging>=24",
   "Pillow>=10,<13",
-  "torch>=2.8,<2.13",
+  "torch>=2.8,<2.15",
 ]
 
 [project.optional-dependencies]
@@ -43,8 +43,8 @@ packages = ["src/comfy_story"]
 
 [tool.comfy-story.story-runtime]
 # Preserve the existing ComfyUI host's Torch/CUDA build.
-torch = "torch>=2.8,<2.13"
-cryptography = "cryptography>=43,<50"
+torch = "torch>=2.8,<2.15"
+cryptography = "cryptography>=43,<51"
 
 [tool.ruff]
 line-length = 100

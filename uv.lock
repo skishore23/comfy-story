@@ -426,7 +426,7 @@ film-audit = [
 requires-dist = [
     { name = "accelerate", marker = "extra == 'film-audit'", specifier = ">=1.2" },
     { name = "aiohttp", specifier = ">=3.11,<4" },
-    { name = "cryptography", specifier = ">=43,<50" },
+    { name = "cryptography", specifier = ">=43,<51" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "packaging", specifier = ">=24" },
@@ -434,7 +434,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.12,<0.16" },
-    { name = "torch", specifier = ">=2.8,<2.13" },
+    { name = "torch", specifier = ">=2.8,<2.15" },
     { name = "transformers", marker = "extra == 'film-audit'", specifier = ">=4.57,<6" },
     { name = "types-pillow", marker = "extra == 'dev'", specifier = ">=10.2" },
 ]
