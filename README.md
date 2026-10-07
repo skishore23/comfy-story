@@ -27,23 +27,50 @@ You'll need:
 
 - **ComfyUI with a working MiniMax H3 setup**, including the authorized generation models,
   encoders, and video/audio VAEs, plus Python 3.11 or newer and suitable hardware.
-- **Linux or macOS** for story storage. GPU generation has been tested on Linux; Windows story
-  storage is not currently supported.
-- **FFmpeg and ffprobe** available on your system for film export.
+- **Linux, macOS or Windows** for story storage. GPU generation has been tested on Linux;
+  installation and node loading have also been tested on Windows 11.
+- **FFmpeg and ffprobe** available on your system for film export. On Windows, put a build's
+  `bin` folder on your `PATH` (for example from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/)),
+  then restart ComfyUI so it picks up the new `PATH`.
+
+### H3 models
+
+The default workflow needs these four files (about 42.5 GB in total) from
+[Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3). Put each in the matching
+folder under `ComfyUI/models`. The installer checks the diffusion model and video VAE by hash, so
+use these exact files:
+
+| Folder | File | Size |
+| --- | --- | --- |
+| `diffusion_models` | [`minimax_h3_ref2va_pruned_int8_convrot.safetensors`](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors) | 21.0 GB |
+| `text_encoders` | [`qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors`](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors) | 15.7 GB |
+| `vae` | [`minimax_h3_video_vae_fp16.safetensors`](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors) | 5.2 GB |
+| `vae` | [`minimax_h3_audio_vae_fp32.safetensors`](https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors) | 0.6 GB |
+
+### Install
 
 Download the **complete installer ZIP** from [Releases](https://github.com/skishore23/comfy-story/releases/latest)
 and extract it. From that folder, run the installer using ComfyUI's Python environment:
+
+> **Windows, or Torch 2.13/2.14:** the 0.6.1 release predates support for these. Until the next
+> release, use [Install from source](#install-from-source) below.
 
 ```bash
 /path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
 ```
 
+On Windows, use the environment's `Scripts\python.exe`:
+
+```powershell
+C:\path\to\ComfyUI\.venv\Scripts\python.exe install.py --comfy-root C:\path\to\ComfyUI
+```
+
 The installer sets up Comfy Story and its story memory automatically, checks your H3 models,
 and installs missing Python dependencies while preserving your existing Torch/CUDA build.
-The H3 foundation models and encoders are installed separately through your ComfyUI model setup.
+Download the H3 models first (see [H3 models](#h3-models)); the installer checks them but does not
+download them.
 
-<details>
-<summary>Install from source</summary>
+### Install from source
 
 Clone the repository outside ComfyUI's `custom_nodes` folder, then run the same installer:
 
@@ -53,11 +80,21 @@ cd comfy-story
 /path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
 ```
 
+On Windows:
+
+```powershell
+git clone https://github.com/skishore23/comfy-story.git
+cd comfy-story
+C:\path\to\ComfyUI\.venv\Scripts\python.exe install.py --comfy-root C:\path\to\ComfyUI
+```
+
+Run it from a normal terminal with ComfyUI's own Python: the installer adds packages to that
+environment. Installing the repository with ComfyUI-Manager or `comfy node install` only clones it
+into `custom_nodes` and registers no nodes.
+
 The installer downloads the small memory model automatically. No GitHub credentials or manual
 memory configuration are needed. Use the installer to set up the complete custom node;
 cloning the repository or running `pip install .` alone does not complete installation.
-
-</details>
 
 See the [installation guide](docs/getting-started.md) for model filenames, shared model paths,
 offline setup, and the `--check-only` option.

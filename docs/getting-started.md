@@ -14,6 +14,12 @@ run with ComfyUI's Python:
 /path/to/ComfyUI/.venv/bin/python install.py --comfy-root /path/to/ComfyUI
 ```
 
+On Windows, use the environment's `Scripts\python.exe`:
+
+```powershell
+C:\path\to\ComfyUI\.venv\Scripts\python.exe install.py --comfy-root C:\path\to\ComfyUI
+```
+
 The same command works from a clean cloned source checkout. It fetches the pinned memory asset
 and builds the installable bundle automatically. No GitHub credentials are needed. The complete
 ZIP includes the checkpoint and needs no separate checkpoint download.
@@ -79,7 +85,7 @@ Completed-shot recovery reopens stored results; it does not resume interrupted s
 
 ## Operation
 
-Story storage supports Linux and macOS. Windows storage is unsupported. The exercised generation
+Story storage and the installer support Linux, macOS and Windows. The exercised generation
 host used Linux, Python 3.13.12, Torch 2.12.1+cu130, ComfyUI 0.34.0, and a 96 GB RTX PRO 6000.
 These describe a tested host, not minimum hardware requirements.
 

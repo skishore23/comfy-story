@@ -125,8 +125,8 @@ def test_release_contains_native_runtime_but_no_artifacts(tmp_path: Path) -> Non
             ):
                 assert wheel.read(license_root + name) == (REPOSITORY_ROOT / source).read_bytes()
             requirements = metadata.get_all("Requires-Dist") or []
-            assert "torch>=2.8,<2.13" in requirements
-            assert "cryptography>=43,<50" in requirements
+            assert "torch>=2.8,<2.15" in requirements
+            assert "cryptography>=43,<51" in requirements
             assert "Pillow>=10,<13" in requirements
             assert any(name.endswith("/licenses/LICENSE") for name in wheel_names)
             assert "comfy_story/h3_reference_compressors.py" not in wheel_names
@@ -209,6 +209,33 @@ def test_installer_check_only_does_not_install_or_copy(
     assert len(checks) == 1
     assert checks[0][1] == comfy.resolve()
     assert list((comfy / "custom_nodes").iterdir()) == []
+
+
+@pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
+def test_installer_accepts_supported_platforms(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, platform: str
+) -> None:
+    namespace, comfy = _installer_fixture(tmp_path)
+    main = cast(Callable[[], int], namespace["main"])
+    monkeypatch.setitem(main.__globals__, "version", _compatible_version)
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy), "--check-only"])
+    monkeypatch.setitem(main.__globals__, "check_runtime", lambda *args: None)
+    monkeypatch.setattr(subprocess, "run", _unexpected_mutation)
+    assert main() == 0
+
+
+def test_installer_rejects_unsupported_platform_before_mutation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace, comfy = _installer_fixture(tmp_path)
+    main = cast(Callable[[], int], namespace["main"])
+    monkeypatch.setattr(sys, "platform", "cygwin")
+    monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy)])
+    monkeypatch.setattr(subprocess, "run", _unexpected_mutation)
+    monkeypatch.setattr(shutil, "copytree", _unexpected_mutation)
+    with pytest.raises(SystemExit, match="requires Linux, macOS or Windows"):
+        main()
 
 
 def test_installer_rejects_missing_dependency_before_mutation(
@@ -414,7 +441,7 @@ def test_installer_installs_missing_dependencies_without_changing_torch(
     monkeypatch.setattr(sys, "argv", ["install.py", "--comfy-root", str(comfy)])
     assert main() == 0
     assert len(calls) == 2
-    assert "cryptography<50,>=43" in calls[0]
+    assert "cryptography<51,>=43" in calls[0]
     assert "--no-deps" in calls[1]
     assert (comfy / "custom_nodes/comfy_story/__init__.py").is_file()
 
